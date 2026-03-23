@@ -47,6 +47,7 @@ export const ru = {
   'chat.cancel': 'Отмена',
   'chat.newMessage': 'новое сообщение',
   'chat.quickReply': 'Быстрый ответ...',
+  'chat.addMembers': 'Добавить участников...',
 
   // Info Panel
   'info.groupInfo': 'Информация о группе',

@@ -47,6 +47,7 @@ export const en = {
   'chat.cancel': 'Cancel',
   'chat.newMessage': 'new message',
   'chat.quickReply': 'Quick reply...',
+  'chat.addMembers': 'Add members...',
 
   // Info Panel
   'info.groupInfo': 'Group Info',

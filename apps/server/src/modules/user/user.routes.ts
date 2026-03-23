@@ -8,18 +8,20 @@ export async function userRoutes(app: FastifyInstance) {
 
   // Search users
   app.get('/', async (request) => {
-    const { q, limit = 20, offset = 0 } = request.query as {
+    const { q, search, limit = 20, offset = 0 } = request.query as {
       q?: string;
+      search?: string;
       limit?: number;
       offset?: number;
     };
+    const query = q || search;
 
     const users = await prisma.user.findMany({
-      where: q
+      where: query
         ? {
             OR: [
-              { username: { contains: q, mode: 'insensitive' } },
-              { displayName: { contains: q, mode: 'insensitive' } },
+              { username: { contains: query, mode: 'insensitive' } },
+              { displayName: { contains: query, mode: 'insensitive' } },
             ],
             status: 'ACTIVE',
           }

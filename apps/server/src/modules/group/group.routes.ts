@@ -93,6 +93,51 @@ export async function groupRoutes(app: FastifyInstance) {
     return { success: true, chatId: chat.id };
   });
 
+  // Add members to group
+  app.post<{ Params: { groupId: string } }>('/:groupId/members', async (request, reply) => {
+    const userId = request.user!.userId;
+    const { groupId } = request.params;
+    const { userIds } = request.body as { userIds: string[] };
+
+    if (!userIds?.length) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: 'No users provided' });
+    }
+
+    // Check requester is member of the group
+    const requester = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId: groupId, userId } },
+    });
+    if (!requester || requester.leftAt) {
+      return reply.status(403).send({ error: 'FORBIDDEN', message: 'Not a member of this group' });
+    }
+
+    const chat = await prisma.chat.findUnique({ where: { id: groupId } });
+    if (!chat || chat.type !== 'GROUP') {
+      return reply.status(404).send({ error: 'NOT_FOUND', message: 'Group not found' });
+    }
+
+    const added: string[] = [];
+    for (const uid of userIds) {
+      const existing = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId: groupId, userId: uid } },
+      });
+      if (existing && !existing.leftAt) continue; // already member
+      if (existing) {
+        await prisma.chatMember.update({
+          where: { id: existing.id },
+          data: { leftAt: null, role: 'MEMBER' },
+        });
+      } else {
+        await prisma.chatMember.create({
+          data: { chatId: groupId, userId: uid, role: 'MEMBER' },
+        });
+      }
+      added.push(uid);
+    }
+
+    return { success: true, added };
+  });
+
   // Get group members
   app.get<{ Params: { groupId: string } }>('/:groupId/members', async (request) => {
     const { groupId } = request.params;
