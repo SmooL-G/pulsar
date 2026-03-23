@@ -58,6 +58,21 @@ export const ru = {
   'info.sharedMedia': 'Общие медиа',
   'info.on': 'Вкл',
 
+  // Profile
+  'profile.title': 'Профиль',
+  'profile.displayName': 'Отображаемое имя',
+  'profile.bio': 'О себе',
+  'profile.bioPlaceholder': 'Расскажите о себе...',
+  'profile.wallet': 'Кошелёк',
+  'profile.walletType': 'Тип кошелька',
+  'profile.external': 'Внешний',
+  'profile.custodial': 'Авто-созданный',
+  'profile.memberSince': 'Участник с',
+  'profile.changeAvatar': 'Сменить аватар',
+  'profile.saved': 'Профиль сохранён!',
+  'profile.saveError': 'Ошибка сохранения',
+  'profile.copyWallet': 'Скопировано!',
+
   // Settings
   'settings.title': 'Настройки',
   'settings.language': 'Язык',

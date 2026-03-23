@@ -58,6 +58,21 @@ export const en = {
   'info.sharedMedia': 'Shared Media',
   'info.on': 'On',
 
+  // Profile
+  'profile.title': 'Profile',
+  'profile.displayName': 'Display Name',
+  'profile.bio': 'Bio',
+  'profile.bioPlaceholder': 'Tell about yourself...',
+  'profile.wallet': 'Wallet',
+  'profile.walletType': 'Wallet Type',
+  'profile.external': 'External',
+  'profile.custodial': 'Auto-generated',
+  'profile.memberSince': 'Member since',
+  'profile.changeAvatar': 'Change avatar',
+  'profile.saved': 'Profile saved!',
+  'profile.saveError': 'Error saving profile',
+  'profile.copyWallet': 'Copied!',
+
   // Settings
   'settings.title': 'Settings',
   'settings.language': 'Language',

@@ -4,6 +4,7 @@ import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { ChatListItem } from '../chat/ChatListItem';
 import { NewChatModal } from '../chat/NewChatModal';
+import { ProfilePanel } from '../profile/ProfilePanel';
 import { useI18n } from '../../i18n';
 
 interface SidebarProps {
@@ -16,6 +17,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     fetchChats();
@@ -104,15 +106,24 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
       {/* User info */}
       {user && (
         <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-200 dark:border-dark-500">
-          <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium">
-            {user.username[0].toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user.displayName || user.username}</p>
-            <p className="text-xs text-gray-400 truncate font-mono">
-              {user.walletAddress.slice(0, 4)}...{user.walletAddress.slice(-4)}
-            </p>
-          </div>
+          <button
+            onClick={() => setShowProfile(true)}
+            className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+          >
+            <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium overflow-hidden shrink-0">
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                user.username[0].toUpperCase()
+              )}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-medium truncate">{user.displayName || user.username}</p>
+              <p className="text-xs text-gray-400 truncate font-mono">
+                {user.walletAddress.slice(0, 4)}...{user.walletAddress.slice(-4)}
+              </p>
+            </div>
+          </button>
           <button
             onClick={logout}
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors text-gray-400"
@@ -123,8 +134,9 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
         </div>
       )}
 
-      {/* New Chat Modal */}
+      {/* Modals */}
       {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
+      {showProfile && <ProfilePanel onClose={() => setShowProfile(false)} />}
     </div>
   );
 }
