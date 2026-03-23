@@ -94,6 +94,26 @@ export const ru = {
   'settings.walletInfo': 'Ваш Solana-кошелёк используется для идентификации в сети Pulsar. В будущем через него можно будет отправлять токены и NFT.',
   'settings.logout': 'Выйти',
 
+  // Friends
+  'friends.title': 'Друзья',
+  'friends.list': 'Друзья',
+  'friends.requests': 'Заявки',
+  'friends.add': 'Добавить',
+  'friends.noFriends': 'Пока нет друзей',
+  'friends.addFirst': 'Найдите и добавьте друзей',
+  'friends.online': 'В сети',
+  'friends.offline': 'Не в сети',
+  'friends.incoming': 'Входящие',
+  'friends.outgoing': 'Исходящие',
+  'friends.pending': 'Ожидание',
+  'friends.accept': 'Принять',
+  'friends.decline': 'Отклонить',
+  'friends.remove': 'Удалить',
+  'friends.message': 'Написать',
+  'friends.already': 'В друзьях',
+  'friends.sent': 'Отправлено',
+  'friends.noRequests': 'Нет заявок',
+
   // Common
   'common.loading': 'Загрузка...',
   'common.error': 'Ошибка',

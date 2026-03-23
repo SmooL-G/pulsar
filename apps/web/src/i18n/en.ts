@@ -94,6 +94,26 @@ export const en = {
   'settings.walletInfo': 'Your Solana wallet is used for identity on the Pulsar network. In the future, you can use it to send tokens and NFTs.',
   'settings.logout': 'Logout',
 
+  // Friends
+  'friends.title': 'Friends',
+  'friends.list': 'Friends',
+  'friends.requests': 'Requests',
+  'friends.add': 'Add',
+  'friends.noFriends': 'No friends yet',
+  'friends.addFirst': 'Find and add friends',
+  'friends.online': 'Online',
+  'friends.offline': 'Offline',
+  'friends.incoming': 'Incoming',
+  'friends.outgoing': 'Outgoing',
+  'friends.pending': 'Pending',
+  'friends.accept': 'Accept',
+  'friends.decline': 'Decline',
+  'friends.remove': 'Remove',
+  'friends.message': 'Message',
+  'friends.already': 'Friends',
+  'friends.sent': 'Sent',
+  'friends.noRequests': 'No requests',
+
   // Common
   'common.loading': 'Loading...',
   'common.error': 'Error',

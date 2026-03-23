@@ -29,13 +29,15 @@ model User {
   createdAt           DateTime   @default(now()) @map("created_at")
   updatedAt           DateTime   @updatedAt @map("updated_at")
 
-  sentMessages   Message[]
-  chatMembers    ChatMember[]
-  ownedGroups    Chat[]             @relation("owner")
-  fileUploads    FileAttachment[]
-  readReceipts   ReadReceipt[]
-  sessions       Session[]
-  notifications  Notification[]
+  sentMessages      Message[]
+  chatMembers       ChatMember[]
+  ownedGroups       Chat[]             @relation("owner")
+  fileUploads       FileAttachment[]
+  readReceipts      ReadReceipt[]
+  sessions          Session[]
+  notifications     Notification[]
+  sentRequests      Friendship[]       @relation("requester")
+  receivedRequests  Friendship[]       @relation("addressee")
 
   @@map("users")
 }
@@ -238,6 +240,31 @@ model PinnedMessage {
 
   @@index([chatId])
   @@map("pinned_messages")
+}
+
+// ─── FRIENDSHIPS ────────────────────────────────────────
+
+model Friendship {
+  id          String           @id @default(uuid()) @db.Uuid
+  requesterId String           @map("requester_id") @db.Uuid
+  addresseeId String           @map("addressee_id") @db.Uuid
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  requester User @relation("requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
+  @@map("friendships")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
 }
 
 // ─── NOTIFICATIONS ───────────────────────────────────────

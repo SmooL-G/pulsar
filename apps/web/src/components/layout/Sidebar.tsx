@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Search, Plus, Settings, LogOut } from 'lucide-react';
+import { Search, Plus, Settings, LogOut, Users } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { ChatListItem } from '../chat/ChatListItem';
 import { NewChatModal } from '../chat/NewChatModal';
 import { ProfilePanel } from '../profile/ProfilePanel';
 import { SettingsPanel } from '../settings/SettingsPanel';
+import { FriendsPanel } from '../friends/FriendsPanel';
 import { useI18n } from '../../i18n';
 
 interface SidebarProps {
@@ -20,6 +21,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
   const [showNewChat, setShowNewChat] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
 
   useEffect(() => {
     fetchChats();
@@ -48,6 +50,13 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
             title={t('settings.language')}
           >
             {locale === 'ru' ? 'EN' : 'RU'}
+          </button>
+          <button
+            onClick={() => setShowFriends(true)}
+            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
+            title={t('friends.title')}
+          >
+            <Users size={20} />
           </button>
           <button
             onClick={() => setShowNewChat(true)}
@@ -141,6 +150,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
       {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
       {showProfile && <ProfilePanel onClose={() => setShowProfile(false)} />}
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+      {showFriends && <FriendsPanel onClose={() => setShowFriends(false)} />}
     </div>
   );
 }
