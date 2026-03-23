@@ -8,7 +8,7 @@ COPY . .
 RUN cd packages/shared && npm install && npx tsc || true
 RUN cd packages/ui && npm install
 RUN cd apps/web && npm install
-RUN cd apps/web && npm run build
+RUN cd apps/web && npx vite build
 
 # Serve with nginx
 FROM nginx:alpine AS runner
