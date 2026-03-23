@@ -1,6 +1,7 @@
-import React from 'react';
 import type { Chat } from '@pulsar/shared';
 import { formatDistanceToNow } from 'date-fns';
+import { ru as ruLocale } from 'date-fns/locale/ru';
+import { useI18n } from '../../i18n';
 
 interface ChatListItemProps {
   chat: Chat & { otherUser?: any };
@@ -9,23 +10,28 @@ interface ChatListItemProps {
 }
 
 export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
+  const { t, locale } = useI18n();
+
   const name =
     chat.type === 'DIRECT'
-      ? chat.otherUser?.displayName || chat.otherUser?.username || 'Unknown'
-      : chat.name || 'Group';
+      ? chat.otherUser?.displayName || chat.otherUser?.username || t('common.unknown')
+      : chat.name || t('common.group');
 
   const lastMsg = chat.lastMessage;
   const time = lastMsg
-    ? formatDistanceToNow(new Date(lastMsg.createdAt), { addSuffix: false })
+    ? formatDistanceToNow(new Date(lastMsg.createdAt), {
+        addSuffix: false,
+        locale: locale === 'ru' ? ruLocale : undefined,
+      })
     : '';
 
   const preview = lastMsg
     ? lastMsg.type === 'IMAGE'
-      ? '📷 Photo'
+      ? `📷 ${t('chat.photo')}`
       : lastMsg.type === 'FILE'
-        ? '📎 File'
+        ? `📎 ${t('chat.file')}`
         : lastMsg.content || ''
-    : 'No messages yet';
+    : t('chat.noMessagesYet');
 
   return (
     <button

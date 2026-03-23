@@ -1,17 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Plus, Settings, LogOut } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { ChatListItem } from '../chat/ChatListItem';
+import { NewChatModal } from '../chat/NewChatModal';
+import { useI18n } from '../../i18n';
 
 interface SidebarProps {
   onChatSelect: () => void;
 }
 
 export function Sidebar({ onChatSelect }: SidebarProps) {
+  const { t, locale, setLocale } = useI18n();
   const { chats, fetchChats, setActiveChat, activeChat } = useChatStore();
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewChat, setShowNewChat] = useState(false);
 
   useEffect(() => {
     fetchChats();
@@ -32,16 +36,25 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-dark-500">
         <h1 className="text-xl font-bold text-primary-600">Pulsar</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {/* Language toggle */}
           <button
+            onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')}
+            className="px-2 py-1 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors text-xs font-medium text-gray-500"
+            title={t('settings.language')}
+          >
+            {locale === 'ru' ? 'EN' : 'RU'}
+          </button>
+          <button
+            onClick={() => setShowNewChat(true)}
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
-            title="New chat"
+            title={t('chat.newChat')}
           >
             <Plus size={20} />
           </button>
           <button
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
-            title="Settings"
+            title={t('settings.title')}
           >
             <Settings size={20} />
           </button>
@@ -57,7 +70,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
           />
           <input
             type="text"
-            placeholder="Search chats..."
+            placeholder={t('chat.searchChats')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-gray-200 dark:bg-dark-600
@@ -82,8 +95,8 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
         ))}
         {filteredChats.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-            <p className="text-sm">No chats yet</p>
-            <p className="text-xs mt-1">Start a new conversation</p>
+            <p className="text-sm">{t('chat.noChats')}</p>
+            <p className="text-xs mt-1">{t('chat.startConversation')}</p>
           </div>
         )}
       </div>
@@ -103,12 +116,15 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
           <button
             onClick={logout}
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors text-gray-400"
-            title="Logout"
+            title={t('settings.logout')}
           >
             <LogOut size={18} />
           </button>
         </div>
       )}
+
+      {/* New Chat Modal */}
+      {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
     </div>
   );
 }

@@ -1,11 +1,14 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Send, Paperclip, Smile } from 'lucide-react';
+import { getSocket } from '../../hooks/useSocket';
+import { useI18n } from '../../i18n';
 
 interface MessageInputProps {
   chatId: string;
 }
 
 export function MessageInput({ chatId }: MessageInputProps) {
+  const { t } = useI18n();
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -13,8 +16,10 @@ export function MessageInput({ chatId }: MessageInputProps) {
     const content = text.trim();
     if (!content) return;
 
-    // TODO: Emit via socket
-    // socket.emit('message:send', { chatId, content });
+    const socket = getSocket();
+    if (socket?.connected) {
+      socket.emit('message:send', { chatId, content, type: 'TEXT' });
+    }
 
     setText('');
     if (textareaRef.current) {
@@ -31,28 +36,31 @@ export function MessageInput({ chatId }: MessageInputProps) {
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
-    // Auto-resize
     const textarea = e.target;
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
+
+    // Typing indicator
+    const socket = getSocket();
+    if (socket?.connected) {
+      socket.emit('typing:start', { chatId });
+    }
   };
 
   return (
     <div className="px-4 py-3 border-t border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
       <div className="flex items-end gap-2">
-        {/* Attachments */}
         <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-400 shrink-0">
           <Paperclip size={20} />
         </button>
 
-        {/* Text input */}
         <div className="flex-1 relative">
           <textarea
             ref={textareaRef}
             value={text}
             onChange={handleInput}
             onKeyDown={handleKeyDown}
-            placeholder="Write a message..."
+            placeholder={t('chat.writeMessage')}
             rows={1}
             className="w-full resize-none px-4 py-2.5 rounded-2xl bg-gray-100 dark:bg-dark-600
               border-none outline-none focus:ring-2 focus:ring-primary-500
@@ -61,12 +69,10 @@ export function MessageInput({ chatId }: MessageInputProps) {
           />
         </div>
 
-        {/* Emoji */}
         <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-400 shrink-0">
           <Smile size={20} />
         </button>
 
-        {/* Send */}
         <button
           onClick={handleSend}
           disabled={!text.trim()}

@@ -1,6 +1,6 @@
-import React from 'react';
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
+import { useI18n } from '../../i18n';
 
 interface MessageBubbleProps {
   message: Message;
@@ -9,11 +9,13 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps) {
+  const { t } = useI18n();
+
   if (message.isDeleted) {
     return (
       <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1`}>
         <div className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-dark-600 text-gray-400 italic text-sm">
-          Message deleted
+          {t('chat.messageDeleted')}
         </div>
       </div>
     );
@@ -78,7 +80,7 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
           <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
             {message.isEdited && (
               <span className={`text-[10px] ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>
-                edited
+                {t('chat.edited')}
               </span>
             )}
             <span className={`text-[10px] ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>
