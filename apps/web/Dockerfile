@@ -1,6 +1,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Install build dependencies for native modules (usb, etc.)
+RUN apk add --no-cache python3 make g++ linux-headers libusb-dev eudev-dev
+
 COPY . .
 RUN cd packages/shared && npm install && npx tsc || true
 RUN cd packages/ui && npm install
