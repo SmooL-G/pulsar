@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Users, Bell, Shield, Link as LinkIcon, Copy, Check, Trash2 } from 'lucide-react';
+import { X, Users, Bell, Shield, Copy, Check, Trash2, Share2, MessageCircle } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -11,11 +11,15 @@ interface InfoPanelProps {
 
 export function InfoPanel({ onClose }: InfoPanelProps) {
   const { t } = useI18n();
-  const { activeChat, setActiveChat, fetchChats } = useChatStore();
+  const { activeChat, setActiveChat, fetchChats, chats } = useChatStore();
   const user = useAuthStore((s) => s.user);
   const [copied, setCopied] = useState(false);
   const [members, setMembers] = useState<any[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [shareSearch, setShareSearch] = useState('');
+  const [sharedTo, setSharedTo] = useState<Set<string>>(new Set());
 
   const isGroup = activeChat?.type === 'GROUP';
 
@@ -28,12 +32,54 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
 
   if (!activeChat) return null;
 
+  const inviteLink = activeChat.inviteCode
+    ? `${window.location.origin}/invite/${activeChat.inviteCode}`
+    : '';
+
   const copyInviteLink = async () => {
-    if (!activeChat.inviteCode) return;
-    const link = `${window.location.origin}/invite/${activeChat.inviteCode}`;
-    await navigator.clipboard.writeText(link);
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+    } catch {
+      // Fallback for non-HTTPS
+      const textarea = document.createElement('textarea');
+      textarea.value = inviteLink;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const openSharePanel = async () => {
+    setShowShare(true);
+    try {
+      const { data } = await api.get('/friends');
+      setFriends(data.friends || []);
+    } catch {}
+  };
+
+  const shareToUser = async (userId: string) => {
+    if (!inviteLink) return;
+    try {
+      // Send invite link as a DM
+      const { data } = await api.post('/chats/direct', { targetUserId: userId });
+      const chat = data.chat || data;
+      const { getSocket } = await import('../../hooks/useSocket');
+      const socket = getSocket();
+      if (socket?.connected) {
+        socket.emit('message:send', {
+          chatId: chat.id,
+          content: `${t('info.inviteToGroup')} "${activeChat.name}"\n${inviteLink}`,
+          type: 'TEXT',
+        });
+      }
+      setSharedTo((prev) => new Set(prev).add(userId));
+    } catch {}
   };
 
   const isOwner = isGroup && activeChat.ownerId === user?.id;
@@ -49,10 +95,32 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
       setActiveChat(null);
       fetchChats();
       onClose();
-    } catch {
-      // Error
-    }
+    } catch {}
   };
+
+  // Recent DM chats for share panel
+  const recentDMs = chats
+    .filter((c) => c.type === 'DIRECT' && (c as any).otherUser)
+    .slice(0, 5)
+    .map((c) => (c as any).otherUser);
+
+  // Merge friends + recent, deduplicate
+  const shareList = (() => {
+    const map = new Map<string, any>();
+    // Friends first
+    friends.forEach((f: any) => map.set(f.id, { ...f, source: 'friend' }));
+    // Then recent DMs
+    recentDMs.forEach((u: any) => {
+      if (!map.has(u.id)) map.set(u.id, { ...u, source: 'recent' });
+    });
+    const query = shareSearch.toLowerCase();
+    if (!query) return Array.from(map.values());
+    return Array.from(map.values()).filter(
+      (u) =>
+        (u.displayName || '').toLowerCase().includes(query) ||
+        u.username.toLowerCase().includes(query)
+    );
+  })();
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-dark-700">
@@ -81,19 +149,89 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
 
         {/* Invite link */}
         {isGroup && activeChat.inviteCode && (
-          <div className="bg-gray-50 dark:bg-dark-600 rounded-xl p-3">
-            <p className="text-xs text-gray-400 mb-2">{t('info.inviteLink')}</p>
+          <div className="bg-gray-50 dark:bg-dark-600 rounded-xl p-3 space-y-2">
+            <p className="text-xs text-gray-400">{t('info.inviteLink')}</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 text-xs text-primary-400 bg-dark-700/50 rounded-lg px-3 py-2 truncate">
-                {window.location.origin}/invite/{activeChat.inviteCode}
+                {inviteLink}
               </code>
               <button
                 onClick={copyInviteLink}
                 className="p-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white transition-colors shrink-0"
+                title={t('info.copy')}
               >
                 {copied ? <Check size={16} /> : <Copy size={16} />}
               </button>
+              <button
+                onClick={openSharePanel}
+                className="p-2 rounded-lg bg-dark-500 hover:bg-dark-400 text-white transition-colors shrink-0"
+                title={t('info.share')}
+              >
+                <Share2 size={16} />
+              </button>
             </div>
+
+            {/* Copied toast */}
+            {copied && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg animate-fade-in">
+                <Check size={14} className="text-green-400" />
+                <span className="text-xs text-green-400 font-medium">{t('info.copied')}</span>
+              </div>
+            )}
+
+            {/* Share panel */}
+            {showShare && (
+              <div className="bg-dark-700/50 rounded-xl p-3 space-y-2 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-400 font-medium">{t('info.shareWith')}</p>
+                  <button onClick={() => setShowShare(false)} className="p-0.5 rounded hover:bg-dark-500 text-gray-500">
+                    <X size={14} />
+                  </button>
+                </div>
+                {(friends.length > 0 || recentDMs.length > 0) && (
+                  <input
+                    type="text"
+                    value={shareSearch}
+                    onChange={(e) => setShareSearch(e.target.value)}
+                    placeholder={t('chat.findUser')}
+                    className="w-full px-3 py-1.5 text-xs rounded-lg bg-dark-600 border-none outline-none text-gray-100 placeholder:text-gray-500"
+                  />
+                )}
+                <div className="max-h-48 overflow-y-auto space-y-0.5">
+                  {shareList.map((u: any) => (
+                    <div key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-dark-600 transition-colors">
+                      <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-medium">
+                          {(u.displayName || u.username)?.[0]?.toUpperCase() || '?'}
+                        </div>
+                        {u.isOnline && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-dark-700" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{u.displayName || u.username}</p>
+                      </div>
+                      {sharedTo.has(u.id) ? (
+                        <span className="text-xs text-green-400 flex items-center gap-1">
+                          <Check size={12} />
+                          {t('friends.sent')}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => shareToUser(u.id)}
+                          className="p-1 rounded-lg bg-primary-500 hover:bg-primary-600 text-white transition-colors"
+                        >
+                          <MessageCircle size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {shareList.length === 0 && (
+                    <p className="text-xs text-gray-500 text-center py-3">{t('friends.noFriends')}</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

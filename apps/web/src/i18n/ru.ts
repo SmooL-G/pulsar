@@ -62,6 +62,10 @@ export const ru = {
   'info.planned': 'Планируется',
   'info.sharedMedia': 'Общие медиа',
   'info.on': 'Вкл',
+  'info.share': 'Поделиться',
+  'info.shareWith': 'Поделиться с...',
+  'info.copied': 'Ссылка скопирована!',
+  'info.inviteToGroup': 'Присоединяйся к группе',
 
   // Profile
   'profile.title': 'Профиль',
