@@ -190,7 +190,7 @@ export function LoginPage() {
                   required
                   minLength={3}
                   maxLength={32}
-                  pattern="[a-zA-Z0-9_]+"
+                  pattern="[a-zA-Z0-9_\-]+"
                   className="w-full px-4 py-2.5 bg-dark-600 rounded-lg text-white border border-dark-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
                   placeholder="username"
                 />
