@@ -48,6 +48,8 @@ export const ru = {
   'chat.newMessage': 'новое сообщение',
   'chat.quickReply': 'Быстрый ответ...',
   'chat.addMembers': 'Добавить участников...',
+  'chat.deleteGroup': 'Удалить группу',
+  'chat.confirmDelete': 'Нажмите ещё раз для подтверждения',
 
   // Info Panel
   'info.groupInfo': 'Информация о группе',

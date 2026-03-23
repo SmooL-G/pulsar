@@ -48,6 +48,8 @@ export const en = {
   'chat.newMessage': 'new message',
   'chat.quickReply': 'Quick reply...',
   'chat.addMembers': 'Add members...',
+  'chat.deleteGroup': 'Delete group',
+  'chat.confirmDelete': 'Tap again to confirm',
 
   // Info Panel
   'info.groupInfo': 'Group Info',

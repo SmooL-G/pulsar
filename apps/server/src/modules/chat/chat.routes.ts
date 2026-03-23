@@ -53,6 +53,7 @@ export async function chatRoutes(app: FastifyInstance) {
         avatarUrl: m.chat.avatarUrl,
         isPublic: m.chat.isPublic,
         inviteCode: m.chat.inviteCode,
+        ownerId: m.chat.ownerId,
         memberCount: m.chat._count.members,
         myRole: m.role,
         updatedAt: m.chat.updatedAt.toISOString(),

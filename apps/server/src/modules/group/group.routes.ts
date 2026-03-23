@@ -138,6 +138,32 @@ export async function groupRoutes(app: FastifyInstance) {
     return { success: true, added };
   });
 
+  // Delete group (owner only)
+  app.delete<{ Params: { groupId: string } }>('/:groupId', async (request, reply) => {
+    const userId = request.user!.userId;
+    const { groupId } = request.params;
+
+    const chat = await prisma.chat.findUnique({ where: { id: groupId } });
+    if (!chat || chat.type !== 'GROUP') {
+      return reply.status(404).send({ error: 'NOT_FOUND', message: 'Group not found' });
+    }
+    if (chat.ownerId !== userId) {
+      return reply.status(403).send({ error: 'FORBIDDEN', message: 'Only the owner can delete the group' });
+    }
+
+    // Delete all related data
+    await prisma.$transaction([
+      prisma.readReceipt.deleteMany({ where: { message: { chatId: groupId } } }),
+      prisma.reaction.deleteMany({ where: { message: { chatId: groupId } } }),
+      prisma.fileAttachment.deleteMany({ where: { message: { chatId: groupId } } }),
+      prisma.message.deleteMany({ where: { chatId: groupId } }),
+      prisma.chatMember.deleteMany({ where: { chatId: groupId } }),
+      prisma.chat.delete({ where: { id: groupId } }),
+    ]);
+
+    return { success: true };
+  });
+
   // Get group members
   app.get<{ Params: { groupId: string } }>('/:groupId/members', async (request) => {
     const { groupId } = request.params;

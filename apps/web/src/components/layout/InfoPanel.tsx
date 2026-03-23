@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { X, Users, Bell, Shield, Link as LinkIcon, Copy, Check } from 'lucide-react';
+import { X, Users, Bell, Shield, Link as LinkIcon, Copy, Check, Trash2 } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
+import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { api } from '../../services/api';
 
@@ -10,9 +11,11 @@ interface InfoPanelProps {
 
 export function InfoPanel({ onClose }: InfoPanelProps) {
   const { t } = useI18n();
-  const activeChat = useChatStore((s) => s.activeChat);
+  const { activeChat, setActiveChat, fetchChats } = useChatStore();
+  const user = useAuthStore((s) => s.user);
   const [copied, setCopied] = useState(false);
   const [members, setMembers] = useState<any[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const isGroup = activeChat?.type === 'GROUP';
 
@@ -31,6 +34,24 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
     await navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const isOwner = isGroup && activeChat.ownerId === user?.id;
+
+  const handleDeleteGroup = async () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      setTimeout(() => setConfirmDelete(false), 3000);
+      return;
+    }
+    try {
+      await api.delete(`/groups/${activeChat.id}`);
+      setActiveChat(null);
+      fetchChats();
+      onClose();
+    } catch {
+      // Error
+    }
   };
 
   return (
@@ -111,6 +132,21 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Delete group */}
+        {isOwner && (
+          <button
+            onClick={handleDeleteGroup}
+            className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              confirmDelete
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : 'bg-red-500/10 hover:bg-red-500/20 text-red-500'
+            }`}
+          >
+            <Trash2 size={16} />
+            {confirmDelete ? t('chat.confirmDelete') : t('chat.deleteGroup')}
+          </button>
         )}
 
         <div>
