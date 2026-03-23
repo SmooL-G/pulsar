@@ -118,6 +118,14 @@ export const en = {
   'friends.sent': 'Sent',
   'friends.noRequests': 'No requests',
 
+  // Invite
+  'invite.joining': 'Joining group...',
+  'invite.success': 'You joined the group!',
+  'invite.alreadyMember': 'You are already a member',
+  'invite.redirecting': 'Redirecting...',
+  'invite.error': 'Could not join',
+  'invite.goHome': 'Go to chats',
+
   // Common
   'common.loading': 'Loading...',
   'common.error': 'Error',

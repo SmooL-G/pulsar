@@ -8,6 +8,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
 import { LoginPage } from './pages/LoginPage';
 import { ChatPage } from './pages/ChatPage';
+import { InvitePage } from './pages/InvitePage';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -53,6 +54,7 @@ export function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="/invite/:code" element={<InvitePage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>

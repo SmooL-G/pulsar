@@ -118,6 +118,14 @@ export const ru = {
   'friends.sent': 'Отправлено',
   'friends.noRequests': 'Нет заявок',
 
+  // Invite
+  'invite.joining': 'Вступление в группу...',
+  'invite.success': 'Вы вступили в группу!',
+  'invite.alreadyMember': 'Вы уже участник',
+  'invite.redirecting': 'Перенаправление...',
+  'invite.error': 'Не удалось вступить',
+  'invite.goHome': 'К чатам',
+
   // Common
   'common.loading': 'Загрузка...',
   'common.error': 'Ошибка',

@@ -7,6 +7,16 @@ import { api } from '../services/api';
 import { useI18n } from '../i18n';
 import bs58 from 'bs58';
 
+function navigateAfterLogin(navigate: ReturnType<typeof useNavigate>) {
+  const pending = sessionStorage.getItem('pendingInvite');
+  if (pending) {
+    sessionStorage.removeItem('pendingInvite');
+    navigate(pending, { replace: true });
+  } else {
+    navigate('/');
+  }
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
   const { t, locale, setLocale } = useI18n();
@@ -32,7 +42,7 @@ export function LoginPage() {
       const signatureB58 = bs58.encode(signature);
       const { data } = await api.post('/auth/wallet/verify', { walletAddress, signature: signatureB58 });
       await login(data.accessToken);
-      navigate('/');
+      navigateAfterLogin(navigate);
     } catch (err: any) {
       setError(err.response?.data?.message || t('auth.walletAuthFailed'));
     } finally {
@@ -48,7 +58,7 @@ export function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       await login(data.accessToken);
-      navigate('/');
+      navigateAfterLogin(navigate);
     } catch (err: any) {
       setError(err.response?.data?.message || t('auth.loginFailed'));
     } finally {
@@ -64,7 +74,7 @@ export function LoginPage() {
     try {
       const { data } = await api.post('/auth/register', { username, email, password });
       await login(data.accessToken);
-      navigate('/');
+      navigateAfterLogin(navigate);
     } catch (err: any) {
       setError(err.response?.data?.message || t('auth.registerFailed'));
     } finally {
