@@ -34,9 +34,10 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
   const createDM = async (userId: string) => {
     setLoading(true);
     try {
-      const { data } = await api.post('/chats/direct', { userId });
-      addChat(data);
-      setActiveChat(data);
+      const { data } = await api.post('/chats/direct', { targetUserId: userId });
+      const chat = data.chat || data;
+      addChat(chat);
+      setActiveChat(chat);
       onClose();
     } catch {
       // Error handling
@@ -50,8 +51,9 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
     setLoading(true);
     try {
       const { data } = await api.post('/groups', { name: groupName });
-      addChat(data);
-      setActiveChat(data);
+      const chat = data.group || data;
+      addChat(chat);
+      setActiveChat(chat);
       onClose();
     } catch {
       // Error handling
