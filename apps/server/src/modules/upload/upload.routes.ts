@@ -1,5 +1,4 @@
 import type { FastifyInstance } from 'fastify';
-import multipart from '@fastify/multipart';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client } from '../../config/s3.js';
 import { authMiddleware } from '../../middleware/auth.js';
@@ -7,12 +6,6 @@ import { env } from '../../config/env.js';
 import { nanoid } from 'nanoid';
 
 export async function uploadRoutes(app: FastifyInstance) {
-  await app.register(multipart, {
-    limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB for avatars
-    },
-  });
-
   app.addHook('preHandler', authMiddleware);
 
   // Upload avatar
@@ -40,7 +33,8 @@ export async function uploadRoutes(app: FastifyInstance) {
       })
     );
 
-    const avatarUrl = `${env.S3_ENDPOINT}/${env.S3_BUCKET}/${key}`;
+    // URL accessible through nginx proxy
+    const avatarUrl = `/s3/${env.S3_BUCKET}/${key}`;
 
     return { avatarUrl };
   });
