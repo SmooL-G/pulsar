@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { ChatArea } from './ChatArea';
 import { InfoPanel } from './InfoPanel';
@@ -8,6 +8,14 @@ export function AppLayout() {
   const activeChat = useChatStore((s) => s.activeChat);
   const [showInfo, setShowInfo] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+
+  // When activeChat is cleared (e.g. group deleted), show sidebar and hide info
+  useEffect(() => {
+    if (!activeChat) {
+      setShowSidebar(true);
+      setShowInfo(false);
+    }
+  }, [activeChat]);
 
   return (
     <div className="flex h-screen bg-white dark:bg-dark-800 overflow-hidden">
