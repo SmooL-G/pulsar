@@ -77,6 +77,16 @@ export const en = {
   'settings.title': 'Settings',
   'settings.language': 'Language',
   'settings.theme': 'Theme',
+  'settings.dark': 'Dark',
+  'settings.light': 'Light',
+  'settings.system': 'System',
+  'settings.appearance': 'Appearance',
+  'settings.notifications': 'Notifications',
+  'settings.pushNotifications': 'Push Notifications',
+  'settings.pushDescription': 'Show notifications for new messages',
+  'settings.sound': 'Sound',
+  'settings.soundDescription': 'Play sound on new message',
+  'settings.walletInfo': 'Your Solana wallet is used for identity on the Pulsar network. In the future, you can use it to send tokens and NFTs.',
   'settings.logout': 'Logout',
 
   // Common

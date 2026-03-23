@@ -77,6 +77,16 @@ export const ru = {
   'settings.title': 'Настройки',
   'settings.language': 'Язык',
   'settings.theme': 'Тема',
+  'settings.dark': 'Тёмная',
+  'settings.light': 'Светлая',
+  'settings.system': 'Система',
+  'settings.appearance': 'Внешний вид',
+  'settings.notifications': 'Уведомления',
+  'settings.pushNotifications': 'Push-уведомления',
+  'settings.pushDescription': 'Показывать уведомления о новых сообщениях',
+  'settings.sound': 'Звук',
+  'settings.soundDescription': 'Воспроизводить звук при новом сообщении',
+  'settings.walletInfo': 'Ваш Solana-кошелёк используется для идентификации в сети Pulsar. В будущем через него можно будет отправлять токены и NFT.',
   'settings.logout': 'Выйти',
 
   // Common

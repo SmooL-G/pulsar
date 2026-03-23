@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore';
 import { ChatListItem } from '../chat/ChatListItem';
 import { NewChatModal } from '../chat/NewChatModal';
 import { ProfilePanel } from '../profile/ProfilePanel';
+import { SettingsPanel } from '../settings/SettingsPanel';
 import { useI18n } from '../../i18n';
 
 interface SidebarProps {
@@ -18,6 +19,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     fetchChats();
@@ -55,6 +57,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
             <Plus size={20} />
           </button>
           <button
+            onClick={() => setShowSettings(true)}
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
             title={t('settings.title')}
           >
@@ -137,6 +140,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
       {/* Modals */}
       {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
       {showProfile && <ProfilePanel onClose={() => setShowProfile(false)} />}
+      {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
     </div>
   );
 }
