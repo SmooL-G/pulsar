@@ -45,6 +45,8 @@ export const ru = {
   'chat.groupName': 'Название группы',
   'chat.create': 'Создать',
   'chat.cancel': 'Отмена',
+  'chat.newMessage': 'новое сообщение',
+  'chat.quickReply': 'Быстрый ответ...',
 
   // Info Panel
   'info.groupInfo': 'Информация о группе',

@@ -45,6 +45,8 @@ export const en = {
   'chat.groupName': 'Group name',
   'chat.create': 'Create',
   'chat.cancel': 'Cancel',
+  'chat.newMessage': 'new message',
+  'chat.quickReply': 'Quick reply...',
 
   // Info Panel
   'info.groupInfo': 'Group Info',

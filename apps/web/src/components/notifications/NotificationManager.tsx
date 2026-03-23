@@ -87,6 +87,7 @@ export function NotificationManager() {
           <div className="pointer-events-auto">
             <NotificationToast
               sender={notif.sender}
+              chatId={notif.chatId}
               chatName={notif.chatName}
               onClose={() => removeNotification(notif.id)}
               onClick={() => handleClick(notif.chatId, notif.id)}
