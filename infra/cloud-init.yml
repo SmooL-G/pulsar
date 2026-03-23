@@ -1,0 +1,140 @@
+#!/bin/sh
+
+# === Pulsar Server Setup for Timeweb Cloud ===
+# Ubuntu 24.04, автоматическая установка Docker + Node.js + Nginx
+
+set -e
+
+# 1. Обновление системы
+apt-get update -y && apt-get upgrade -y
+
+# 2. Установка базовых пакетов
+apt-get install -y \
+  curl \
+  wget \
+  git \
+  unzip \
+  htop \
+  ufw \
+  fail2ban \
+  certbot \
+  python3-certbot-nginx
+
+# 3. Установка Docker
+curl -fsSL https://get.docker.com | sh
+systemctl enable docker
+systemctl start docker
+
+# Установка Docker Compose plugin
+apt-get install -y docker-compose-plugin
+
+# 4. Установка Node.js 20 LTS
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs
+
+# 5. Установка Nginx
+apt-get install -y nginx
+systemctl enable nginx
+
+# 6. Настройка файрвола
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow 22/tcp    # SSH
+ufw allow 80/tcp    # HTTP
+ufw allow 443/tcp   # HTTPS
+ufw --force enable
+
+# 7. Настройка fail2ban
+systemctl enable fail2ban
+systemctl start fail2ban
+
+# 8. Создание пользователя для приложения
+useradd -m -s /bin/bash pulsar
+usermod -aG docker pulsar
+
+# 9. Создание директории проекта
+mkdir -p /home/pulsar/app
+chown -R pulsar:pulsar /home/pulsar
+
+# 10. Настройка swap (2 GB)
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+
+# 11. Оптимизация sysctl для WebSocket/чата
+cat >> /etc/sysctl.conf << 'SYSCTL'
+# Network tuning for WebSocket
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 65535
+net.ipv4.ip_local_port_range = 1024 65535
+net.ipv4.tcp_tw_reuse = 1
+net.core.netdev_max_backlog = 65535
+# File descriptors
+fs.file-max = 2097152
+SYSCTL
+sysctl -p
+
+# 12. Увеличить лимиты файловых дескрипторов
+cat >> /etc/security/limits.conf << 'LIMITS'
+pulsar soft nofile 65535
+pulsar hard nofile 65535
+* soft nofile 65535
+* hard nofile 65535
+LIMITS
+
+# 13. Базовая конфигурация Nginx (заглушка, заменим позже)
+cat > /etc/nginx/sites-available/pulsar << 'NGINX'
+server {
+    listen 80;
+    server_name _;
+
+    # Frontend
+    location / {
+        proxy_pass http://127.0.0.1:5173;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # API
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WebSocket
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # MinIO console (only for dev, remove in prod)
+    location /minio/ {
+        proxy_pass http://127.0.0.1:9001/;
+        proxy_set_header Host $host;
+    }
+
+    client_max_body_size 50M;
+}
+NGINX
+
+ln -sf /etc/nginx/sites-available/pulsar /etc/nginx/sites-enabled/pulsar
+rm -f /etc/nginx/sites-enabled/default
+nginx -t && systemctl reload nginx
+
+echo "=== Pulsar server setup complete! ==="
+echo "Docker: $(docker --version)"
+echo "Node.js: $(node --version)"
+echo "npm: $(npm --version)"
+echo "Nginx: $(nginx -v 2>&1)"

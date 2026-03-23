@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── USERS ───────────────────────────────────────────────
+
+model User {
+  id                  String     @id @default(uuid()) @db.Uuid
+  walletAddress       String     @unique @map("wallet_address")
+  walletType          WalletType @default(CUSTODIAL) @map("wallet_type")
+  encryptedPrivateKey String?    @map("encrypted_private_key")
+  email               String?    @unique
+  passwordHash        String?    @map("password_hash")
+  username            String     @unique @db.VarChar(32)
+  displayName         String?    @map("display_name") @db.VarChar(64)
+  avatarUrl           String?    @map("avatar_url")
+  nftAvatarMint       String?    @map("nft_avatar_mint")
+  bio                 String?    @db.VarChar(256)
+  role                UserRole   @default(USER)
+  status              UserStatus @default(ACTIVE)
+  lastSeenAt          DateTime?  @map("last_seen_at")
+  isOnline            Boolean    @default(false) @map("is_online")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  sentMessages   Message[]
+  chatMembers    ChatMember[]
+  ownedGroups    Chat[]             @relation("owner")
+  fileUploads    FileAttachment[]
+  readReceipts   ReadReceipt[]
+  sessions       Session[]
+  notifications  Notification[]
+
+  @@map("users")
+}
+
+enum WalletType {
+  EXTERNAL
+  CUSTODIAL
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+}
+
+// ─── AUTH SESSIONS ───────────────────────────────────────
+
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  token      String   @unique
+  deviceInfo String?  @map("device_info")
+  ipAddress  String?  @map("ip_address")
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ─── CHATS ───────────────────────────────────────────────
+
+model Chat {
+  id          String   @id @default(uuid()) @db.Uuid
+  type        ChatType
+  name        String?  @db.VarChar(128)
+  description String?  @db.VarChar(512)
+  avatarUrl   String?  @map("avatar_url")
+  inviteCode  String?  @unique @map("invite_code") @db.VarChar(16)
+  ownerId     String?  @map("owner_id") @db.Uuid
+  maxMembers  Int      @default(500) @map("max_members")
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  owner          User?           @relation("owner", fields: [ownerId], references: [id])
+  members        ChatMember[]
+  messages       Message[]
+  pinnedMessages PinnedMessage[]
+
+  @@index([type])
+  @@index([inviteCode])
+  @@map("chats")
+}
+
+enum ChatType {
+  DIRECT
+  GROUP
+  CHANNEL
+}
+
+model ChatMember {
+  id       String     @id @default(uuid()) @db.Uuid
+  chatId   String     @map("chat_id") @db.Uuid
+  userId   String     @map("user_id") @db.Uuid
+  role     MemberRole @default(MEMBER)
+  mutedUntil DateTime? @map("muted_until")
+  joinedAt DateTime   @default(now()) @map("joined_at")
+  leftAt   DateTime?  @map("left_at")
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+  @@index([userId])
+  @@map("chat_members")
+}
+
+enum MemberRole {
+  MEMBER
+  MODERATOR
+  ADMIN
+  OWNER
+}
+
+// ─── MESSAGES ────────────────────────────────────────────
+
+model Message {
+  id        String      @id @default(uuid()) @db.Uuid
+  chatId    String      @map("chat_id") @db.Uuid
+  senderId  String      @map("sender_id") @db.Uuid
+  content   String?     @db.Text
+  type      MessageType @default(TEXT)
+  replyToId String?     @map("reply_to_id") @db.Uuid
+  isEdited  Boolean     @default(false) @map("is_edited")
+  isDeleted Boolean     @default(false) @map("is_deleted")
+  metadata  Json?
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  chat         Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender       User              @relation(fields: [senderId], references: [id])
+  replyTo      Message?          @relation("replies", fields: [replyToId], references: [id])
+  replies      Message[]         @relation("replies")
+  attachments  FileAttachment[]
+  readReceipts ReadReceipt[]
+  reactions    Reaction[]
+  pinned       PinnedMessage?
+
+  @@index([chatId, createdAt(sort: Desc)])
+  @@index([senderId])
+  @@map("messages")
+}
+
+enum MessageType {
+  TEXT
+  FILE
+  IMAGE
+  SYSTEM
+  VOICE
+  VIDEO
+}
+
+// ─── FILES ───────────────────────────────────────────────
+
+model FileAttachment {
+  id           String   @id @default(uuid()) @db.Uuid
+  messageId    String   @map("message_id") @db.Uuid
+  uploaderId   String   @map("uploader_id") @db.Uuid
+  fileName     String   @map("file_name") @db.VarChar(255)
+  fileSize     BigInt   @map("file_size")
+  mimeType     String   @map("mime_type") @db.VarChar(128)
+  s3Key        String   @map("s3_key")
+  s3Bucket     String   @map("s3_bucket") @db.VarChar(64)
+  thumbnailKey String?  @map("thumbnail_key")
+  width        Int?
+  height       Int?
+  duration     Int?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  message  Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  uploader User    @relation(fields: [uploaderId], references: [id])
+
+  @@index([messageId])
+  @@map("file_attachments")
+}
+
+// ─── READ RECEIPTS ───────────────────────────────────────
+
+model ReadReceipt {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  readAt    DateTime @default(now()) @map("read_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId, readAt])
+  @@map("read_receipts")
+}
+
+// ─── REACTIONS ───────────────────────────────────────────
+
+model Reaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  emoji     String   @db.VarChar(8)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@map("reactions")
+}
+
+// ─── PINNED MESSAGES ─────────────────────────────────────
+
+model PinnedMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  chatId    String   @map("chat_id") @db.Uuid
+  messageId String   @unique @map("message_id") @db.Uuid
+  pinnedBy  String   @map("pinned_by") @db.Uuid
+  pinnedAt  DateTime @default(now()) @map("pinned_at")
+
+  chat    Chat    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@map("pinned_messages")
+}
+
+// ─── NOTIFICATIONS ───────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String           @db.VarChar(128)
+  body      String?          @db.VarChar(512)
+  data      Json?
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  MESSAGE
+  MENTION
+  GROUP_INVITE
+  SYSTEM
+}
