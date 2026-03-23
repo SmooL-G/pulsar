@@ -7,11 +7,12 @@ interface NotificationToastProps {
   sender: string;
   chatId: string;
   chatName?: string;
+  message?: string;
   onClose: () => void;
   onClick: () => void;
 }
 
-export function NotificationToast({ sender, chatId, chatName, onClose, onClick }: NotificationToastProps) {
+export function NotificationToast({ sender, chatId, chatName, message, onClose, onClick }: NotificationToastProps) {
   const { t } = useI18n();
   const [visible, setVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -110,9 +111,14 @@ export function NotificationToast({ sender, chatId, chatName, onClose, onClick }
           )}
         </div>
 
-        {/* Quick reply input */}
+        {/* Message content + Quick reply */}
         {expanded && (
-          <div className="px-4 pb-3">
+          <div className="px-4 pb-3 space-y-2">
+            {message && (
+              <div className="bg-dark-600/50 rounded-xl px-3 py-2">
+                <p className="text-sm text-gray-300 line-clamp-3 break-words">{message}</p>
+              </div>
+            )}
             <div className="flex items-center gap-2 bg-dark-600 rounded-xl px-3 py-2">
               <input
                 ref={inputRef}

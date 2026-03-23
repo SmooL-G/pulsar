@@ -11,6 +11,7 @@ interface Notification {
   sender: string;
   chatId: string;
   chatName?: string;
+  message: string;
 }
 
 // Notification sound (simple beep)
@@ -65,6 +66,7 @@ export function NotificationManager() {
         id: `${message.id}-${Date.now()}`,
         sender: senderName,
         chatId: message.chatId,
+        message: message.content || '',
       };
 
       setNotifications((prev) => [...prev.slice(-2), notif]); // Max 3 notifications
@@ -89,6 +91,7 @@ export function NotificationManager() {
               sender={notif.sender}
               chatId={notif.chatId}
               chatName={notif.chatName}
+              message={notif.message}
               onClose={() => removeNotification(notif.id)}
               onClick={() => handleClick(notif.chatId, notif.id)}
             />
