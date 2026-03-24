@@ -12,7 +12,7 @@ export function PrivacyPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/login')}
             className="p-2 rounded-lg hover:bg-dark-600 transition-colors"
           >
             <ArrowLeft size={20} />
