@@ -87,6 +87,11 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
         },
       });
 
+      // Check how many other sockets are in the chat room (for delivery status)
+      const roomSockets = await io.in(`chat:${data.chatId}`).fetchSockets();
+      const otherInRoom = roomSockets.some((s) => s.data.userId !== userId);
+      const status = otherInRoom ? 'delivered' : 'sent';
+
       const messagePayload = {
         id: message.id,
         chatId: message.chatId,
@@ -100,6 +105,7 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
         createdAt: message.createdAt.toISOString(),
         updatedAt: message.updatedAt.toISOString(),
         sender: message.sender,
+        status,
       };
 
       // Broadcast to all members of the chat

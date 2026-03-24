@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useMessageStore } from '../../store/messageStore';
 import { MessageBubble } from './MessageBubble';
 import { useAuthStore } from '../../store/authStore';
+import { getSocket } from '../../hooks/useSocket';
 
 interface MessageListProps {
   chatId: string;
@@ -20,6 +21,18 @@ export function MessageList({ chatId }: MessageListProps) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages.length]);
+
+  // Send read receipt for last message from other users
+  useEffect(() => {
+    if (!chatMessages.length || !user) return;
+    const lastMsg = chatMessages[chatMessages.length - 1];
+    if (lastMsg && lastMsg.senderId !== user.id) {
+      const socket = getSocket();
+      if (socket?.connected) {
+        socket.emit('message:read', { chatId, messageId: lastMsg.id });
+      }
+    }
+  }, [chatId, chatMessages.length, user]);
 
   if (isLoading && chatMessages.length === 0) {
     return (

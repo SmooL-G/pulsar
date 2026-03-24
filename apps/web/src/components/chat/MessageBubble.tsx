@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
-import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink } from 'lucide-react';
+import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -154,7 +154,7 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
 
             {message.content && <MessageContent content={message.content} isOwn={isOwn} metadata={message.metadata} />}
 
-            {/* Time & edited indicator */}
+            {/* Time, edited & status indicator */}
             <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
               {message.isEdited && (
                 <span className={`text-[10px] ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>
@@ -164,6 +164,7 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
               <span className={`text-[10px] ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>
                 {time}
               </span>
+              {isOwn && <MessageStatusIcon status={message.status} />}
             </div>
           </div>
         </div>
@@ -356,6 +357,18 @@ function ForwardModal({ message, onClose }: { message: Message; onClose: () => v
       </div>
     </div>
   );
+}
+
+// Message status checkmarks
+function MessageStatusIcon({ status }: { status?: string }) {
+  if (status === 'read') {
+    return <CheckCheck size={14} className="text-green-400" />;
+  }
+  if (status === 'delivered') {
+    return <CheckCheck size={14} className="text-blue-200" />;
+  }
+  // sent or undefined
+  return <Check size={14} className="text-blue-200" />;
 }
 
 const INVITE_REGEX = /((https?:\/\/[^\s]+)?\/invite\/([a-zA-Z0-9_-]+))/;

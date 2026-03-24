@@ -71,6 +71,17 @@ export async function messageRoutes(app: FastifyInstance) {
         ? messages[messages.length - 1].createdAt.toISOString()
         : null;
 
+    // Get read receipt counts for own messages
+    const ownMessageIds = messages.filter((m) => m.senderId === userId).map((m) => m.id);
+    const readReceipts = ownMessageIds.length > 0
+      ? await prisma.readReceipt.groupBy({
+          by: ['messageId'],
+          where: { messageId: { in: ownMessageIds } },
+          _count: true,
+        })
+      : [];
+    const readMap = new Map(readReceipts.map((r) => [r.messageId, r._count]));
+
     return {
       messages: messages.map((m) => ({
         ...m,
@@ -80,6 +91,9 @@ export async function messageRoutes(app: FastifyInstance) {
         })),
         createdAt: m.createdAt.toISOString(),
         updatedAt: m.updatedAt.toISOString(),
+        status: m.senderId === userId
+          ? (readMap.get(m.id) ? 'read' : 'delivered')
+          : undefined,
       })),
       nextCursor,
     };

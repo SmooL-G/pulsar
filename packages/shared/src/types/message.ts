@@ -7,6 +7,8 @@ export enum MessageType {
   VIDEO = 'VIDEO',
 }
 
+export type MessageStatus = 'sent' | 'delivered' | 'read';
+
 export interface Message {
   id: string;
   chatId: string;
@@ -19,6 +21,7 @@ export interface Message {
   metadata: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
+  status?: MessageStatus;
   sender?: {
     id: string;
     username: string;

@@ -16,6 +16,7 @@ export function useSocket() {
   const addMessage = useMessageStore((s) => s.addMessage);
   const updateMessage = useMessageStore((s) => s.updateMessage);
   const deleteMessage = useMessageStore((s) => s.deleteMessage);
+  const markChatRead = useMessageStore((s) => s.markChatRead);
   const updateChat = useChatStore((s) => s.updateChat);
   const addChat = useChatStore((s) => s.addChat);
   const connectedRef = useRef(false);
@@ -66,6 +67,14 @@ export function useSocket() {
       deleteMessage(chatId, messageId);
     });
 
+    socket.on('message:read', ({ chatId, userId: readerId }: { chatId: string; messageId: string; userId: string }) => {
+      // The reader read our messages — mark all our messages in that chat as read
+      const currentUserId = useAuthStore.getState().user?.id;
+      if (currentUserId && readerId !== currentUserId) {
+        markChatRead(chatId, readerId, currentUserId);
+      }
+    });
+
     // Chat events
     socket.on('chat:new', (chat: any) => {
       addChat(chat);
@@ -96,7 +105,7 @@ export function useSocket() {
         connectedRef.current = false;
       }
     };
-  }, [isAuthenticated, addMessage, updateMessage, deleteMessage, updateChat, addChat]);
+  }, [isAuthenticated, addMessage, updateMessage, deleteMessage, markChatRead, updateChat, addChat]);
 
   return socket;
 }

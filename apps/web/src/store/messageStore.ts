@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Message } from '@pulsar/shared';
+import type { Message, MessageStatus } from '@pulsar/shared';
 import { api } from '../services/api';
 
 interface MessageState {
@@ -13,6 +13,8 @@ interface MessageState {
   updateMessage: (message: Message) => void;
   deleteMessage: (chatId: string, messageId: string) => void;
   hideMessage: (chatId: string, messageId: string) => void;
+  setMessageStatus: (chatId: string, messageId: string, status: MessageStatus) => void;
+  markChatRead: (chatId: string, readerId: string, senderId: string) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -93,6 +95,31 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       messages: {
         ...state.messages,
         [chatId]: (state.messages[chatId] || []).filter((m) => m.id !== messageId),
+      },
+    }));
+  },
+
+  setMessageStatus: (chatId, messageId, status) => {
+    set((state) => ({
+      messages: {
+        ...state.messages,
+        [chatId]: (state.messages[chatId] || []).map((m) =>
+          m.id === messageId ? { ...m, status } : m
+        ),
+      },
+    }));
+  },
+
+  markChatRead: (chatId, readerId, senderId) => {
+    // Mark all messages from senderId in this chat as read
+    set((state) => ({
+      messages: {
+        ...state.messages,
+        [chatId]: (state.messages[chatId] || []).map((m) =>
+          m.senderId === senderId && m.status !== 'read'
+            ? { ...m, status: 'read' as const }
+            : m
+        ),
       },
     }));
   },
