@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../services/api';
 import { useI18n } from '../i18n';
-import { LanguageSelector } from '../components/settings/LanguageSelector';
+import { FloatingFlags } from '../components/settings/LanguageSelector';
 import bs58 from 'bs58';
 
 function navigateAfterLogin(navigate: ReturnType<typeof useNavigate>) {
@@ -29,7 +29,7 @@ export function LoginPage() {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showLang, setShowLang] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const handleWalletAuth = async () => {
     if (!publicKey || !signMessage) return;
@@ -88,15 +88,6 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900 p-4">
       <div className="w-full max-w-md">
         {/* Language toggle */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => setShowLang(true)}
-            className="px-3 py-1.5 rounded-lg bg-dark-700/50 hover:bg-dark-600 text-sm text-gray-300 transition-colors"
-          >
-            {locale.toUpperCase()}
-          </button>
-        </div>
-
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">{t('auth.title')}</h1>
@@ -104,7 +95,7 @@ export function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-dark-700 rounded-2xl p-6 shadow-2xl">
+        <div ref={formRef} className="bg-dark-700 rounded-2xl p-6 shadow-2xl relative z-10">
           {/* Tabs */}
           <div className="flex gap-1 bg-dark-600 rounded-lg p-1 mb-6">
             {(['wallet', 'login', 'register'] as const).map((tab) => (
@@ -245,7 +236,7 @@ export function LoginPage() {
           )}
         </div>
       </div>
-      {showLang && <LanguageSelector onClose={() => setShowLang(false)} />}
+      <FloatingFlags containerRef={formRef} />
     </div>
   );
 }
