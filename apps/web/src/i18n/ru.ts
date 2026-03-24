@@ -125,6 +125,8 @@ export const ru = {
   'invite.redirecting': 'Перенаправление...',
   'invite.error': 'Не удалось вступить',
   'invite.goHome': 'К чатам',
+  'invite.joinGroup': 'Приглашение в группу',
+  'invite.join': 'Вступить',
 
   // Common
   'common.loading': 'Загрузка...',

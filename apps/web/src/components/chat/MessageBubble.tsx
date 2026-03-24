@@ -1,5 +1,6 @@
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
+import { Users } from 'lucide-react';
 import { useI18n } from '../../i18n';
 
 interface MessageBubbleProps {
@@ -74,7 +75,7 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
             </div>
           )}
 
-          {message.content && <p className="whitespace-pre-wrap break-words">{message.content}</p>}
+          {message.content && <MessageContent content={message.content} isOwn={isOwn} />}
 
           {/* Time & edited indicator */}
           <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
@@ -89,6 +90,57 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+const INVITE_REGEX = /((https?:\/\/[^\s]+)?\/invite\/([a-zA-Z0-9_-]+))/;
+
+function MessageContent({ content, isOwn }: { content: string; isOwn: boolean }) {
+  const { t } = useI18n();
+  const match = content.match(INVITE_REGEX);
+
+  if (!match) {
+    return <p className="whitespace-pre-wrap break-words">{content}</p>;
+  }
+
+  const inviteUrl = match[1];
+  const inviteCode = match[3];
+  const textBefore = content.slice(0, content.indexOf(inviteUrl)).trim();
+  const textAfter = content.slice(content.indexOf(inviteUrl) + inviteUrl.length).trim();
+
+  // Build full URL
+  const fullUrl = inviteUrl.startsWith('http') ? inviteUrl : `${window.location.origin}/invite/${inviteCode}`;
+
+  return (
+    <div className="space-y-2">
+      {textBefore && <p className="whitespace-pre-wrap break-words">{textBefore}</p>}
+      <a
+        href={fullUrl}
+        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-colors no-underline ${
+          isOwn
+            ? 'bg-white/15 hover:bg-white/25 text-white'
+            : 'bg-primary-500/10 hover:bg-primary-500/20 text-primary-400'
+        }`}
+      >
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+          isOwn ? 'bg-white/20' : 'bg-primary-500/20'
+        }`}>
+          <Users size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold">{t('invite.joinGroup')}</p>
+          <p className={`text-[10px] truncate ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>
+            {inviteCode}
+          </p>
+        </div>
+        <div className={`px-2.5 py-1 rounded-lg text-xs font-medium shrink-0 ${
+          isOwn ? 'bg-white/20 text-white' : 'bg-primary-500 text-white'
+        }`}>
+          {t('invite.join')}
+        </div>
+      </a>
+      {textAfter && <p className="whitespace-pre-wrap break-words">{textAfter}</p>}
     </div>
   );
 }

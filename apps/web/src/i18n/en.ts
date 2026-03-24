@@ -125,6 +125,8 @@ export const en = {
   'invite.redirecting': 'Redirecting...',
   'invite.error': 'Could not join',
   'invite.goHome': 'Go to chats',
+  'invite.joinGroup': 'Group invite',
+  'invite.join': 'Join',
 
   // Common
   'common.loading': 'Loading...',
