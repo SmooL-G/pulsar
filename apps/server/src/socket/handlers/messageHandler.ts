@@ -1,6 +1,67 @@
 import type { Server, Socket } from 'socket.io';
 import { prisma } from '../../config/database.js';
 
+const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g;
+
+async function fetchLinkPreview(url: string): Promise<{ title?: string; description?: string; image?: string; siteName?: string; url: string } | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PulsarBot/1.0)' },
+      redirect: 'follow',
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) return null;
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('text/html')) return null;
+
+    const html = await res.text();
+    // Only parse first 50KB
+    const head = html.slice(0, 50000);
+
+    const getOg = (prop: string) => {
+      const m = head.match(new RegExp(`<meta[^>]*property=["']og:${prop}["'][^>]*content=["']([^"']+)["']`, 'i'))
+        || head.match(new RegExp(`<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:${prop}["']`, 'i'));
+      return m?.[1];
+    };
+
+    const getTitle = () => {
+      const m = head.match(/<title[^>]*>([^<]+)<\/title>/i);
+      return m?.[1]?.trim();
+    };
+
+    const getMeta = (name: string) => {
+      const m = head.match(new RegExp(`<meta[^>]*name=["']${name}["'][^>]*content=["']([^"']+)["']`, 'i'))
+        || head.match(new RegExp(`<meta[^>]*content=["']([^"']+)["'][^>]*name=["']${name}["']`, 'i'));
+      return m?.[1];
+    };
+
+    const title = getOg('title') || getTitle();
+    const description = getOg('description') || getMeta('description');
+    const image = getOg('image');
+    const siteName = getOg('site_name');
+
+    if (!title && !description && !image) return null;
+
+    // Resolve relative image URLs
+    let resolvedImage = image;
+    if (image && !image.startsWith('http')) {
+      try {
+        resolvedImage = new URL(image, url).href;
+      } catch { resolvedImage = undefined; }
+    }
+
+    return { title, description: description?.slice(0, 200), image: resolvedImage, siteName, url };
+  } catch {
+    return null;
+  }
+}
+
 export function registerMessageHandlers(io: Server, socket: Socket) {
   const userId = socket.data.userId as string;
 
@@ -26,8 +87,7 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
         },
       });
 
-      // Broadcast to all members of the chat
-      io.to(`chat:${data.chatId}`).emit('message:new', {
+      const messagePayload = {
         id: message.id,
         chatId: message.chatId,
         senderId: message.senderId,
@@ -40,7 +100,31 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
         createdAt: message.createdAt.toISOString(),
         updatedAt: message.updatedAt.toISOString(),
         sender: message.sender,
-      });
+      };
+
+      // Broadcast to all members of the chat
+      io.to(`chat:${data.chatId}`).emit('message:new', messagePayload);
+
+      // Async: fetch link preview if message contains URLs
+      if (data.content) {
+        const urls = data.content.match(URL_REGEX);
+        if (urls && urls.length > 0) {
+          // Fetch preview for first URL only
+          fetchLinkPreview(urls[0]).then(async (preview) => {
+            if (!preview) return;
+            try {
+              await prisma.message.update({
+                where: { id: message.id },
+                data: { metadata: { linkPreview: preview } },
+              });
+              io.to(`chat:${data.chatId}`).emit('message:updated', {
+                ...messagePayload,
+                metadata: { linkPreview: preview },
+              });
+            } catch { /* ignore */ }
+          });
+        }
+      }
     } catch (error) {
       socket.emit('error', {
         code: 'MESSAGE_SEND_FAILED',

@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
-import { Users, Trash2, Copy, Forward, CheckSquare, X } from 'lucide-react';
+import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -152,7 +152,7 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
               </div>
             )}
 
-            {message.content && <MessageContent content={message.content} isOwn={isOwn} />}
+            {message.content && <MessageContent content={message.content} isOwn={isOwn} metadata={message.metadata} />}
 
             {/* Time & edited indicator */}
             <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
@@ -359,52 +359,144 @@ function ForwardModal({ message, onClose }: { message: Message; onClose: () => v
 }
 
 const INVITE_REGEX = /((https?:\/\/[^\s]+)?\/invite\/([a-zA-Z0-9_-]+))/;
+const URL_REGEX = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
 
-function MessageContent({ content, isOwn }: { content: string; isOwn: boolean }) {
+function MessageContent({ content, isOwn, metadata }: { content: string; isOwn: boolean; metadata?: any }) {
   const { t } = useI18n();
-  const match = content.match(INVITE_REGEX);
+  const linkPreview = metadata?.linkPreview as { title?: string; description?: string; image?: string; siteName?: string; url?: string } | undefined;
 
-  if (!match) {
-    return <p className="whitespace-pre-wrap break-words">{content}</p>;
+  // Check for invite link first
+  const inviteMatch = content.match(INVITE_REGEX);
+  if (inviteMatch) {
+    const inviteUrl = inviteMatch[1];
+    const inviteCode = inviteMatch[3];
+    const textBefore = content.slice(0, content.indexOf(inviteUrl)).trim();
+    const textAfter = content.slice(content.indexOf(inviteUrl) + inviteUrl.length).trim();
+    const fullUrl = inviteUrl.startsWith('http') ? inviteUrl : `${window.location.origin}/invite/${inviteCode}`;
+
+    return (
+      <div className="space-y-2">
+        {textBefore && <p className="whitespace-pre-wrap break-words">{renderTextWithLinks(textBefore, isOwn)}</p>}
+        <a
+          href={fullUrl}
+          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-colors no-underline ${
+            isOwn
+              ? 'bg-white/15 hover:bg-white/25 text-white'
+              : 'bg-primary-500/10 hover:bg-primary-500/20 text-primary-400'
+          }`}
+        >
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+            isOwn ? 'bg-white/20' : 'bg-primary-500/20'
+          }`}>
+            <Users size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold">{t('invite.joinGroup')}</p>
+            <p className={`text-[10px] truncate ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>
+              {inviteCode}
+            </p>
+          </div>
+          <div className={`px-2.5 py-1 rounded-lg text-xs font-medium shrink-0 ${
+            isOwn ? 'bg-white/20 text-white' : 'bg-primary-500 text-white'
+          }`}>
+            {t('invite.join')}
+          </div>
+        </a>
+        {textAfter && <p className="whitespace-pre-wrap break-words">{renderTextWithLinks(textAfter, isOwn)}</p>}
+      </div>
+    );
   }
-
-  const inviteUrl = match[1];
-  const inviteCode = match[3];
-  const textBefore = content.slice(0, content.indexOf(inviteUrl)).trim();
-  const textAfter = content.slice(content.indexOf(inviteUrl) + inviteUrl.length).trim();
-
-  // Build full URL
-  const fullUrl = inviteUrl.startsWith('http') ? inviteUrl : `${window.location.origin}/invite/${inviteCode}`;
 
   return (
     <div className="space-y-2">
-      {textBefore && <p className="whitespace-pre-wrap break-words">{textBefore}</p>}
-      <a
-        href={fullUrl}
-        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-colors no-underline ${
-          isOwn
-            ? 'bg-white/15 hover:bg-white/25 text-white'
-            : 'bg-primary-500/10 hover:bg-primary-500/20 text-primary-400'
-        }`}
-      >
-        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-          isOwn ? 'bg-white/20' : 'bg-primary-500/20'
-        }`}>
-          <Users size={18} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold">{t('invite.joinGroup')}</p>
-          <p className={`text-[10px] truncate ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>
-            {inviteCode}
-          </p>
-        </div>
-        <div className={`px-2.5 py-1 rounded-lg text-xs font-medium shrink-0 ${
-          isOwn ? 'bg-white/20 text-white' : 'bg-primary-500 text-white'
-        }`}>
-          {t('invite.join')}
-        </div>
-      </a>
-      {textAfter && <p className="whitespace-pre-wrap break-words">{textAfter}</p>}
+      <p className="whitespace-pre-wrap break-words">{renderTextWithLinks(content, isOwn)}</p>
+      {linkPreview && <LinkPreviewCard preview={linkPreview} isOwn={isOwn} />}
     </div>
+  );
+}
+
+// Render text with clickable links
+function renderTextWithLinks(text: string, isOwn: boolean): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  const regex = new RegExp(URL_REGEX.source, 'g');
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const url = match[1];
+    parts.push(
+      <a
+        key={match.index}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`underline break-all ${isOwn ? 'text-blue-200 hover:text-white' : 'text-primary-500 hover:text-primary-400'}`}
+      >
+        {url}
+      </a>
+    );
+    lastIndex = match.index + url.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+}
+
+// Link preview card
+function LinkPreviewCard({ preview, isOwn }: { preview: { title?: string; description?: string; image?: string; siteName?: string; url?: string }; isOwn: boolean }) {
+  const domain = preview.url ? new URL(preview.url).hostname.replace('www.', '') : '';
+
+  return (
+    <a
+      href={preview.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`block rounded-xl overflow-hidden no-underline transition-colors ${
+        isOwn
+          ? 'bg-white/10 hover:bg-white/20'
+          : 'bg-dark-500/50 hover:bg-dark-500/80'
+      }`}
+    >
+      {preview.image && (
+        <div className="w-full h-32 overflow-hidden">
+          <img
+            src={preview.image}
+            alt=""
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+      )}
+      <div className="px-3 py-2">
+        {preview.siteName && (
+          <p className={`text-[10px] font-medium mb-0.5 ${isOwn ? 'text-blue-200' : 'text-primary-400'}`}>
+            {preview.siteName}
+          </p>
+        )}
+        {!preview.siteName && domain && (
+          <p className={`text-[10px] font-medium mb-0.5 flex items-center gap-1 ${isOwn ? 'text-blue-200' : 'text-primary-400'}`}>
+            <ExternalLink size={10} />
+            {domain}
+          </p>
+        )}
+        {preview.title && (
+          <p className={`text-xs font-semibold line-clamp-2 ${isOwn ? 'text-white' : 'text-gray-200'}`}>
+            {preview.title}
+          </p>
+        )}
+        {preview.description && (
+          <p className={`text-[11px] mt-0.5 line-clamp-2 ${isOwn ? 'text-blue-100' : 'text-gray-400'}`}>
+            {preview.description}
+          </p>
+        )}
+      </div>
+    </a>
   );
 }
