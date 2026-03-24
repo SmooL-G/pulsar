@@ -53,6 +53,11 @@ export const en = {
   'chat.deleteChat': 'Delete chat',
   'chat.leaveGroup': 'Leave group',
   'chat.clearHistory': 'Clear history',
+  'chat.forward': 'Forward',
+  'chat.forwardTo': 'Forward to...',
+  'chat.forwarded': 'Forwarded',
+  'chat.select': 'Select',
+  'chat.copy': 'Copy',
 
   // Info Panel
   'info.groupInfo': 'Group Info',

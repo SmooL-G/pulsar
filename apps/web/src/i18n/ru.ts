@@ -53,6 +53,11 @@ export const ru = {
   'chat.deleteChat': 'Удалить чат',
   'chat.leaveGroup': 'Покинуть группу',
   'chat.clearHistory': 'Очистить историю',
+  'chat.forward': 'Переслать',
+  'chat.forwardTo': 'Переслать кому...',
+  'chat.forwarded': 'Переслано',
+  'chat.select': 'Выделить',
+  'chat.copy': 'Копировать',
 
   // Info Panel
   'info.groupInfo': 'Информация о группе',
