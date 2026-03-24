@@ -20,6 +20,18 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
   const [selected, setSelected] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Close context menu on click outside — must be before early returns
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [contextMenu]);
+
   if (message.isDeleted) {
     return (
       <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1`}>
@@ -84,18 +96,6 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
     setContextMenu(null);
     setShowForward(true);
   };
-
-  // Close context menu on click outside
-  useEffect(() => {
-    if (!contextMenu) return;
-    const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setContextMenu(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [contextMenu]);
 
   return (
     <>
