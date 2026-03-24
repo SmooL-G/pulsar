@@ -36,11 +36,31 @@ export default {
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
+        'pulsar-glow': 'pulsarGlow 2s ease-in-out infinite',
+        'orbit-spin': 'orbitSpin 120s linear infinite',
+        'star-pulse': 'starPulse 1.5s ease-in-out infinite',
+        'star-twinkle': 'starTwinkle 3s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0', transform: 'translateY(-4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        pulsarGlow: {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(92,124,250,0.6), 0 0 60px rgba(92,124,250,0.3)' },
+          '50%': { boxShadow: '0 0 40px rgba(92,124,250,0.9), 0 0 100px rgba(92,124,250,0.5)' },
+        },
+        orbitSpin: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        starPulse: {
+          '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
+          '50%': { opacity: '1', transform: 'scale(1.3)' },
+        },
+        starTwinkle: {
+          '0%, 100%': { opacity: '0.2' },
+          '50%': { opacity: '0.8' },
         },
       },
     },

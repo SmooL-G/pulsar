@@ -10,6 +10,7 @@ import { LoginPage } from './pages/LoginPage';
 import { ChatPage } from './pages/ChatPage';
 import { InvitePage } from './pages/InvitePage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { RoadmapPage } from './pages/RoadmapPage';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -57,6 +58,7 @@ export function App() {
               />
               <Route path="/invite/:code" element={<InvitePage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/roadmap" element={<RoadmapPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>

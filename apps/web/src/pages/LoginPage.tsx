@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useAuthStore } from '../store/authStore';
@@ -238,6 +238,12 @@ export function LoginPage() {
         </div>
       </div>
       <UserCountInformer />
+      <Link
+        to="/roadmap"
+        className="fixed top-[72px] right-4 z-20 px-3 py-1.5 rounded-lg border border-primary-500/20 bg-dark-800/80 backdrop-blur-md text-xs font-medium text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all shadow-[0_0_12px_rgba(92,124,250,0.08)]"
+      >
+        {t('roadmap.link')}
+      </Link>
       <FloatingFlags containerRef={formRef} />
     </div>
   );
