@@ -32,8 +32,15 @@ export function InvitePage() {
       } catch (err: any) {
         const error = err.response?.data?.error;
         if (error === 'ALREADY_MEMBER') {
-          setStatus('already');
-          setTimeout(() => navigate('/', { replace: true }), 1500);
+          // Redirect directly to the group chat
+          await fetchChats();
+          const chatId = err.response?.data?.chatId;
+          if (chatId) {
+            const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
+            if (chat) setActiveChat(chat);
+          }
+          navigate('/', { replace: true });
+          return;
         } else {
           setStatus('error');
           setErrorMsg(err.response?.data?.message || t('common.error'));

@@ -75,7 +75,7 @@ export async function groupRoutes(app: FastifyInstance) {
     });
 
     if (existing && !existing.leftAt) {
-      return reply.status(400).send({ error: 'ALREADY_MEMBER', message: 'Already a member' });
+      return reply.status(400).send({ error: 'ALREADY_MEMBER', message: 'Already a member', chatId: chat.id });
     }
 
     if (existing) {
