@@ -109,6 +109,24 @@ const PHASES: Phase[] = [
   {
     id: 7, nameKey: 'roadmap.phase7', status: 'planned',
     features: [
+      { key: 'aiBot', status: 'planned' },
+      { key: 'smartReply', status: 'planned' },
+      { key: 'aiTranslate', status: 'planned' },
+      { key: 'aiSummary', status: 'planned' },
+      { key: 'aiModeration', status: 'planned' },
+      { key: 'aiImageGen', status: 'planned' },
+      { key: 'tts', status: 'planned' },
+      { key: 'semanticSearch', status: 'planned' },
+      { key: 'aiRecommend', status: 'planned' },
+      { key: 'aiSentiment', status: 'planned' },
+      { key: 'aiTrading', status: 'planned' },
+      { key: 'aiNftAdvisor', status: 'planned' },
+      { key: 'aiContractAudit', status: 'planned' },
+    ],
+  },
+  {
+    id: 8, nameKey: 'roadmap.phase8', status: 'planned',
+    features: [
       { key: 'reactNative', status: 'planned' },
       { key: 'e2e', status: 'planned' },
       { key: 'calls', status: 'planned' },
@@ -152,7 +170,7 @@ const STATUS_COLORS: Record<FeatureStatus, { bg: string; glow: string; text: str
   },
 };
 
-const ORBIT_RADII = [80, 130, 185, 245, 310, 390, 460];
+const ORBIT_RADII = [80, 130, 185, 245, 310, 380, 440, 500];
 
 export function RoadmapPage() {
   const navigate = useNavigate();

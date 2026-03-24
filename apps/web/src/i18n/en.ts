@@ -178,7 +178,8 @@ export const en = {
   'roadmap.phase4': 'Media & UX',
   'roadmap.phase5': 'Admin & Polish',
   'roadmap.phase6': 'Solana Protocol',
-  'roadmap.phase7': 'Future',
+  'roadmap.phase7': 'AI & Voice',
+  'roadmap.phase8': 'Future',
   // Phase 1 features
   'roadmap.f.monorepo': 'Turborepo Monorepo',
   'roadmap.f.docker': 'Docker Infrastructure',
@@ -243,7 +244,21 @@ export const en = {
   'roadmap.f.cNft': 'Compressed NFT Achievements',
   'roadmap.f.leaderboard': 'Leaderboards',
   'roadmap.f.quests': 'Quests & Challenges',
-  // Phase 7 features
+  // Phase 7 features — AI & Voice
+  'roadmap.f.aiBot': 'AI Assistant Bot',
+  'roadmap.f.smartReply': 'Smart Reply Suggestions',
+  'roadmap.f.aiTranslate': 'Real-time Translation',
+  'roadmap.f.aiSummary': 'Chat Summarization',
+  'roadmap.f.aiModeration': 'AI Content Moderation',
+  'roadmap.f.aiImageGen': 'Image Generation',
+  'roadmap.f.tts': 'Message Voice Playback',
+  'roadmap.f.semanticSearch': 'Semantic Search',
+  'roadmap.f.aiRecommend': 'Contact Recommendations',
+  'roadmap.f.aiSentiment': 'Sentiment Analysis',
+  'roadmap.f.aiTrading': 'AI Trading Agent',
+  'roadmap.f.aiNftAdvisor': 'AI NFT Advisor',
+  'roadmap.f.aiContractAudit': 'Smart Contract Audit',
+  // Phase 8 features
   'roadmap.f.reactNative': 'React Native App',
   'roadmap.f.e2e': 'E2E Encryption',
   'roadmap.f.calls': 'Voice & Video Calls',

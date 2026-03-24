@@ -178,7 +178,8 @@ export const ru = {
   'roadmap.phase4': 'Медиа и UX',
   'roadmap.phase5': 'Админка',
   'roadmap.phase6': 'Протокол Solana',
-  'roadmap.phase7': 'Будущее',
+  'roadmap.phase7': 'ИИ и голос',
+  'roadmap.phase8': 'Будущее',
   // Phase 1 features
   'roadmap.f.monorepo': 'Turborepo монорепо',
   'roadmap.f.docker': 'Docker инфраструктура',
@@ -243,7 +244,21 @@ export const ru = {
   'roadmap.f.cNft': 'Compressed NFT достижения',
   'roadmap.f.leaderboard': 'Лидерборды',
   'roadmap.f.quests': 'Квесты и челленджи',
-  // Phase 7 features
+  // Phase 7 features — AI & Voice
+  'roadmap.f.aiBot': 'ИИ-ассистент бот',
+  'roadmap.f.smartReply': 'Умные подсказки ответов',
+  'roadmap.f.aiTranslate': 'Перевод в реальном времени',
+  'roadmap.f.aiSummary': 'Суммаризация чатов',
+  'roadmap.f.aiModeration': 'ИИ-модерация контента',
+  'roadmap.f.aiImageGen': 'Генерация изображений',
+  'roadmap.f.tts': 'Озвучка сообщений',
+  'roadmap.f.semanticSearch': 'Семантический поиск',
+  'roadmap.f.aiRecommend': 'Рекомендации контактов',
+  'roadmap.f.aiSentiment': 'Анализ настроений',
+  'roadmap.f.aiTrading': 'ИИ-агент трейдинга',
+  'roadmap.f.aiNftAdvisor': 'ИИ-советник по NFT',
+  'roadmap.f.aiContractAudit': 'Аудит смарт-контрактов',
+  // Phase 8 features
   'roadmap.f.reactNative': 'React Native приложение',
   'roadmap.f.e2e': 'E2E шифрование',
   'roadmap.f.calls': 'Голосовые и видеозвонки',
