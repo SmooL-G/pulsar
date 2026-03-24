@@ -156,4 +156,8 @@ export const en = {
   'common.close': 'Close',
   'common.unknown': 'Unknown',
   'common.group': 'Group',
+
+  // Stats
+  'stats.users': 'Users',
+  'stats.online': 'Online',
 };

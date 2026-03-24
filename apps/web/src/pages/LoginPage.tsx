@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { api } from '../services/api';
 import { useI18n } from '../i18n';
 import { FloatingFlags } from '../components/settings/LanguageSelector';
+import { UserCountInformer } from '../components/auth/UserCountInformer';
 import bs58 from 'bs58';
 
 function navigateAfterLogin(navigate: ReturnType<typeof useNavigate>) {
@@ -236,6 +237,7 @@ export function LoginPage() {
           )}
         </div>
       </div>
+      <UserCountInformer />
       <FloatingFlags containerRef={formRef} />
     </div>
   );

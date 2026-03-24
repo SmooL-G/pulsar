@@ -155,4 +155,8 @@ export const es = {
   'common.close': 'Cerrar',
   'common.unknown': 'Desconocido',
   'common.group': 'Grupo',
+
+  // Stats
+  'stats.users': 'Usuarios',
+  'stats.online': 'En línea',
 };

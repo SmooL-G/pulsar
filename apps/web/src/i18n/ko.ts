@@ -155,4 +155,8 @@ export const ko = {
   'common.close': '닫기',
   'common.unknown': '알 수 없음',
   'common.group': '그룹',
+
+  // Stats
+  'stats.users': '사용자',
+  'stats.online': '온라인',
 };

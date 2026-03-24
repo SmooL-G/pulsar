@@ -155,4 +155,8 @@ export const tr = {
   'common.close': 'Kapat',
   'common.unknown': 'Bilinmiyor',
   'common.group': 'Grup',
+
+  // Stats
+  'stats.users': 'Kullanıcılar',
+  'stats.online': 'Çevrimiçi',
 };

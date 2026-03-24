@@ -155,4 +155,8 @@ export const uk = {
   'common.close': 'Закрити',
   'common.unknown': 'Невідомо',
   'common.group': 'Група',
+
+  // Stats
+  'stats.users': 'Користувачі',
+  'stats.online': 'Онлайн',
 };

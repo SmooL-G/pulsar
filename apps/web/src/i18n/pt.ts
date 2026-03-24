@@ -155,4 +155,8 @@ export const pt = {
   'common.close': 'Fechar',
   'common.unknown': 'Desconhecido',
   'common.group': 'Grupo',
+
+  // Stats
+  'stats.users': 'Usuários',
+  'stats.online': 'Online',
 };

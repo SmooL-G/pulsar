@@ -156,4 +156,8 @@ export const ru = {
   'common.close': 'Закрыть',
   'common.unknown': 'Неизвестный',
   'common.group': 'Группа',
+
+  // Stats
+  'stats.users': 'Пользователи',
+  'stats.online': 'Онлайн',
 };

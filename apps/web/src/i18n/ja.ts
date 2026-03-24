@@ -155,4 +155,8 @@ export const ja = {
   'common.close': '閉じる',
   'common.unknown': '不明',
   'common.group': 'グループ',
+
+  // Stats
+  'stats.users': 'ユーザー',
+  'stats.online': 'オンライン',
 };

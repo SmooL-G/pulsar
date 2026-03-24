@@ -155,4 +155,8 @@ export const zh = {
   'common.close': '关闭',
   'common.unknown': '未知',
   'common.group': '群组',
+
+  // Stats
+  'stats.users': '用户',
+  'stats.online': '在线',
 };
