@@ -139,6 +139,15 @@ export const en = {
   'invite.join': 'Join',
 
   // Common
+  // Privacy
+  'privacy.title': 'Privacy Policy',
+  'privacy.lastUpdated': 'Last updated',
+  'privacy.backToChat': 'Back to chats',
+  'privacy.agreePrefix': 'By registering, you agree to our',
+  'privacy.agreeLink': 'Privacy Policy',
+  'settings.privacy': 'Privacy Policy',
+
+  // Common
   'common.loading': 'Loading...',
   'common.error': 'Error',
   'common.save': 'Save',

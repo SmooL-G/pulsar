@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor } from 'lucide-react';
+import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor, Shield } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { useNotificationStore } from '../../store/notificationStore';
@@ -264,6 +264,15 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                     {t('settings.walletInfo')}
                   </p>
                 </div>
+
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-dark-600 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-500 transition-colors"
+                >
+                  <Shield size={18} className="text-gray-400" />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('settings.privacy')}</span>
+                </a>
               </div>
             )}
           </div>

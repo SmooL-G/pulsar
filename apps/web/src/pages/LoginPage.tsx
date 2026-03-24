@@ -233,6 +233,12 @@ export function LoginPage() {
                 {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
               </button>
               <p className="text-xs text-gray-500 text-center">{t('auth.walletNote')}</p>
+              <p className="text-xs text-gray-500 text-center">
+                {t('privacy.agreePrefix')}{' '}
+                <a href="/privacy" target="_blank" className="text-primary-400 hover:text-primary-300 underline">
+                  {t('privacy.agreeLink')}
+                </a>
+              </p>
             </form>
           )}
         </div>

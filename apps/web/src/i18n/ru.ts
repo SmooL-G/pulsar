@@ -139,6 +139,15 @@ export const ru = {
   'invite.join': 'Вступить',
 
   // Common
+  // Privacy
+  'privacy.title': 'Политика конфиденциальности',
+  'privacy.lastUpdated': 'Последнее обновление',
+  'privacy.backToChat': 'Вернуться к чатам',
+  'privacy.agreePrefix': 'Регистрируясь, вы соглашаетесь с',
+  'privacy.agreeLink': 'Политикой конфиденциальности',
+  'settings.privacy': 'Политика конфиденциальности',
+
+  // Common
   'common.loading': 'Загрузка...',
   'common.error': 'Ошибка',
   'common.save': 'Сохранить',
