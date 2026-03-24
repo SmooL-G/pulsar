@@ -50,6 +50,9 @@ export const ru = {
   'chat.addMembers': 'Добавить участников...',
   'chat.deleteGroup': 'Удалить группу',
   'chat.confirmDelete': 'Нажмите ещё раз для подтверждения',
+  'chat.deleteChat': 'Удалить чат',
+  'chat.leaveGroup': 'Покинуть группу',
+  'chat.clearHistory': 'Очистить историю',
 
   // Info Panel
   'info.groupInfo': 'Информация о группе',

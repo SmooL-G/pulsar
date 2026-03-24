@@ -50,6 +50,9 @@ export const en = {
   'chat.addMembers': 'Add members...',
   'chat.deleteGroup': 'Delete group',
   'chat.confirmDelete': 'Tap again to confirm',
+  'chat.deleteChat': 'Delete chat',
+  'chat.leaveGroup': 'Leave group',
+  'chat.clearHistory': 'Clear history',
 
   // Info Panel
   'info.groupInfo': 'Group Info',

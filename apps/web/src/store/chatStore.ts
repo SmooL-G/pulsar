@@ -10,6 +10,7 @@ interface ChatState {
   fetchChats: () => Promise<void>;
   addChat: (chat: Chat) => void;
   updateChat: (chatId: string, updates: Partial<Chat>) => void;
+  removeChat: (chatId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -43,6 +44,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         state.activeChat?.id === chatId
           ? { ...state.activeChat, ...updates }
           : state.activeChat,
+    }));
+  },
+
+  removeChat: (chatId) => {
+    set((state) => ({
+      chats: state.chats.filter((c) => c.id !== chatId),
+      activeChat: state.activeChat?.id === chatId ? null : state.activeChat,
     }));
   },
 }));
