@@ -58,6 +58,8 @@ export const en = {
   'chat.forwarded': 'Forwarded',
   'chat.select': 'Select',
   'chat.copy': 'Copy',
+  'chat.deleteForMe': 'Delete for me',
+  'chat.deleteForAll': 'Delete for everyone',
 
   // Info Panel
   'info.groupInfo': 'Group Info',

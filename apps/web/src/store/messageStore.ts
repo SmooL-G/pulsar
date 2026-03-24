@@ -12,6 +12,7 @@ interface MessageState {
   addMessage: (message: Message) => void;
   updateMessage: (message: Message) => void;
   deleteMessage: (chatId: string, messageId: string) => void;
+  hideMessage: (chatId: string, messageId: string) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -83,6 +84,15 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         [chatId]: (state.messages[chatId] || []).map((m) =>
           m.id === messageId ? { ...m, isDeleted: true, content: null } : m
         ),
+      },
+    }));
+  },
+
+  hideMessage: (chatId: string, messageId: string) => {
+    set((state) => ({
+      messages: {
+        ...state.messages,
+        [chatId]: (state.messages[chatId] || []).filter((m) => m.id !== messageId),
       },
     }));
   },

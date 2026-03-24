@@ -58,6 +58,8 @@ export const ru = {
   'chat.forwarded': 'Переслано',
   'chat.select': 'Выделить',
   'chat.copy': 'Копировать',
+  'chat.deleteForMe': 'Удалить у меня',
+  'chat.deleteForAll': 'Удалить у всех',
 
   // Info Panel
   'info.groupInfo': 'Информация о группе',

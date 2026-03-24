@@ -6,6 +6,7 @@ import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import { useChatStore } from '../../store/chatStore';
+import { useMessageStore } from '../../store/messageStore';
 
 interface MessageBubbleProps {
   message: Message;
@@ -18,6 +19,7 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showForward, setShowForward] = useState(false);
   const [selected, setSelected] = useState(false);
+  const [deleteSubmenu, setDeleteSubmenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close context menu on click outside — must be before early returns
@@ -26,6 +28,7 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
     const handleClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setContextMenu(null);
+        setDeleteSubmenu(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -62,12 +65,19 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
     setContextMenu({ x, y });
   };
 
-  const handleDelete = () => {
+  const handleDeleteForAll = () => {
     setContextMenu(null);
+    setDeleteSubmenu(false);
     const socket = getSocket();
     if (socket?.connected) {
       socket.emit('message:delete', { messageId: message.id });
     }
+  };
+
+  const handleDeleteForMe = () => {
+    setContextMenu(null);
+    setDeleteSubmenu(false);
+    useMessageStore.getState().hideMessage(message.chatId, message.id);
   };
 
   const handleCopy = () => {
@@ -189,17 +199,34 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
             <CheckSquare size={16} className="text-gray-400" />
             {t('chat.select')}
           </button>
-          {isOwn && (
-            <>
-              <div className="h-px bg-dark-500 mx-2 my-1" />
+          <div className="h-px bg-dark-500 mx-2 my-1" />
+          {!deleteSubmenu ? (
+            <button
+              onClick={() => setDeleteSubmenu(true)}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-dark-600 transition-colors"
+            >
+              <Trash2 size={16} />
+              {t('common.delete')}
+            </button>
+          ) : (
+            <div className="animate-fade-in">
               <button
-                onClick={handleDelete}
+                onClick={handleDeleteForMe}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-dark-600 transition-colors"
               >
                 <Trash2 size={16} />
-                {t('common.delete')}
+                {t('chat.deleteForMe')}
               </button>
-            </>
+              {isOwn && (
+                <button
+                  onClick={handleDeleteForAll}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-dark-600 transition-colors"
+                >
+                  <Trash2 size={16} className="text-red-500" />
+                  {t('chat.deleteForAll')}
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
