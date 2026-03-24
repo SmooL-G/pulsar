@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Plus, Settings, LogOut, Users } from 'lucide-react';
+import { Search, Plus, Settings, LogOut, Users, Globe } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { ChatListItem } from '../chat/ChatListItem';
@@ -7,6 +7,7 @@ import { NewChatModal } from '../chat/NewChatModal';
 import { ProfilePanel } from '../profile/ProfilePanel';
 import { SettingsPanel } from '../settings/SettingsPanel';
 import { FriendsPanel } from '../friends/FriendsPanel';
+import { LanguageSelector } from '../settings/LanguageSelector';
 import { useI18n } from '../../i18n';
 
 interface SidebarProps {
@@ -22,6 +23,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
+  const [showLang, setShowLang] = useState(false);
 
   useEffect(() => {
     fetchChats();
@@ -45,11 +47,11 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
         <div className="flex items-center gap-1">
           {/* Language toggle */}
           <button
-            onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')}
+            onClick={() => setShowLang(true)}
             className="px-2 py-1 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors text-xs font-medium text-gray-500"
             title={t('settings.language')}
           >
-            {locale === 'ru' ? 'EN' : 'RU'}
+            {locale.toUpperCase()}
           </button>
           <button
             onClick={() => setShowFriends(true)}
@@ -151,6 +153,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
       {showProfile && <ProfilePanel onClose={() => setShowProfile(false)} />}
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       {showFriends && <FriendsPanel onClose={() => setShowFriends(false)} />}
+      {showLang && <LanguageSelector onClose={() => setShowLang(false)} />}
     </div>
   );
 }

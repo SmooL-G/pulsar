@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor, Shield } from 'lucide-react';
+import { LanguageSelector } from './LanguageSelector';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { useNotificationStore } from '../../store/notificationStore';
@@ -21,6 +22,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [bio, setBio] = useState(user?.bio || '');
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showLangSelector, setShowLangSelector] = useState(false);
   const [theme, setThemeState] = useState<'dark' | 'light' | 'system'>(
     () => (localStorage.getItem('theme') as any) || 'dark'
   );
@@ -197,23 +199,13 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 {/* Language */}
                 <div>
                   <label className="block text-sm font-medium mb-3">{t('settings.language')}</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: 'ru' as const, label: '🇷🇺 Русский' },
-                      { id: 'en' as const, label: '🇬🇧 English' },
-                    ].map(({ id, label }) => (
-                      <button
-                        key={id}
-                        onClick={() => setLocale(id)}
-                        className={`py-3 px-4 rounded-xl border-2 text-sm font-medium transition-colors
-                          ${locale === id
-                            ? 'border-primary-500 bg-primary-500/10 text-primary-500'
-                            : 'border-gray-200 dark:border-dark-500 hover:border-gray-300 dark:hover:border-dark-400'}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    onClick={() => setShowLangSelector(true)}
+                    className="w-full py-3 px-4 rounded-xl border-2 border-gray-200 dark:border-dark-500 hover:border-primary-500 text-sm font-medium transition-colors flex items-center justify-between"
+                  >
+                    <span>{locale.toUpperCase()}</span>
+                    <Globe size={18} className="text-gray-400" />
+                  </button>
                 </div>
               </div>
             )}
@@ -278,6 +270,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
           </div>
         </div>
       </div>
+      {showLangSelector && <LanguageSelector onClose={() => setShowLangSelector(false)} />}
     </div>
   );
 }

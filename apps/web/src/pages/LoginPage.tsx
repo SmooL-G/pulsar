@@ -5,6 +5,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../services/api';
 import { useI18n } from '../i18n';
+import { LanguageSelector } from '../components/settings/LanguageSelector';
 import bs58 from 'bs58';
 
 function navigateAfterLogin(navigate: ReturnType<typeof useNavigate>) {
@@ -28,6 +29,7 @@ export function LoginPage() {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showLang, setShowLang] = useState(false);
 
   const handleWalletAuth = async () => {
     if (!publicKey || !signMessage) return;
@@ -88,10 +90,10 @@ export function LoginPage() {
         {/* Language toggle */}
         <div className="flex justify-end mb-4">
           <button
-            onClick={() => setLocale(locale === 'ru' ? 'en' : 'ru')}
+            onClick={() => setShowLang(true)}
             className="px-3 py-1.5 rounded-lg bg-dark-700/50 hover:bg-dark-600 text-sm text-gray-300 transition-colors"
           >
-            {locale === 'ru' ? '🇬🇧 English' : '🇷🇺 Русский'}
+            {locale.toUpperCase()}
           </button>
         </div>
 
@@ -243,6 +245,7 @@ export function LoginPage() {
           )}
         </div>
       </div>
+      {showLang && <LanguageSelector onClose={() => setShowLang(false)} />}
     </div>
   );
 }
