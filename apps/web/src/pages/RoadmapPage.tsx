@@ -312,7 +312,7 @@ export function RoadmapPage() {
                   className="absolute text-center pointer-events-none"
                   style={{
                     left: mapCenter.x,
-                    top: mapCenter.y - radius - 22,
+                    top: mapCenter.y - radius - 32,
                     transform: 'translateX(-50%)',
                   }}
                 >
