@@ -218,7 +218,7 @@ export function FloatingFlags({ containerRef }: { containerRef: React.RefObject<
     initRef.current = true;
     const states: FlagState[] = LANGUAGES.map((_, i) => {
       const angle = (i / LANGUAGES.length) * Math.PI * 2;
-      const radius = 220 + Math.random() * 40;
+      const radius = 300 + Math.random() * 50;
       return {
         x: 0, y: 0, vx: 0, vy: 0,
         baseAngle: angle,
