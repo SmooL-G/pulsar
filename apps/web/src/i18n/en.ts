@@ -31,6 +31,8 @@ export const en = {
   'chat.searchChats': 'Search chats...',
   'chat.writeMessage': 'Write a message...',
   'chat.online': 'online',
+  'chat.status': 'Status',
+  'chat.lastSeen': 'Last seen',
   'chat.members': 'members',
   'chat.directMessage': 'Direct Message',
   'chat.noMessages': 'No messages',

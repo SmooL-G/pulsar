@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { X, Users, Bell, Shield, Copy, Check, Trash2, Share2, MessageCircle } from 'lucide-react';
+import { X, Users, Bell, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { api } from '../../services/api';
+import { PulsarBadge } from '../ui/PulsarBadge';
 
 interface InfoPanelProps {
   onClose: () => void;
@@ -137,15 +138,61 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        <div className="flex flex-col items-center text-center">
-          <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold mb-3">
-            {(activeChat.name || '?')[0]?.toUpperCase()}
+        {/* DM: show other user's profile */}
+        {!isGroup && (activeChat as any).otherUser ? (() => {
+          const other = (activeChat as any).otherUser;
+          const memberSince = other.createdAt
+            ? new Date(other.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+            : '';
+          return (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold mb-3 overflow-hidden relative">
+                  {other.avatarUrl ? (
+                    <img src={other.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    (other.displayName || other.username)?.[0]?.toUpperCase() || '?'
+                  )}
+                  {other.isOnline && (
+                    <div className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-dark-700" />
+                  )}
+                </div>
+                <h4 className="font-semibold text-lg flex items-center gap-1.5">
+                  {other.displayName || other.username}
+                  <PulsarBadge level={other.verificationLevel || 0} size={16} />
+                </h4>
+                <p className="text-sm text-gray-400">@{other.username}</p>
+                {other.bio && (
+                  <p className="text-sm text-gray-300 mt-2 px-2">{other.bio}</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <InfoAction icon={<AtSign size={18} />} label={t('auth.username')} value={`@${other.username}`} />
+                {other.isOnline ? (
+                  <InfoAction icon={<div className="w-2.5 h-2.5 rounded-full bg-green-500 ml-1" />} label={t('chat.status')} value={t('chat.online')} />
+                ) : other.lastSeenAt ? (
+                  <InfoAction icon={<Calendar size={18} />} label={t('chat.lastSeen')} value={new Date(other.lastSeenAt).toLocaleDateString()} />
+                ) : null}
+                {other.walletAddress && (
+                  <InfoAction icon={<Wallet size={18} />} label="Wallet" value={`${other.walletAddress.slice(0, 4)}...${other.walletAddress.slice(-4)}`} />
+                )}
+                <InfoAction icon={<Bell size={18} />} label={t('info.notifications')} value={t('info.on')} />
+                <InfoAction icon={<Shield size={18} />} label={t('info.encryption')} value={t('info.planned')} />
+              </div>
+            </div>
+          );
+        })() : (
+          <div className="flex flex-col items-center text-center">
+            <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold mb-3">
+              {(activeChat.name || '?')[0]?.toUpperCase()}
+            </div>
+            <h4 className="font-semibold text-lg">{activeChat.name || t('chat.directMessage')}</h4>
+            {activeChat.description && (
+              <p className="text-sm text-gray-400 mt-1">{activeChat.description}</p>
+            )}
           </div>
-          <h4 className="font-semibold text-lg">{activeChat.name || t('chat.directMessage')}</h4>
-          {activeChat.description && (
-            <p className="text-sm text-gray-400 mt-1">{activeChat.description}</p>
-          )}
-        </div>
+        )}
 
         {/* Invite link */}
         {isGroup && activeChat.inviteCode && (

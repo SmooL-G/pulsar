@@ -31,6 +31,8 @@ export const ru = {
   'chat.searchChats': 'Поиск чатов...',
   'chat.writeMessage': 'Написать сообщение...',
   'chat.online': 'в сети',
+  'chat.status': 'Статус',
+  'chat.lastSeen': 'Был(а) в сети',
   'chat.members': 'участников',
   'chat.directMessage': 'Личное сообщение',
   'chat.noMessages': 'Нет сообщений',

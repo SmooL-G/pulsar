@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Plus, Settings, LogOut, Users, Globe } from 'lucide-react';
+import { Search, Plus, Settings, LogOut, Users, Globe, Wallet } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { ChatListItem } from '../chat/ChatListItem';
@@ -8,6 +8,7 @@ import { ProfilePanel } from '../profile/ProfilePanel';
 import { SettingsPanel } from '../settings/SettingsPanel';
 import { FriendsPanel } from '../friends/FriendsPanel';
 import { LanguageSelector } from '../settings/LanguageSelector';
+import { WalletPanel } from '../wallet/WalletPanel';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { useI18n } from '../../i18n';
 
@@ -25,6 +26,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const [showLang, setShowLang] = useState(false);
+  const [showWallet, setShowWallet] = useState(false);
 
   useEffect(() => {
     fetchChats();
@@ -53,6 +55,13 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
             title={t('settings.language')}
           >
             {locale.toUpperCase()}
+          </button>
+          <button
+            onClick={() => setShowWallet(true)}
+            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
+            title={t('profile.wallet')}
+          >
+            <Wallet size={20} />
           </button>
           <button
             onClick={() => setShowFriends(true)}
@@ -157,6 +166,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
       {showProfile && <ProfilePanel onClose={() => setShowProfile(false)} />}
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       {showFriends && <FriendsPanel onClose={() => setShowFriends(false)} />}
+      {showWallet && <WalletPanel onClose={() => setShowWallet(false)} />}
       {showLang && <LanguageSelector onClose={() => setShowLang(false)} />}
     </div>
   );

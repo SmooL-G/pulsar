@@ -40,6 +40,7 @@ export default {
         'orbit-spin': 'orbitSpin 120s linear infinite',
         'star-pulse': 'starPulse 1.5s ease-in-out infinite',
         'star-twinkle': 'starTwinkle 3s ease-in-out infinite',
+        'slide-in-right': 'slideInRight 0.25s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -61,6 +62,10 @@ export default {
         starTwinkle: {
           '0%, 100%': { opacity: '0.2' },
           '50%': { opacity: '0.8' },
+        },
+        slideInRight: {
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
         },
       },
     },

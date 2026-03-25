@@ -47,11 +47,23 @@ export function AppLayout() {
         />
       </div>
 
-      {/* Right Panel — Info / News */}
+      {/* Right Panel — Info (desktop: sidebar, mobile: modal overlay) */}
       {showInfo && activeChat && (
-        <div className="hidden lg:flex flex-col w-80 border-l border-gray-200 dark:border-dark-500 shrink-0">
-          <InfoPanel onClose={() => setShowInfo(false)} />
-        </div>
+        <>
+          {/* Desktop sidebar */}
+          <div className="hidden lg:flex flex-col w-80 border-l border-gray-200 dark:border-dark-500 shrink-0">
+            <InfoPanel onClose={() => setShowInfo(false)} />
+          </div>
+          {/* Mobile/tablet modal */}
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 z-50 flex justify-end"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowInfo(false); }}
+          >
+            <div className="w-full max-w-sm bg-white dark:bg-dark-700 h-full animate-slide-in-right">
+              <InfoPanel onClose={() => setShowInfo(false)} />
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
