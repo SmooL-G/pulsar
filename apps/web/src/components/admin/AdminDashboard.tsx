@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, MessageCircle, UserPlus, Wifi, MessagesSquare, UsersRound, Server } from 'lucide-react';
+import { Users, MessageCircle, UserPlus, Wifi, MessagesSquare, UsersRound, Server, Banknote, Gift } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -23,11 +23,19 @@ interface SystemInfo {
   redisMemory: string;
 }
 
+interface BankData {
+  totalSupply: string;
+  distributed: string;
+  bankBalance: string;
+  recentRewards: { id: string; amount: string; description: string; createdAt: string; user: { username: string; displayName?: string } }[];
+}
+
 export function AdminDashboard() {
   const { t } = useI18n();
   const { user } = useAuthStore();
   const [data, setData] = useState<DashboardData | null>(null);
   const [system, setSystem] = useState<SystemInfo | null>(null);
+  const [bank, setBank] = useState<BankData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -42,8 +50,12 @@ export function AdminDashboard() {
       const { data: d } = await api.get('/admin/dashboard');
       setData(d);
       if (isSuperAdmin) {
-        const { data: s } = await api.get('/admin/system');
+        const [{ data: s }, { data: b }] = await Promise.all([
+          api.get('/admin/system'),
+          api.get('/admin/bank'),
+        ]);
         setSystem(s);
+        setBank(b);
       }
     } catch {}
     setLoading(false);
@@ -131,6 +143,54 @@ export function AdminDashboard() {
           ))}
         </div>
       </div>
+
+      {/* PLS Bank (SUPER_ADMIN) */}
+      {isSuperAdmin && bank && (
+        <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Banknote size={16} className="text-amber-400" />
+            <p className="text-sm font-medium text-amber-400">{t('admin.plsBank')}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="bg-dark-700/60 rounded-lg p-2.5">
+              <span className="text-[10px] text-gray-400">{t('admin.bankBalance')}</span>
+              <p className="text-sm font-bold font-mono text-amber-400 mt-0.5">
+                {BigInt(bank.bankBalance).toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-dark-700/60 rounded-lg p-2.5">
+              <span className="text-[10px] text-gray-400">{t('admin.distributed')}</span>
+              <p className="text-sm font-bold font-mono text-green-400 mt-0.5">
+                {BigInt(bank.distributed).toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-dark-700/60 rounded-lg p-2.5">
+              <span className="text-[10px] text-gray-400">{t('admin.totalSupply')}</span>
+              <p className="text-sm font-bold font-mono text-gray-300 mt-0.5">
+                22T
+              </p>
+            </div>
+          </div>
+
+          {/* Recent rewards */}
+          {bank.recentRewards.length > 0 && (
+            <div>
+              <p className="text-xs text-gray-400 mb-2 flex items-center gap-1">
+                <Gift size={12} />
+                {t('admin.recentRewards')}
+              </p>
+              <div className="space-y-1 max-h-32 overflow-y-auto scrollbar-hidden">
+                {bank.recentRewards.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between text-xs bg-dark-700/40 rounded-lg px-2.5 py-1.5">
+                    <span className="text-gray-300">@{r.user.username}</span>
+                    <span className="text-amber-400 font-mono font-medium">+{BigInt(r.amount).toLocaleString()} PLS</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* System info (SUPER_ADMIN) */}
       {isSuperAdmin && system && (

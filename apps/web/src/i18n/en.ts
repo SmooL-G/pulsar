@@ -312,6 +312,16 @@ export const en = {
   'admin.noTransactions': 'No transactions yet',
   'admin.income': 'Income',
   'admin.expenses': 'Expenses',
+  'admin.plsBank': 'PLS Bank',
+  'admin.bankBalance': 'Bank',
+  'admin.distributed': 'Distributed',
+  'admin.totalSupply': 'Total',
+  'admin.recentRewards': 'Recent rewards',
+  'admin.giveReward': 'Give Reward',
+  'admin.rewardAmount': 'Amount (PLS)',
+  'admin.rewardReason': 'Reason',
+  'admin.rewardReasonPlaceholder': 'For activity, help...',
+  'admin.sendReward': 'Send Reward',
 
   // Wallet / PLS
   'wallet.plsBalance': 'PLS Balance',

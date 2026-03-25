@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
-import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck } from 'lucide-react';
+import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import { useChatStore } from '../../store/chatStore';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { useMessageStore } from '../../store/messageStore';
+import { useAuthStore } from '../../store/authStore';
+import toast from 'react-hot-toast';
 
 interface MessageBubbleProps {
   message: Message;
@@ -19,9 +21,12 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
   const { t } = useI18n();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showForward, setShowForward] = useState(false);
+  const [showReward, setShowReward] = useState(false);
   const [selected, setSelected] = useState(false);
   const [deleteSubmenu, setDeleteSubmenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const currentUser = useAuthStore((s) => s.user);
+  const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
 
   // Close context menu on click outside — must be before early returns
   useEffect(() => {
@@ -202,6 +207,15 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
             <CheckSquare size={16} className="text-gray-400" />
             {t('chat.select')}
           </button>
+          {isStaff && !isOwn && message.sender && (
+            <button
+              onClick={() => { setContextMenu(null); setShowReward(true); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-amber-400 hover:bg-dark-600 transition-colors"
+            >
+              <Gift size={16} />
+              {t('admin.giveReward')}
+            </button>
+          )}
           <div className="h-px bg-dark-500 mx-2 my-1" />
           {!deleteSubmenu ? (
             <button
@@ -241,7 +255,133 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
           onClose={() => setShowForward(false)}
         />
       )}
+
+      {/* Reward Modal */}
+      {showReward && message.sender && (
+        <RewardModal
+          userId={(message.sender as any).id || message.senderId}
+          username={message.sender.displayName || message.sender.username || ''}
+          onClose={() => setShowReward(false)}
+        />
+      )}
     </>
+  );
+}
+
+// Reward modal for admins
+function RewardModal({ userId, username, onClose }: { userId: string; username: string; onClose: () => void }) {
+  const { t } = useI18n();
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const presets = [100, 500, 1000, 5000, 10000];
+
+  const handleReward = async () => {
+    const numAmount = parseInt(amount);
+    if (!numAmount || numAmount <= 0) return;
+
+    setLoading(true);
+    try {
+      await api.post('/admin/reward', {
+        userId,
+        amount: numAmount,
+        description: description || `Reward for @${username}`,
+      });
+      setSuccess(true);
+      toast.success(`+${numAmount.toLocaleString()} PLS → @${username}`);
+      setTimeout(onClose, 1500);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-dark-700 rounded-2xl w-full max-w-sm mx-4 shadow-2xl animate-fade-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-dark-500">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Gift size={18} className="text-amber-400" />
+            {t('admin.giveReward')}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {success ? (
+            <div className="text-center py-6">
+              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-3">
+                <Gift size={28} className="text-amber-400" />
+              </div>
+              <p className="font-bold text-lg text-amber-400">+{parseInt(amount).toLocaleString()} PLS</p>
+              <p className="text-sm text-gray-400 mt-1">→ @{username}</p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-dark-600 rounded-xl px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium">
+                  {username[0]?.toUpperCase() || '?'}
+                </div>
+                <span className="text-sm font-medium">@{username}</span>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1.5">{t('admin.rewardAmount')}</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="1000000"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-4 py-3 bg-dark-600 rounded-lg text-lg font-mono border-none outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div className="flex gap-2 flex-wrap">
+                {presets.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setAmount(p.toString())}
+                    className="px-3 py-1.5 text-xs font-medium bg-dark-600 hover:bg-dark-500 rounded-lg transition-colors text-amber-400"
+                  >
+                    {p.toLocaleString()} PLS
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1.5">{t('admin.rewardReason')}</label>
+                <input
+                  type="text"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t('admin.rewardReasonPlaceholder')}
+                  className="w-full px-4 py-2.5 bg-dark-600 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <button
+                onClick={handleReward}
+                disabled={!amount || parseInt(amount) <= 0 || loading}
+                className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-black rounded-lg font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 size={16} className="animate-spin" />}
+                {t('admin.sendReward')}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -277,6 +277,108 @@ export async function adminRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
+  // ─── PLS BANK BALANCE (SUPER_ADMIN) ────────────────────
+  app.get('/bank', async (request, reply) => {
+    if (request.user!.role !== 'SUPER_ADMIN') {
+      return reply.status(403).send({ error: 'FORBIDDEN', message: 'SUPER_ADMIN required' });
+    }
+
+    const totalSupply = BigInt('22000000000000');
+
+    // Sum all user wallets
+    const result = await prisma.plsWallet.aggregate({
+      _sum: { balance: true },
+    });
+    const distributed = result._sum.balance ?? BigInt(0);
+    const bankBalance = totalSupply - distributed;
+
+    // Recent reward transactions
+    const recentRewards = await prisma.plsTransaction.findMany({
+      where: { type: 'REWARD' },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: {
+        wallet: {
+          select: {
+            user: { select: { id: true, username: true, displayName: true } },
+          },
+        },
+      },
+    });
+
+    return {
+      totalSupply: totalSupply.toString(),
+      distributed: distributed.toString(),
+      bankBalance: bankBalance.toString(),
+      recentRewards: recentRewards.map((tx) => ({
+        id: tx.id,
+        amount: tx.amount.toString(),
+        description: tx.description,
+        createdAt: tx.createdAt.toISOString(),
+        user: tx.wallet.user,
+      })),
+    };
+  });
+
+  // ─── REWARD USER (ADMIN+) ────────────────────────────
+  app.post('/reward', async (request: FastifyRequest<{
+    Body: { userId: string; amount: number; description?: string };
+  }>, reply) => {
+    if (!hasRole(request.user!.role, 'ADMIN')) {
+      return reply.status(403).send({ error: 'FORBIDDEN', message: 'Admin role required' });
+    }
+
+    const { userId, amount, description } = request.body as { userId: string; amount: number; description?: string };
+
+    if (!userId || !amount || amount <= 0 || amount > 1000000) {
+      return reply.status(400).send({ error: 'INVALID', message: 'Amount must be 1-1,000,000 PLS' });
+    }
+
+    // Check bank balance
+    const totalSupply = BigInt('22000000000000');
+    const agg = await prisma.plsWallet.aggregate({ _sum: { balance: true } });
+    const distributed = agg._sum.balance ?? BigInt(0);
+    const bankBalance = totalSupply - distributed;
+    const rewardAmount = BigInt(amount);
+
+    if (rewardAmount > bankBalance) {
+      return reply.status(400).send({ error: 'INSUFFICIENT', message: 'Not enough PLS in bank' });
+    }
+
+    // Find or create target wallet
+    let wallet = await prisma.plsWallet.findUnique({ where: { userId } });
+    if (!wallet) {
+      wallet = await prisma.plsWallet.create({ data: { userId } });
+    }
+
+    // Credit
+    const [updatedWallet, transaction] = await prisma.$transaction([
+      prisma.plsWallet.update({
+        where: { id: wallet.id },
+        data: { balance: { increment: rewardAmount } },
+      }),
+      prisma.plsTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'REWARD',
+          amount: rewardAmount,
+          description: description || `Reward from ${request.user!.role}`,
+          status: 'COMPLETED',
+        },
+      }),
+    ]);
+
+    return {
+      success: true,
+      balance: updatedWallet.balance.toString(),
+      transaction: {
+        id: transaction.id,
+        amount: transaction.amount.toString(),
+        description: transaction.description,
+      },
+    };
+  });
+
   // ─── SYSTEM INFO (SUPER_ADMIN only) ────────────────────
   app.get('/system', async (request, reply) => {
     if (request.user!.role !== 'SUPER_ADMIN') {

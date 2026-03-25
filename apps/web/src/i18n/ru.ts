@@ -312,6 +312,16 @@ export const ru = {
   'admin.noTransactions': 'Транзакций пока нет',
   'admin.income': 'Доход',
   'admin.expenses': 'Расходы',
+  'admin.plsBank': 'Банк PLS',
+  'admin.bankBalance': 'В банке',
+  'admin.distributed': 'Выдано',
+  'admin.totalSupply': 'Всего',
+  'admin.recentRewards': 'Последние награды',
+  'admin.giveReward': 'Выдать награду',
+  'admin.rewardAmount': 'Сумма (PLS)',
+  'admin.rewardReason': 'Причина',
+  'admin.rewardReasonPlaceholder': 'За активность, помощь...',
+  'admin.sendReward': 'Отправить награду',
 
   // Wallet / PLS
   'wallet.plsBalance': 'Баланс PLS',
