@@ -18,7 +18,7 @@ export function AppLayout() {
   }, [activeChat]);
 
   return (
-    <div className="flex h-screen bg-white dark:bg-dark-800 overflow-hidden">
+    <div className="flex h-full bg-white dark:bg-dark-800 overflow-hidden">
       {/* Left Sidebar — Chat List */}
       <div
         className={`
