@@ -22,6 +22,7 @@ model User {
   avatarUrl           String?    @map("avatar_url")
   nftAvatarMint       String?    @map("nft_avatar_mint")
   bio                 String?    @db.VarChar(256)
+  verificationLevel   Int        @default(0) @map("verification_level") @db.SmallInt
   role                UserRole   @default(USER)
   status              UserStatus @default(ACTIVE)
   lastSeenAt          DateTime?  @map("last_seen_at")

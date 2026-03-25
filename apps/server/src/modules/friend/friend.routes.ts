@@ -16,10 +16,10 @@ export async function friendRoutes(app: FastifyInstance) {
       },
       include: {
         requester: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true, isOnline: true, lastSeenAt: true },
+          select: { id: true, username: true, displayName: true, avatarUrl: true, isOnline: true, lastSeenAt: true, verificationLevel: true },
         },
         addressee: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true, isOnline: true, lastSeenAt: true },
+          select: { id: true, username: true, displayName: true, avatarUrl: true, isOnline: true, lastSeenAt: true, verificationLevel: true },
         },
       },
       orderBy: { updatedAt: 'desc' },
@@ -41,7 +41,7 @@ export async function friendRoutes(app: FastifyInstance) {
       where: { addresseeId: userId, status: 'PENDING' },
       include: {
         requester: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true, isOnline: true },
+          select: { id: true, username: true, displayName: true, avatarUrl: true, isOnline: true, verificationLevel: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -51,7 +51,7 @@ export async function friendRoutes(app: FastifyInstance) {
       where: { requesterId: userId, status: 'PENDING' },
       include: {
         addressee: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true, isOnline: true },
+          select: { id: true, username: true, displayName: true, avatarUrl: true, isOnline: true, verificationLevel: true },
         },
       },
       orderBy: { createdAt: 'desc' },

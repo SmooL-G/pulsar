@@ -3,6 +3,7 @@ import { X, Search, Users, MessageCircle, Check } from 'lucide-react';
 import { api } from '../../services/api';
 import { useChatStore } from '../../store/chatStore';
 import { useI18n } from '../../i18n';
+import { PulsarBadge } from '../ui/PulsarBadge';
 
 interface NewChatModalProps {
   onClose: () => void;
@@ -139,7 +140,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
                       {(user.displayName || user.username)?.[0]?.toUpperCase() || '?'}
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{user.displayName || user.username}</p>
+                      <p className="text-sm font-medium flex items-center gap-1">{user.displayName || user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={12} /></p>
                       <p className="text-xs text-gray-400 font-mono">
                         {user.walletAddress?.slice(0, 6)}...{user.walletAddress?.slice(-4)}
                       </p>
@@ -207,7 +208,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
                         {(user.displayName || user.username)?.[0]?.toUpperCase() || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{user.displayName || user.username}</p>
+                        <p className="text-sm font-medium flex items-center gap-1">{user.displayName || user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={12} /></p>
                         <p className="text-xs text-gray-400 font-mono">
                           {user.walletAddress?.slice(0, 6)}...{user.walletAddress?.slice(-4)}
                         </p>

@@ -143,6 +143,7 @@ export async function handleGetMe(request: FastifyRequest, reply: FastifyReply) 
       status: true,
       isOnline: true,
       createdAt: true,
+      verificationLevel: true,
     },
   });
 

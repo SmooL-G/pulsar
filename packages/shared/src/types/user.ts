@@ -26,6 +26,7 @@ export interface User {
   displayName: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  verificationLevel: number;
   role: UserRole;
   status: UserStatus;
   isOnline: boolean;

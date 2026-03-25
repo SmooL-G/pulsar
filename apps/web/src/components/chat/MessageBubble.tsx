@@ -6,6 +6,7 @@ import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import { useChatStore } from '../../store/chatStore';
+import { PulsarBadge } from '../ui/PulsarBadge';
 import { useMessageStore } from '../../store/messageStore';
 
 interface MessageBubbleProps {
@@ -124,8 +125,9 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
         <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
           {/* Sender name */}
           {!isOwn && showAvatar && (
-            <p className="text-xs font-medium text-primary-500 mb-0.5 ml-1">
+            <p className="text-xs font-medium text-primary-500 mb-0.5 ml-1 flex items-center gap-1">
               {message.sender?.displayName || message.sender?.username}
+              <PulsarBadge level={(message.sender as any)?.verificationLevel || 0} size={12} />
             </p>
           )}
 

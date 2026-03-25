@@ -3,6 +3,7 @@ import { X, Camera, Copy, Check, Wallet } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { api } from '../../services/api';
+import { PulsarBadge } from '../ui/PulsarBadge';
 import toast from 'react-hot-toast';
 
 interface ProfilePanelProps {
@@ -112,7 +113,7 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
             <p className="text-sm text-gray-400 mt-2">
               {uploading ? t('common.loading') : t('profile.changeAvatar')}
             </p>
-            <p className="text-lg font-semibold mt-1">@{user.username}</p>
+            <p className="text-lg font-semibold mt-1 flex items-center gap-1.5">@{user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={16} /></p>
           </div>
 
           {/* Display Name */}

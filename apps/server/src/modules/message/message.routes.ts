@@ -38,6 +38,7 @@ export async function messageRoutes(app: FastifyInstance) {
             username: true,
             displayName: true,
             avatarUrl: true,
+            verificationLevel: true,
           },
         },
         attachments: {
@@ -59,7 +60,7 @@ export async function messageRoutes(app: FastifyInstance) {
             content: true,
             senderId: true,
             sender: {
-              select: { username: true, displayName: true },
+              select: { username: true, displayName: true, verificationLevel: true },
             },
           },
         },

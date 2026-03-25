@@ -3,6 +3,7 @@ import type { Chat } from '@pulsar/shared';
 import { formatDistanceToNow } from 'date-fns';
 import { ru as ruLocale } from 'date-fns/locale/ru';
 import { Trash2, LogOut, Eraser } from 'lucide-react';
+import { PulsarBadge } from '../ui/PulsarBadge';
 import { useI18n } from '../../i18n';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
@@ -121,7 +122,10 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-sm truncate">{name}</span>
+            <span className="font-medium text-sm truncate flex items-center gap-1">
+              {name}
+              <PulsarBadge level={(chat.type === 'DIRECT' ? (chat.otherUser as any)?.verificationLevel : 0) || 0} size={13} />
+            </span>
             {time && <span className="text-xs text-gray-400 shrink-0 ml-2">{time}</span>}
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">

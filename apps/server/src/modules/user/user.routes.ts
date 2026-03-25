@@ -34,6 +34,7 @@ export async function userRoutes(app: FastifyInstance) {
         walletAddress: true,
         isOnline: true,
         lastSeenAt: true,
+        verificationLevel: true,
       },
       take: Math.min(Number(limit), 50),
       skip: Number(offset),
@@ -56,6 +57,7 @@ export async function userRoutes(app: FastifyInstance) {
         isOnline: true,
         lastSeenAt: true,
         createdAt: true,
+        verificationLevel: true,
       },
     });
 
@@ -84,6 +86,7 @@ export async function userRoutes(app: FastifyInstance) {
         avatarUrl: true,
         bio: true,
         walletAddress: true,
+        verificationLevel: true,
       },
     });
 

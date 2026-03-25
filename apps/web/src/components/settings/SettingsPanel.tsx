@@ -6,6 +6,7 @@ import { useI18n } from '../../i18n';
 import { useNotificationStore } from '../../store/notificationStore';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
+import { PulsarBadge } from '../ui/PulsarBadge';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -130,7 +131,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                     {user.username[0].toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-lg">@{user.username}</p>
+                    <p className="font-semibold text-lg flex items-center gap-1.5">@{user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={16} /></p>
                     <p className="text-xs text-gray-400">{t('profile.memberSince')} {memberSince}</p>
                   </div>
                 </div>
