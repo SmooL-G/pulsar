@@ -7,6 +7,8 @@ import {
   handleRefreshToken,
   handleLogout,
   handleGetMe,
+  handleForgotPassword,
+  handleResetPassword,
 } from './auth.controller.js';
 import { authMiddleware } from '../../middleware/auth.js';
 
@@ -22,6 +24,10 @@ export async function authRoutes(app: FastifyInstance) {
   // Token management
   app.post('/refresh', handleRefreshToken);
   app.post('/logout', handleLogout);
+
+  // Password reset
+  app.post('/forgot-password', handleForgotPassword);
+  app.post('/reset-password', handleResetPassword);
 
   // Current user
   app.get('/me', { preHandler: [authMiddleware] }, handleGetMe);

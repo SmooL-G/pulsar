@@ -309,4 +309,40 @@ export const tr = {
   'admin.noTransactions': 'Henüz işlem yok',
   'admin.income': 'Gelir',
   'admin.expenses': 'Giderler',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'PLS Bakiyesi',
+  'wallet.topUp': 'PLS Yükle',
+  'wallet.deposit': 'SOL Yatır → PLS',
+  'wallet.depositSuccess': 'Yatırma başarılı!',
+  'wallet.depositError': 'Yatırma başarısız oldu',
+  'wallet.platformAddress': 'Platform cüzdan adresi',
+  'wallet.amountSol': 'Miktar (SOL)',
+  'wallet.rate': 'Kur',
+  'wallet.payNow': 'Şimdi Öde',
+  'wallet.sending': 'Gönderiliyor...',
+  'wallet.confirming': 'Onaylanıyor...',
+  'wallet.connectFirst': 'Yatırma yapmak için Solana cüzdanınızı bağlayın',
+
+  // Forgot / Reset password
+  'forgot.link': 'Şifrenizi mi unuttunuz?',
+  'forgot.title': 'Şifre Sıfırlama',
+  'forgot.subtitle': 'E-postanıza bir kod göndereceğiz',
+  'forgot.sendCode': 'Kod Gönder',
+  'forgot.codeSent': 'Sıfırlama kodu e-postanıza gönderildi',
+  'forgot.rateLimit': 'Lütfen yeni bir kod talep etmeden önce bekleyin',
+  'forgot.backToLogin': 'Girişe dön',
+  'reset.title': 'Kodu Girin',
+  'reset.subtitle': 'E-postanızdaki 6 haneli kodu kontrol edin',
+  'reset.code': 'Sıfırlama Kodu',
+  'reset.newPassword': 'Yeni Şifre',
+  'reset.resetButton': 'Şifreyi Sıfırla',
+  'reset.success': 'Şifre başarıyla sıfırlandı!',
+  'reset.redirecting': 'Girişe yönlendiriliyor...',
+  'reset.invalidCode': 'Geçersiz veya süresi dolmuş kod',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'PLS Dahili Para Birimi',
+  'roadmap.f.deposit': 'SOL → PLS Yatırma',
+  'roadmap.f.passwordReset': 'Şifre Kurtarma',
 };

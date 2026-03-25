@@ -309,4 +309,40 @@ export const ko = {
   'admin.noTransactions': '아직 트랜잭션이 없습니다',
   'admin.income': '수입',
   'admin.expenses': '지출',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'PLS 잔액',
+  'wallet.topUp': 'PLS 충전',
+  'wallet.deposit': 'SOL 입금 → PLS',
+  'wallet.depositSuccess': '입금 성공!',
+  'wallet.depositError': '입금 실패',
+  'wallet.platformAddress': '플랫폼 지갑 주소',
+  'wallet.amountSol': '금액 (SOL)',
+  'wallet.rate': '환율',
+  'wallet.payNow': '지금 결제',
+  'wallet.sending': '전송 중...',
+  'wallet.confirming': '확인 중...',
+  'wallet.connectFirst': '입금하려면 Solana 지갑을 연결하세요',
+
+  // Forgot / Reset password
+  'forgot.link': '비밀번호를 잊으셨나요?',
+  'forgot.title': '비밀번호 재설정',
+  'forgot.subtitle': '이메일로 코드를 보내드립니다',
+  'forgot.sendCode': '코드 전송',
+  'forgot.codeSent': '재설정 코드가 이메일로 전송되었습니다',
+  'forgot.rateLimit': '다음 코드를 요청하기 전에 잠시 기다려 주세요',
+  'forgot.backToLogin': '로그인으로 돌아가기',
+  'reset.title': '코드 입력',
+  'reset.subtitle': '이메일에서 6자리 코드를 확인하세요',
+  'reset.code': '재설정 코드',
+  'reset.newPassword': '새 비밀번호',
+  'reset.resetButton': '비밀번호 재설정',
+  'reset.success': '비밀번호가 성공적으로 재설정되었습니다!',
+  'reset.redirecting': '로그인으로 이동 중...',
+  'reset.invalidCode': '유효하지 않거나 만료된 코드',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'PLS 내부 화폐',
+  'roadmap.f.deposit': 'SOL → PLS 입금',
+  'roadmap.f.passwordReset': '비밀번호 복구',
 };

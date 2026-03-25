@@ -21,4 +21,12 @@ export const env = cleanEnv(process.env, {
   SOLANA_NETWORK: str({ choices: ['devnet', 'mainnet-beta', 'testnet'], default: 'devnet' }),
 
   CORS_ORIGIN: str({ default: 'http://localhost:5173' }),
+
+  PLATFORM_WALLET_ADDRESS: str({ default: '' }),
+
+  SMTP_HOST: str({ default: '' }),
+  SMTP_PORT: num({ default: 587 }),
+  SMTP_USER: str({ default: '' }),
+  SMTP_PASS: str({ default: '' }),
+  SMTP_FROM: str({ default: 'noreply@pulsar.chat' }),
 });

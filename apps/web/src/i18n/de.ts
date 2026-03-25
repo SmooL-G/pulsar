@@ -309,4 +309,40 @@ export const de = {
   'admin.noTransactions': 'Noch keine Transaktionen',
   'admin.income': 'Einnahmen',
   'admin.expenses': 'Ausgaben',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'PLS-Guthaben',
+  'wallet.topUp': 'PLS aufladen',
+  'wallet.deposit': 'SOL einzahlen → PLS',
+  'wallet.depositSuccess': 'Einzahlung erfolgreich!',
+  'wallet.depositError': 'Einzahlung fehlgeschlagen',
+  'wallet.platformAddress': 'Plattform-Wallet-Adresse',
+  'wallet.amountSol': 'Betrag (SOL)',
+  'wallet.rate': 'Kurs',
+  'wallet.payNow': 'Jetzt bezahlen',
+  'wallet.sending': 'Wird gesendet...',
+  'wallet.confirming': 'Bestätigung...',
+  'wallet.connectFirst': 'Verbinde dein Solana-Wallet zum Einzahlen',
+
+  // Forgot / Reset password
+  'forgot.link': 'Passwort vergessen?',
+  'forgot.title': 'Passwort zurücksetzen',
+  'forgot.subtitle': 'Wir senden einen Code an deine E-Mail',
+  'forgot.sendCode': 'Code senden',
+  'forgot.codeSent': 'Zurücksetzungscode an deine E-Mail gesendet',
+  'forgot.rateLimit': 'Bitte warte, bevor du einen neuen Code anforderst',
+  'forgot.backToLogin': 'Zurück zur Anmeldung',
+  'reset.title': 'Code eingeben',
+  'reset.subtitle': 'Prüfe deine E-Mail auf den 6-stelligen Code',
+  'reset.code': 'Zurücksetzungscode',
+  'reset.newPassword': 'Neues Passwort',
+  'reset.resetButton': 'Passwort zurücksetzen',
+  'reset.success': 'Passwort erfolgreich zurückgesetzt!',
+  'reset.redirecting': 'Weiterleitung zur Anmeldung...',
+  'reset.invalidCode': 'Ungültiger oder abgelaufener Code',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'PLS Interne Währung',
+  'roadmap.f.deposit': 'SOL → PLS Einzahlung',
+  'roadmap.f.passwordReset': 'Passwort-Wiederherstellung',
 };

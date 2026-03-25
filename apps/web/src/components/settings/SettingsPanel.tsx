@@ -7,7 +7,8 @@ import { useNotificationStore } from '../../store/notificationStore';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { PulsarBadge } from '../ui/PulsarBadge';
-import { AdminPanel } from '../admin/AdminPanel';
+import { AdminModal } from '../admin/AdminModal';
+import { DepositModal } from '../wallet/DepositModal';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -25,6 +26,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showLangSelector, setShowLangSelector] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [showDeposit, setShowDeposit] = useState(false);
   const [theme, setThemeState] = useState<'dark' | 'light' | 'system'>(
     () => (localStorage.getItem('theme') as any) || 'dark'
   );
@@ -103,9 +106,9 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             {tabs.map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
-                onClick={() => setTab(id)}
+                onClick={() => id === 'admin' ? setShowAdmin(true) : setTab(id)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-                  ${tab === id
+                  ${tab === id && id !== 'admin'
                     ? 'bg-primary-500/10 text-primary-500'
                     : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-600 hover:text-gray-700 dark:hover:text-gray-300'}`}
               >
@@ -236,6 +239,24 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             {/* Wallet */}
             {tab === 'wallet' && (
               <div className="space-y-5">
+                {/* PLS Balance */}
+                <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-amber-400 font-medium">{t('wallet.plsBalance')}</span>
+                    <span className="text-[10px] text-gray-500">PLS</span>
+                  </div>
+                  <p className="text-2xl font-bold font-mono text-amber-400">
+                    {BigInt((user as any).plsBalance || '0').toLocaleString()}
+                  </p>
+                  <button
+                    onClick={() => setShowDeposit(true)}
+                    className="mt-3 w-full py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-sm font-bold transition-colors"
+                  >
+                    {t('wallet.topUp')}
+                  </button>
+                </div>
+
+                {/* Solana Wallet */}
                 <div className="bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl p-5 text-white">
                   <div className="flex items-center gap-2 mb-4">
                     <Wallet size={20} />
@@ -273,12 +294,13 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
               </div>
             )}
 
-            {/* Admin */}
-            {tab === 'admin' && isStaff && <AdminPanel />}
+            {/* Admin rendered as separate modal */}
           </div>
         </div>
       </div>
       {showLangSelector && <LanguageSelector onClose={() => setShowLangSelector(false)} />}
+      {showAdmin && <AdminModal onClose={() => setShowAdmin(false)} />}
+      {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
     </div>
   );
 }

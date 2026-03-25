@@ -309,4 +309,40 @@ export const pt = {
   'admin.noTransactions': 'Nenhuma transação ainda',
   'admin.income': 'Receita',
   'admin.expenses': 'Despesas',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'Saldo PLS',
+  'wallet.topUp': 'Recarregar PLS',
+  'wallet.deposit': 'Depositar SOL → PLS',
+  'wallet.depositSuccess': 'Depósito realizado com sucesso!',
+  'wallet.depositError': 'Falha no depósito',
+  'wallet.platformAddress': 'Endereço da carteira da plataforma',
+  'wallet.amountSol': 'Valor (SOL)',
+  'wallet.rate': 'Taxa',
+  'wallet.payNow': 'Pagar agora',
+  'wallet.sending': 'Enviando...',
+  'wallet.confirming': 'Confirmando...',
+  'wallet.connectFirst': 'Conecte sua carteira Solana para depositar',
+
+  // Forgot / Reset password
+  'forgot.link': 'Esqueceu a senha?',
+  'forgot.title': 'Redefinir senha',
+  'forgot.subtitle': 'Enviaremos um código para o seu e-mail',
+  'forgot.sendCode': 'Enviar código',
+  'forgot.codeSent': 'Código de redefinição enviado para o seu e-mail',
+  'forgot.rateLimit': 'Por favor aguarde antes de solicitar outro código',
+  'forgot.backToLogin': 'Voltar ao login',
+  'reset.title': 'Inserir código',
+  'reset.subtitle': 'Verifique seu e-mail para o código de 6 dígitos',
+  'reset.code': 'Código de redefinição',
+  'reset.newPassword': 'Nova senha',
+  'reset.resetButton': 'Redefinir senha',
+  'reset.success': 'Senha redefinida com sucesso!',
+  'reset.redirecting': 'Redirecionando para o login...',
+  'reset.invalidCode': 'Código inválido ou expirado',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'Moeda interna PLS',
+  'roadmap.f.deposit': 'Depósito SOL → PLS',
+  'roadmap.f.passwordReset': 'Recuperação de senha',
 };

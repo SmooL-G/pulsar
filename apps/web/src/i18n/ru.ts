@@ -310,4 +310,40 @@ export const ru = {
   'admin.noTransactions': 'Транзакций пока нет',
   'admin.income': 'Доход',
   'admin.expenses': 'Расходы',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'Баланс PLS',
+  'wallet.topUp': 'Пополнить PLS',
+  'wallet.deposit': 'Пополнение SOL → PLS',
+  'wallet.depositSuccess': 'Пополнение успешно!',
+  'wallet.depositError': 'Ошибка пополнения',
+  'wallet.platformAddress': 'Адрес кошелька платформы',
+  'wallet.amountSol': 'Сумма (SOL)',
+  'wallet.rate': 'Курс',
+  'wallet.payNow': 'Оплатить',
+  'wallet.sending': 'Отправка...',
+  'wallet.confirming': 'Подтверждение...',
+  'wallet.connectFirst': 'Подключите Solana-кошелёк для пополнения',
+
+  // Forgot / Reset password
+  'forgot.link': 'Забыли пароль?',
+  'forgot.title': 'Сброс пароля',
+  'forgot.subtitle': 'Мы отправим код на ваш email',
+  'forgot.sendCode': 'Отправить код',
+  'forgot.codeSent': 'Код отправлен на ваш email',
+  'forgot.rateLimit': 'Подождите перед повторной отправкой',
+  'forgot.backToLogin': 'Вернуться ко входу',
+  'reset.title': 'Введите код',
+  'reset.subtitle': 'Проверьте email — 6-значный код',
+  'reset.code': 'Код сброса',
+  'reset.newPassword': 'Новый пароль',
+  'reset.resetButton': 'Сбросить пароль',
+  'reset.success': 'Пароль успешно изменён!',
+  'reset.redirecting': 'Перенаправление на вход...',
+  'reset.invalidCode': 'Неверный или просроченный код',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'Внутренняя валюта PLS',
+  'roadmap.f.deposit': 'Пополнение SOL → PLS',
+  'roadmap.f.passwordReset': 'Восстановление пароля',
 };

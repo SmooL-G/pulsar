@@ -9,6 +9,7 @@ import {
 } from './auth.service.js';
 import { registerSchema, walletAuthSchema } from '@pulsar/shared';
 import { z } from 'zod';
+import { sendResetEmail } from '../../utils/mailer.js';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -151,5 +152,93 @@ export async function handleGetMe(request: FastifyRequest, reply: FastifyReply) 
     return reply.status(404).send({ error: 'USER_NOT_FOUND', message: 'User not found' });
   }
 
-  return reply.send(user);
+  // Attach PLS balance
+  const plsWallet = await prisma.plsWallet.findUnique({
+    where: { userId: user.id },
+    select: { balance: true },
+  });
+
+  return reply.send({
+    ...user,
+    plsBalance: (plsWallet?.balance ?? BigInt(0)).toString(),
+  });
+}
+
+const forgotSchema = z.object({
+  email: z.string().email(),
+});
+
+const resetSchema = z.object({
+  email: z.string().email(),
+  code: z.string().length(6),
+  newPassword: z.string().min(8),
+});
+
+export async function handleForgotPassword(request: FastifyRequest, reply: FastifyReply) {
+  const { prisma } = await import('../../config/database.js');
+  const { redis } = await import('../../config/redis.js');
+  const { email } = forgotSchema.parse(request.body);
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, email: true },
+  });
+
+  // Always return success to prevent email enumeration
+  if (!user || !user.email) {
+    return reply.send({ success: true });
+  }
+
+  // Rate limit: 1 request per 2 minutes per email
+  const rateLimitKey = `reset:rate:${email}`;
+  const existing = await redis.get(rateLimitKey);
+  if (existing) {
+    return reply.status(429).send({ error: 'RATE_LIMIT', message: 'Please wait before requesting another code' });
+  }
+
+  // Generate 6-digit code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Store in Redis with 15 min TTL
+  await redis.set(`reset:code:${email}`, code, 'EX', 900);
+  await redis.set(rateLimitKey, '1', 'EX', 120);
+
+  // Send email
+  await sendResetEmail(email, code);
+
+  return reply.send({ success: true });
+}
+
+export async function handleResetPassword(request: FastifyRequest, reply: FastifyReply) {
+  const { prisma } = await import('../../config/database.js');
+  const { redis } = await import('../../config/redis.js');
+  const bcrypt = await import('bcrypt');
+  const { email, code, newPassword } = resetSchema.parse(request.body);
+
+  // Verify code from Redis
+  const storedCode = await redis.get(`reset:code:${email}`);
+  if (!storedCode || storedCode !== code) {
+    return reply.status(400).send({ error: 'INVALID_CODE', message: 'Invalid or expired code' });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+
+  if (!user) {
+    return reply.status(400).send({ error: 'INVALID_CODE', message: 'Invalid or expired code' });
+  }
+
+  // Hash new password and update
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash },
+  });
+
+  // Clear used code
+  await redis.del(`reset:code:${email}`);
+
+  return reply.send({ success: true });
 }

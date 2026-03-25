@@ -309,4 +309,40 @@ export const zh = {
   'admin.noTransactions': '暂无交易',
   'admin.income': '收入',
   'admin.expenses': '支出',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'PLS 余额',
+  'wallet.topUp': '充值 PLS',
+  'wallet.deposit': '存入 SOL → PLS',
+  'wallet.depositSuccess': '存款成功！',
+  'wallet.depositError': '存款失败',
+  'wallet.platformAddress': '平台钱包地址',
+  'wallet.amountSol': '金额（SOL）',
+  'wallet.rate': '汇率',
+  'wallet.payNow': '立即支付',
+  'wallet.sending': '发送中...',
+  'wallet.confirming': '确认中...',
+  'wallet.connectFirst': '连接 Solana 钱包以进行存款',
+
+  // Forgot / Reset password
+  'forgot.link': '忘记密码？',
+  'forgot.title': '重置密码',
+  'forgot.subtitle': '我们将向您的邮箱发送验证码',
+  'forgot.sendCode': '发送验证码',
+  'forgot.codeSent': '重置验证码已发送至您的邮箱',
+  'forgot.rateLimit': '请稍候再请求新的验证码',
+  'forgot.backToLogin': '返回登录',
+  'reset.title': '输入验证码',
+  'reset.subtitle': '请查看邮箱中的6位验证码',
+  'reset.code': '重置验证码',
+  'reset.newPassword': '新密码',
+  'reset.resetButton': '重置密码',
+  'reset.success': '密码重置成功！',
+  'reset.redirecting': '正在跳转到登录页...',
+  'reset.invalidCode': '验证码无效或已过期',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'PLS 内部货币',
+  'roadmap.f.deposit': 'SOL → PLS 存入',
+  'roadmap.f.passwordReset': '密码恢复',
 };

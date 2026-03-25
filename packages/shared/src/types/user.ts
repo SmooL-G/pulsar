@@ -32,6 +32,7 @@ export interface User {
   isOnline: boolean;
   lastSeenAt: string | null;
   createdAt: string;
+  plsBalance: string;
 }
 
 export interface UserProfile extends User {

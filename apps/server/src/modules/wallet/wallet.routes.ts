@@ -1,0 +1,184 @@
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { prisma } from '../../config/database.js';
+import { redis } from '../../config/redis.js';
+import { authMiddleware } from '../../middleware/auth.js';
+import { env } from '../../config/env.js';
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+
+const PLS_PER_SOL = 100_000;
+
+async function getOrCreateWallet(userId: string) {
+  let wallet = await prisma.plsWallet.findUnique({ where: { userId } });
+  if (!wallet) {
+    wallet = await prisma.plsWallet.create({ data: { userId } });
+  }
+  return wallet;
+}
+
+export async function walletRoutes(app: FastifyInstance) {
+  app.addHook('onRequest', authMiddleware);
+
+  // Get PLS balance
+  app.get('/', async (request) => {
+    const wallet = await getOrCreateWallet(request.user!.userId);
+    const recentTx = await prisma.plsTransaction.findMany({
+      where: { walletId: wallet.id },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    return {
+      balance: wallet.balance.toString(),
+      transactions: recentTx.map((tx) => ({
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount.toString(),
+        solAmount: tx.solAmount?.toString() || null,
+        description: tx.description,
+        status: tx.status,
+        createdAt: tx.createdAt.toISOString(),
+      })),
+    };
+  });
+
+  // Transaction history with pagination
+  app.get('/history', async (request: FastifyRequest<{
+    Querystring: { limit?: string; offset?: string };
+  }>) => {
+    const wallet = await getOrCreateWallet(request.user!.userId);
+    const limit = Math.min(parseInt(request.query.limit || '20') || 20, 100);
+    const offset = parseInt(request.query.offset || '0') || 0;
+
+    const [transactions, total] = await Promise.all([
+      prisma.plsTransaction.findMany({
+        where: { walletId: wallet.id },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.plsTransaction.count({ where: { walletId: wallet.id } }),
+    ]);
+
+    return {
+      transactions: transactions.map((tx) => ({
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount.toString(),
+        solAmount: tx.solAmount?.toString() || null,
+        solSignature: tx.solSignature,
+        description: tx.description,
+        status: tx.status,
+        createdAt: tx.createdAt.toISOString(),
+      })),
+      total,
+      limit,
+      offset,
+    };
+  });
+
+  // Deposit SOL → PLS
+  app.post('/deposit', async (request: FastifyRequest<{
+    Body: { solSignature: string; solAmount: number };
+  }>, reply) => {
+    const { solSignature, solAmount } = request.body as { solSignature: string; solAmount: number };
+
+    if (!solSignature || !solAmount || solAmount < 0.01) {
+      return reply.status(400).send({ error: 'INVALID', message: 'Invalid deposit params. Min 0.01 SOL' });
+    }
+
+    if (!env.PLATFORM_WALLET_ADDRESS) {
+      return reply.status(500).send({ error: 'CONFIG', message: 'Platform wallet not configured' });
+    }
+
+    // Check if signature already used
+    const existing = await prisma.plsTransaction.findUnique({
+      where: { solSignature },
+    });
+    if (existing) {
+      return reply.status(400).send({ error: 'DUPLICATE', message: 'Transaction already processed' });
+    }
+
+    // Verify Solana transaction
+    try {
+      const connection = new Connection(env.SOLANA_RPC_URL, 'confirmed');
+      const tx = await connection.getTransaction(solSignature, {
+        maxSupportedTransactionVersion: 0,
+      });
+
+      if (!tx || !tx.meta) {
+        return reply.status(400).send({ error: 'NOT_FOUND', message: 'Transaction not found on chain' });
+      }
+
+      if (tx.meta.err) {
+        return reply.status(400).send({ error: 'FAILED', message: 'Transaction failed on chain' });
+      }
+
+      // Verify recipient is platform wallet
+      const accountKeys = tx.transaction.message.getAccountKeys();
+      const platformKey = new PublicKey(env.PLATFORM_WALLET_ADDRESS);
+      let foundTransfer = false;
+      let transferredLamports = 0;
+
+      // Check pre/post balances for the platform wallet
+      for (let i = 0; i < accountKeys.length; i++) {
+        if (accountKeys.get(i)?.equals(platformKey)) {
+          const preBal = tx.meta.preBalances[i];
+          const postBal = tx.meta.postBalances[i];
+          if (postBal > preBal) {
+            transferredLamports = postBal - preBal;
+            foundTransfer = true;
+          }
+          break;
+        }
+      }
+
+      if (!foundTransfer) {
+        return reply.status(400).send({ error: 'INVALID_RECIPIENT', message: 'Transfer to platform wallet not found' });
+      }
+
+      const actualSol = transferredLamports / LAMPORTS_PER_SOL;
+      // Allow 5% tolerance for fees
+      if (actualSol < solAmount * 0.95) {
+        return reply.status(400).send({ error: 'AMOUNT_MISMATCH', message: 'SOL amount does not match' });
+      }
+
+      const plsAmount = BigInt(Math.floor(actualSol * PLS_PER_SOL));
+
+      // Credit wallet
+      const wallet = await getOrCreateWallet(request.user!.userId);
+
+      const [updatedWallet, transaction] = await prisma.$transaction([
+        prisma.plsWallet.update({
+          where: { id: wallet.id },
+          data: { balance: { increment: plsAmount } },
+        }),
+        prisma.plsTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'DEPOSIT',
+            amount: plsAmount,
+            solAmount: actualSol,
+            solSignature,
+            description: `Deposit ${actualSol} SOL → ${plsAmount.toString()} PLS`,
+            status: 'COMPLETED',
+          },
+        }),
+      ]);
+
+      return {
+        success: true,
+        balance: updatedWallet.balance.toString(),
+        credited: plsAmount.toString(),
+        transaction: {
+          id: transaction.id,
+          type: transaction.type,
+          amount: transaction.amount.toString(),
+          solAmount: transaction.solAmount?.toString(),
+          createdAt: transaction.createdAt.toISOString(),
+        },
+      };
+    } catch (err: any) {
+      return reply.status(500).send({ error: 'VERIFY_FAILED', message: 'Failed to verify transaction' });
+    }
+  });
+}

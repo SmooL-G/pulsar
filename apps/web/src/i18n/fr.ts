@@ -309,4 +309,40 @@ export const fr = {
   'admin.noTransactions': 'Aucune transaction pour le moment',
   'admin.income': 'Revenus',
   'admin.expenses': 'Dépenses',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'Solde PLS',
+  'wallet.topUp': 'Recharger PLS',
+  'wallet.deposit': 'Déposer SOL → PLS',
+  'wallet.depositSuccess': 'Dépôt réussi !',
+  'wallet.depositError': 'Échec du dépôt',
+  'wallet.platformAddress': 'Adresse du portefeuille de la plateforme',
+  'wallet.amountSol': 'Montant (SOL)',
+  'wallet.rate': 'Taux',
+  'wallet.payNow': 'Payer maintenant',
+  'wallet.sending': 'Envoi en cours...',
+  'wallet.confirming': 'Confirmation...',
+  'wallet.connectFirst': 'Connectez votre portefeuille Solana pour déposer',
+
+  // Forgot / Reset password
+  'forgot.link': 'Mot de passe oublié ?',
+  'forgot.title': 'Réinitialiser le mot de passe',
+  'forgot.subtitle': 'Nous enverrons un code à votre e-mail',
+  'forgot.sendCode': 'Envoyer le code',
+  'forgot.codeSent': 'Code de réinitialisation envoyé à votre e-mail',
+  'forgot.rateLimit': 'Veuillez patienter avant de demander un nouveau code',
+  'forgot.backToLogin': 'Retour à la connexion',
+  'reset.title': 'Entrer le code',
+  'reset.subtitle': 'Vérifiez votre e-mail pour le code à 6 chiffres',
+  'reset.code': 'Code de réinitialisation',
+  'reset.newPassword': 'Nouveau mot de passe',
+  'reset.resetButton': 'Réinitialiser le mot de passe',
+  'reset.success': 'Mot de passe réinitialisé avec succès !',
+  'reset.redirecting': 'Redirection vers la connexion...',
+  'reset.invalidCode': 'Code invalide ou expiré',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'Monnaie interne PLS',
+  'roadmap.f.deposit': 'Dépôt SOL → PLS',
+  'roadmap.f.passwordReset': 'Récupération de mot de passe',
 };

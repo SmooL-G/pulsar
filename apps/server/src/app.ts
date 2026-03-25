@@ -17,6 +17,7 @@ import { uploadRoutes } from './modules/upload/upload.routes.js';
 import { friendRoutes } from './modules/friend/friend.routes.js';
 import { statsRoutes } from './modules/stats/stats.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
+import { walletRoutes } from './modules/wallet/wallet.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -71,6 +72,7 @@ export async function buildApp() {
   await app.register(friendRoutes, { prefix: '/api/v1/friends' });
   await app.register(statsRoutes, { prefix: '/api/v1/stats' });
   await app.register(adminRoutes, { prefix: '/api/v1/admin' });
+  await app.register(walletRoutes, { prefix: '/api/v1/wallet' });
 
   return app;
 }

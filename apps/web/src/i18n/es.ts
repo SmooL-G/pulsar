@@ -309,4 +309,40 @@ export const es = {
   'admin.noTransactions': 'Aún no hay transacciones',
   'admin.income': 'Ingresos',
   'admin.expenses': 'Gastos',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'Saldo PLS',
+  'wallet.topUp': 'Recargar PLS',
+  'wallet.deposit': 'Depositar SOL → PLS',
+  'wallet.depositSuccess': '¡Depósito exitoso!',
+  'wallet.depositError': 'Error en el depósito',
+  'wallet.platformAddress': 'Dirección de la billetera de la plataforma',
+  'wallet.amountSol': 'Cantidad (SOL)',
+  'wallet.rate': 'Tasa',
+  'wallet.payNow': 'Pagar ahora',
+  'wallet.sending': 'Enviando...',
+  'wallet.confirming': 'Confirmando...',
+  'wallet.connectFirst': 'Conecta tu billetera Solana para depositar',
+
+  // Forgot / Reset password
+  'forgot.link': '¿Olvidaste tu contraseña?',
+  'forgot.title': 'Restablecer contraseña',
+  'forgot.subtitle': 'Enviaremos un código a tu correo electrónico',
+  'forgot.sendCode': 'Enviar código',
+  'forgot.codeSent': 'Código de restablecimiento enviado a tu correo',
+  'forgot.rateLimit': 'Por favor espera antes de solicitar otro código',
+  'forgot.backToLogin': 'Volver al inicio de sesión',
+  'reset.title': 'Ingresar código',
+  'reset.subtitle': 'Revisa tu correo para el código de 6 dígitos',
+  'reset.code': 'Código de restablecimiento',
+  'reset.newPassword': 'Nueva contraseña',
+  'reset.resetButton': 'Restablecer contraseña',
+  'reset.success': '¡Contraseña restablecida exitosamente!',
+  'reset.redirecting': 'Redirigiendo al inicio de sesión...',
+  'reset.invalidCode': 'Código inválido o expirado',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'Moneda interna PLS',
+  'roadmap.f.deposit': 'Depósito SOL → PLS',
+  'roadmap.f.passwordReset': 'Recuperación de contraseña',
 };

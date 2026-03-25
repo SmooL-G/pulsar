@@ -310,4 +310,40 @@ export const en = {
   'admin.noTransactions': 'No transactions yet',
   'admin.income': 'Income',
   'admin.expenses': 'Expenses',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'PLS Balance',
+  'wallet.topUp': 'Top Up PLS',
+  'wallet.deposit': 'Deposit SOL → PLS',
+  'wallet.depositSuccess': 'Deposit successful!',
+  'wallet.depositError': 'Deposit failed',
+  'wallet.platformAddress': 'Platform wallet address',
+  'wallet.amountSol': 'Amount (SOL)',
+  'wallet.rate': 'Rate',
+  'wallet.payNow': 'Pay Now',
+  'wallet.sending': 'Sending...',
+  'wallet.confirming': 'Confirming...',
+  'wallet.connectFirst': 'Connect Solana wallet to deposit',
+
+  // Forgot / Reset password
+  'forgot.link': 'Forgot password?',
+  'forgot.title': 'Reset Password',
+  'forgot.subtitle': 'We\'ll send a code to your email',
+  'forgot.sendCode': 'Send Code',
+  'forgot.codeSent': 'Reset code sent to your email',
+  'forgot.rateLimit': 'Please wait before requesting another code',
+  'forgot.backToLogin': 'Back to login',
+  'reset.title': 'Enter Code',
+  'reset.subtitle': 'Check your email for the 6-digit code',
+  'reset.code': 'Reset Code',
+  'reset.newPassword': 'New Password',
+  'reset.resetButton': 'Reset Password',
+  'reset.success': 'Password reset successfully!',
+  'reset.redirecting': 'Redirecting to login...',
+  'reset.invalidCode': 'Invalid or expired code',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'PLS Internal Currency',
+  'roadmap.f.deposit': 'SOL → PLS Deposit',
+  'roadmap.f.passwordReset': 'Password Recovery',
 };

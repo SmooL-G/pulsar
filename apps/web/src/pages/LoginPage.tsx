@@ -168,6 +168,12 @@ export function LoginPage() {
                   className="w-full px-4 py-2.5 bg-dark-600 rounded-lg text-white border border-dark-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
                   placeholder={t('auth.passwordPlaceholder')}
                 />
+                <Link
+                  to="/forgot-password"
+                  className="block text-xs text-primary-400 hover:text-primary-300 mt-1.5 text-right transition-colors"
+                >
+                  {t('forgot.link')}
+                </Link>
               </div>
               <button
                 type="submit"

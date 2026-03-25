@@ -71,10 +71,13 @@ const PHASES: Phase[] = [
     ],
   },
   {
-    id: 5, nameKey: 'roadmap.phase5', status: 'planned',
+    id: 5, nameKey: 'roadmap.phase5', status: 'in-progress',
     features: [
-      { key: 'adminDash', status: 'planned' },
-      { key: 'userMgmt', status: 'planned' },
+      { key: 'adminDash', status: 'complete' },
+      { key: 'userMgmt', status: 'complete' },
+      { key: 'plsCurrency', status: 'complete' },
+      { key: 'deposit', status: 'complete' },
+      { key: 'passwordReset', status: 'complete' },
       { key: 'moderation', status: 'planned' },
       { key: 'channels', status: 'planned' },
       { key: 'mobile', status: 'planned' },

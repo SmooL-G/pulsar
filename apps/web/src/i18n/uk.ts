@@ -309,4 +309,40 @@ export const uk = {
   'admin.noTransactions': 'Транзакцій поки немає',
   'admin.income': 'Доходи',
   'admin.expenses': 'Витрати',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'Баланс PLS',
+  'wallet.topUp': 'Поповнити PLS',
+  'wallet.deposit': 'Внести SOL → PLS',
+  'wallet.depositSuccess': 'Внесення успішне!',
+  'wallet.depositError': 'Помилка внесення',
+  'wallet.platformAddress': 'Адреса гаманця платформи',
+  'wallet.amountSol': 'Сума (SOL)',
+  'wallet.rate': 'Курс',
+  'wallet.payNow': 'Сплатити зараз',
+  'wallet.sending': 'Надсилання...',
+  'wallet.confirming': 'Підтвердження...',
+  'wallet.connectFirst': 'Підключіть Solana-гаманець для внесення коштів',
+
+  // Forgot / Reset password
+  'forgot.link': 'Забули пароль?',
+  'forgot.title': 'Скидання пароля',
+  'forgot.subtitle': 'Ми надішлемо код на вашу електронну пошту',
+  'forgot.sendCode': 'Надіслати код',
+  'forgot.codeSent': 'Код скидання надіслано на вашу електронну пошту',
+  'forgot.rateLimit': 'Будь ласка, зачекайте перед запитом нового коду',
+  'forgot.backToLogin': 'Повернутися до входу',
+  'reset.title': 'Введіть код',
+  'reset.subtitle': 'Перевірте пошту на наявність 6-значного коду',
+  'reset.code': 'Код скидання',
+  'reset.newPassword': 'Новий пароль',
+  'reset.resetButton': 'Скинути пароль',
+  'reset.success': 'Пароль успішно скинуто!',
+  'reset.redirecting': 'Перенаправлення на сторінку входу...',
+  'reset.invalidCode': 'Недійсний або прострочений код',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'Внутрішня валюта PLS',
+  'roadmap.f.deposit': 'Внесення SOL → PLS',
+  'roadmap.f.passwordReset': 'Відновлення пароля',
 };

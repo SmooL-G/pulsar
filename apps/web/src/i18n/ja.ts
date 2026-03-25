@@ -309,4 +309,40 @@ export const ja = {
   'admin.noTransactions': 'まだトランザクションはありません',
   'admin.income': '収入',
   'admin.expenses': '支出',
+
+  // Wallet / PLS
+  'wallet.plsBalance': 'PLS残高',
+  'wallet.topUp': 'PLSをチャージ',
+  'wallet.deposit': 'SOLを入金 → PLS',
+  'wallet.depositSuccess': '入金が完了しました！',
+  'wallet.depositError': '入金に失敗しました',
+  'wallet.platformAddress': 'プラットフォームウォレットアドレス',
+  'wallet.amountSol': '金額（SOL）',
+  'wallet.rate': 'レート',
+  'wallet.payNow': '今すぐ支払う',
+  'wallet.sending': '送信中...',
+  'wallet.confirming': '確認中...',
+  'wallet.connectFirst': '入金するにはSolanaウォレットを接続してください',
+
+  // Forgot / Reset password
+  'forgot.link': 'パスワードをお忘れですか？',
+  'forgot.title': 'パスワードのリセット',
+  'forgot.subtitle': 'メールにコードを送信します',
+  'forgot.sendCode': 'コードを送信',
+  'forgot.codeSent': 'リセットコードをメールに送信しました',
+  'forgot.rateLimit': '次のコードをリクエストする前にお待ちください',
+  'forgot.backToLogin': 'ログインに戻る',
+  'reset.title': 'コードを入力',
+  'reset.subtitle': 'メールで届いた6桁のコードを確認してください',
+  'reset.code': 'リセットコード',
+  'reset.newPassword': '新しいパスワード',
+  'reset.resetButton': 'パスワードをリセット',
+  'reset.success': 'パスワードが正常にリセットされました！',
+  'reset.redirecting': 'ログインにリダイレクト中...',
+  'reset.invalidCode': '無効または期限切れのコード',
+
+  // Roadmap additions
+  'roadmap.f.plsCurrency': 'PLS内部通貨',
+  'roadmap.f.deposit': 'SOL → PLS入金',
+  'roadmap.f.passwordReset': 'パスワード復旧',
 };
