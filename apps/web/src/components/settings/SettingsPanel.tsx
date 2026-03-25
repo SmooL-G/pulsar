@@ -7,12 +7,13 @@ import { useNotificationStore } from '../../store/notificationStore';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { AdminPanel } from '../admin/AdminPanel';
 
 interface SettingsPanelProps {
   onClose: () => void;
 }
 
-type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet';
+type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'admin';
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { t, locale, setLocale } = useI18n();
@@ -75,11 +76,14 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     { year: 'numeric', month: 'long', day: 'numeric' }
   );
 
+  const isStaff = user.role === 'MODERATOR' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+
   const tabs: { id: Tab; icon: typeof User; label: string }[] = [
     { id: 'profile', icon: User, label: t('profile.title') },
     { id: 'appearance', icon: Palette, label: t('settings.appearance') },
     { id: 'notifications', icon: Bell, label: t('settings.notifications') },
     { id: 'wallet', icon: Wallet, label: t('profile.wallet') },
+    ...(isStaff ? [{ id: 'admin' as Tab, icon: Shield, label: t('admin.title') }] : []),
   ];
 
   return (
@@ -268,6 +272,9 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </a>
               </div>
             )}
+
+            {/* Admin */}
+            {tab === 'admin' && isStaff && <AdminPanel />}
           </div>
         </div>
       </div>
