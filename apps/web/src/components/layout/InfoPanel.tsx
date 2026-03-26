@@ -460,7 +460,9 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                       <PulsarBadge level={m.user.verificationLevel || 0} size={13} />
                     </p>
                     {m.role !== 'MEMBER' && (
-                      <p className="text-xs text-primary-400">{m.role.toLowerCase()}</p>
+                      <p className="text-xs text-primary-400">
+                        {m.role === 'OWNER' ? 'Admin' : m.role.charAt(0) + m.role.slice(1).toLowerCase()}
+                      </p>
                     )}
                   </div>
                 </div>
