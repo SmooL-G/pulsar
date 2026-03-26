@@ -174,6 +174,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-500/20 text-primary-400 text-xs font-medium cursor-pointer hover:bg-primary-500/30 transition-colors"
                     >
                       {u.displayName || u.username}
+                      <PulsarBadge level={(u as any).verificationLevel || 0} size={10} />
                       <X size={12} />
                     </span>
                   ))}

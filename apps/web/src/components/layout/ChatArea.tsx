@@ -2,6 +2,7 @@ import { ArrowLeft, Info, Phone, Video } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { MessageList } from '../chat/MessageList';
 import { MessageInput } from '../chat/MessageInput';
+import { PulsarBadge } from '../ui/PulsarBadge';
 import { useI18n } from '../../i18n';
 
 interface ChatAreaProps {
@@ -66,7 +67,12 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <h2 className="font-semibold truncate">{chatName}</h2>
+          <h2 className="font-semibold truncate flex items-center gap-1">
+            {chatName}
+            {activeChat.type === 'DIRECT' && (
+              <PulsarBadge level={(activeChat as any).otherUser?.verificationLevel || 0} size={14} />
+            )}
+          </h2>
           <p className="text-xs text-gray-400">
             {activeChat.type === 'GROUP'
               ? `${(activeChat as any).memberCount || 0} ${t('chat.members')}`

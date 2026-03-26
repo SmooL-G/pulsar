@@ -182,7 +182,7 @@ export function AdminDashboard() {
               <div className="space-y-1 max-h-32 overflow-y-auto scrollbar-hidden">
                 {bank.recentRewards.map((r) => (
                   <div key={r.id} className="flex items-center justify-between text-xs bg-dark-700/40 rounded-lg px-2.5 py-1.5">
-                    <span className="text-gray-300">@{r.user.username}</span>
+                    <span className="text-gray-300 flex items-center gap-1">@{r.user.username}</span>
                     <span className="text-amber-400 font-mono font-medium">+{BigInt(r.amount).toLocaleString()} PLS</span>
                   </div>
                 ))}

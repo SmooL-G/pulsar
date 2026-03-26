@@ -342,7 +342,7 @@ function RewardModal({ userId, username, onClose }: { userId: string; username: 
                 <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium">
                   {username[0]?.toUpperCase() || '?'}
                 </div>
-                <span className="text-sm font-medium">@{username}</span>
+                <span className="text-sm font-medium flex items-center gap-1">@{username}</span>
               </div>
 
               <div>
@@ -496,8 +496,9 @@ function ForwardModal({ message, onClose }: { message: Message; onClose: () => v
                         <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-dark-600" />
                       )}
                     </div>
-                    <span className="text-xs text-gray-300 truncate w-full text-center">
+                    <span className="text-xs text-gray-300 truncate w-full text-center flex items-center justify-center gap-0.5">
                       {user.displayName || user.username}
+                      <PulsarBadge level={user.verificationLevel || 0} size={10} />
                     </span>
                     {isSent && (
                       <span className="text-[10px] text-green-400 font-medium">{t('friends.sent')}</span>

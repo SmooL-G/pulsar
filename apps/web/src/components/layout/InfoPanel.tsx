@@ -256,7 +256,10 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{u.displayName || u.username}</p>
+                        <p className="text-xs font-medium truncate flex items-center gap-0.5">
+                          {u.displayName || u.username}
+                          <PulsarBadge level={u.verificationLevel || 0} size={11} />
+                        </p>
                       </div>
                       {sharedTo.has(u.id) ? (
                         <span className="text-xs text-green-400 flex items-center gap-1">
@@ -308,7 +311,10 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{m.user.displayName || m.user.username}</p>
+                    <p className="text-sm font-medium truncate flex items-center gap-1">
+                      {m.user.displayName || m.user.username}
+                      <PulsarBadge level={m.user.verificationLevel || 0} size={13} />
+                    </p>
                     {m.role !== 'MEMBER' && (
                       <p className="text-xs text-primary-400">{m.role.toLowerCase()}</p>
                     )}

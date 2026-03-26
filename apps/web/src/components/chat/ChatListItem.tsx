@@ -130,8 +130,10 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
             {lastMsg?.sender && chat.type === 'GROUP' && (
-              <span className="text-gray-600 dark:text-gray-300">
-                {lastMsg.sender.displayName || lastMsg.sender.username}:{' '}
+              <span className="text-gray-600 dark:text-gray-300 inline-flex items-center gap-0.5">
+                {lastMsg.sender.displayName || lastMsg.sender.username}
+                <PulsarBadge level={(lastMsg.sender as any)?.verificationLevel || 0} size={10} />
+                :{' '}
               </span>
             )}
             {preview}
