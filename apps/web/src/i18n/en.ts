@@ -350,6 +350,10 @@ export const en = {
   'wallet.connectFirst': 'Connect Solana wallet to deposit',
   'wallet.badges': 'Profile Badges',
   'wallet.badgeObtained': 'Badge obtained:',
+  'nft.gallery': 'NFT Gallery',
+  'nft.setAvatar': 'NFT Avatar',
+  'nft.clearAvatar': 'Remove NFT Avatar',
+  'nft.noNfts': 'No NFTs found in your wallet',
 
   // Forgot / Reset password
   'forgot.link': 'Forgot password?',

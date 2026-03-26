@@ -349,6 +349,10 @@ export const es = {
   'wallet.crediting': 'Acreditando...',
   'wallet.badges': 'Insignias de perfil',
   'wallet.badgeObtained': 'Insignia obtenida:',
+  'nft.gallery': 'Galería NFT',
+  'nft.setAvatar': 'Avatar NFT',
+  'nft.clearAvatar': 'Quitar avatar NFT',
+  'nft.noNfts': 'No se encontraron NFTs en tu billetera',
 
   // Forgot / Reset password
   'forgot.link': '¿Olvidaste tu contraseña?',

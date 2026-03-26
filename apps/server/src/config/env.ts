@@ -24,6 +24,9 @@ export const env = cleanEnv(process.env, {
 
   PLATFORM_WALLET_ADDRESS: str({ default: '' }),
 
+  HELIUS_API_KEY: str({ default: '' }),
+  HELIUS_RPC_URL: str({ default: '' }),
+
   SMTP_HOST: str({ default: '' }),
   SMTP_PORT: num({ default: 587 }),
   SMTP_USER: str({ default: '' }),

@@ -349,6 +349,10 @@ export const ko = {
   'wallet.crediting': '입금 중...',
   'wallet.badges': '프로필 배지',
   'wallet.badgeObtained': '배지 획득:',
+  'nft.gallery': 'NFT 갤러리',
+  'nft.setAvatar': 'NFT 아바타',
+  'nft.clearAvatar': 'NFT 아바타 제거',
+  'nft.noNfts': '지갑에 NFT가 없습니다',
 
   // Forgot / Reset password
   'forgot.link': '비밀번호를 잊으셨나요?',

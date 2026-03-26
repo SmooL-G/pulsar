@@ -349,6 +349,10 @@ export const zh = {
   'wallet.crediting': '入账中...',
   'wallet.badges': '个人徽章',
   'wallet.badgeObtained': '获得徽章：',
+  'nft.gallery': 'NFT 画廊',
+  'nft.setAvatar': 'NFT 头像',
+  'nft.clearAvatar': '移除 NFT 头像',
+  'nft.noNfts': '钱包中未找到 NFT',
 
   // Forgot / Reset password
   'forgot.link': '忘记密码？',

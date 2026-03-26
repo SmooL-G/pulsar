@@ -349,6 +349,10 @@ export const fr = {
   'wallet.crediting': 'Crédit en cours...',
   'wallet.badges': 'Badges de profil',
   'wallet.badgeObtained': 'Badge obtenu :',
+  'nft.gallery': 'Galerie NFT',
+  'nft.setAvatar': 'Avatar NFT',
+  'nft.clearAvatar': 'Retirer l\'avatar NFT',
+  'nft.noNfts': 'Aucun NFT trouvé dans votre portefeuille',
 
   // Forgot / Reset password
   'forgot.link': 'Mot de passe oublié ?',

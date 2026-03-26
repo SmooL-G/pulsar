@@ -86,6 +86,8 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN}
       WALLET_ENCRYPTION_SALT: ${WALLET_ENCRYPTION_SALT}
       PLATFORM_WALLET_ADDRESS: ${PLATFORM_WALLET_ADDRESS}
+      HELIUS_API_KEY: ${HELIUS_API_KEY:-}
+      HELIUS_RPC_URL: ${HELIUS_RPC_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

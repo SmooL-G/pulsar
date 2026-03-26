@@ -349,6 +349,10 @@ export const ja = {
   'wallet.crediting': '入金処理中...',
   'wallet.badges': 'プロフィールバッジ',
   'wallet.badgeObtained': 'バッジ取得：',
+  'nft.gallery': 'NFTギャラリー',
+  'nft.setAvatar': 'NFTアバター',
+  'nft.clearAvatar': 'NFTアバターを削除',
+  'nft.noNfts': 'ウォレットにNFTが見つかりません',
 
   // Forgot / Reset password
   'forgot.link': 'パスワードをお忘れですか？',

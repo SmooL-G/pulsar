@@ -343,3 +343,18 @@ enum PlsTransactionStatus {
   COMPLETED
   FAILED
 }
+
+// ─── NFT CACHE ──────────────────────────────────────────
+
+model NftCache {
+  id           String   @id @default(uuid()) @db.Uuid
+  mintAddress  String   @unique @map("mint_address") @db.VarChar(64)
+  ownerWallet  String   @map("owner_wallet") @db.VarChar(64)
+  name         String?  @db.VarChar(128)
+  imageUrl     String?  @map("image_url")
+  collection   String?  @db.VarChar(64)
+  lastVerified DateTime @default(now()) @map("last_verified")
+
+  @@index([ownerWallet])
+  @@map("nft_cache")
+}

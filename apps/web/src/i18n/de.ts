@@ -349,6 +349,10 @@ export const de = {
   'wallet.crediting': 'Gutschrift...',
   'wallet.badges': 'Profilabzeichen',
   'wallet.badgeObtained': 'Abzeichen erhalten:',
+  'nft.gallery': 'NFT-Galerie',
+  'nft.setAvatar': 'NFT-Avatar',
+  'nft.clearAvatar': 'NFT-Avatar entfernen',
+  'nft.noNfts': 'Keine NFTs in Ihrer Wallet gefunden',
 
   // Forgot / Reset password
   'forgot.link': 'Passwort vergessen?',

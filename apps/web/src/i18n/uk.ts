@@ -349,6 +349,10 @@ export const uk = {
   'wallet.crediting': 'Зарахування...',
   'wallet.badges': 'Значки профілю',
   'wallet.badgeObtained': 'Отримано значок:',
+  'nft.gallery': 'Галерея NFT',
+  'nft.setAvatar': 'NFT Аватар',
+  'nft.clearAvatar': 'Прибрати NFT аватар',
+  'nft.noNfts': 'У вашому гаманці немає NFT',
 
   // Forgot / Reset password
   'forgot.link': 'Забули пароль?',

@@ -8,6 +8,7 @@ import { api } from '../../services/api';
 import { useChatStore } from '../../store/chatStore';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
+import { NftAvatarBorder } from '../ui/NftAvatarBorder';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
@@ -122,8 +123,16 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
       >
         {/* Avatar for other users */}
         {!isOwn && showAvatar && (
-          <div className="w-8 h-8 rounded-full bg-primary-400 flex items-center justify-center text-white text-xs font-medium mr-2 mt-auto shrink-0">
-            {message.sender?.username?.[0]?.toUpperCase() || '?'}
+          <div className="mr-2 mt-auto shrink-0">
+            <NftAvatarBorder isNft={!!(message.sender as any)?.nftAvatarMint} size={32}>
+              <div className="w-8 h-8 rounded-full bg-primary-400 flex items-center justify-center text-white text-xs font-medium overflow-hidden">
+                {message.sender?.avatarUrl ? (
+                  <img src={message.sender.avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  message.sender?.username?.[0]?.toUpperCase() || '?'
+                )}
+              </div>
+            </NftAvatarBorder>
           </div>
         )}
         {!isOwn && !showAvatar && <div className="w-8 mr-2 shrink-0" />}

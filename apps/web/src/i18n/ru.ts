@@ -350,6 +350,10 @@ export const ru = {
   'wallet.connectFirst': 'Подключите Solana-кошелёк для пополнения',
   'wallet.badges': 'Профильные значки',
   'wallet.badgeObtained': 'Получен значок',
+  'nft.gallery': 'Галерея NFT',
+  'nft.setAvatar': 'NFT Аватар',
+  'nft.clearAvatar': 'Убрать NFT аватар',
+  'nft.noNfts': 'В вашем кошельке нет NFT',
 
   // Forgot / Reset password
   'forgot.link': 'Забыли пароль?',

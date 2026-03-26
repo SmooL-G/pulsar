@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import { X, Camera, Copy, Check, Wallet, Send, Globe } from 'lucide-react';
+import { X, Camera, Copy, Check, Wallet, Send, Globe, Image } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { api } from '../../services/api';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeTag } from '../ui/ProfileBadgeIcon';
+import { NftGallery } from '../nft/NftGallery';
 import toast from 'react-hot-toast';
 
 interface ProfilePanelProps {
@@ -30,6 +31,7 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showNftGallery, setShowNftGallery] = useState(false);
 
   if (!user) return null;
 
@@ -129,6 +131,14 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
             <p className="text-sm text-gray-400 mt-2">
               {uploading ? t('common.loading') : t('profile.changeAvatar')}
             </p>
+            <button
+              onClick={() => setShowNftGallery(true)}
+              className="mt-1 flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+            >
+              <Image size={14} />
+              {t('nft.setAvatar')}
+              {(user as any).nftAvatarMint && <span className="text-green-400">✓</span>}
+            </button>
             {user.displayName && user.displayName !== user.username && (
               <p className="text-lg font-semibold mt-1 flex items-center gap-1.5">
                 {user.displayName}
@@ -231,6 +241,9 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
           </button>
         </div>
       </div>
+
+      {/* NFT Gallery Modal */}
+      {showNftGallery && <NftGallery onClose={() => setShowNftGallery(false)} />}
     </div>
   );
 }

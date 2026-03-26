@@ -18,6 +18,7 @@ import { friendRoutes } from './modules/friend/friend.routes.js';
 import { statsRoutes } from './modules/stats/stats.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
 import { walletRoutes } from './modules/wallet/wallet.routes.js';
+import { nftRoutes } from './modules/nft/nft.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -73,6 +74,7 @@ export async function buildApp() {
   await app.register(statsRoutes, { prefix: '/api/v1/stats' });
   await app.register(adminRoutes, { prefix: '/api/v1/admin' });
   await app.register(walletRoutes, { prefix: '/api/v1/wallet' });
+  await app.register(nftRoutes, { prefix: '/api/v1/nft' });
 
   return app;
 }

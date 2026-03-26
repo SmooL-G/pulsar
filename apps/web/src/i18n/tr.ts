@@ -349,6 +349,10 @@ export const tr = {
   'wallet.crediting': 'Yükleniyor...',
   'wallet.badges': 'Profil Rozetleri',
   'wallet.badgeObtained': 'Rozet alındı:',
+  'nft.gallery': 'NFT Galerisi',
+  'nft.setAvatar': 'NFT Avatar',
+  'nft.clearAvatar': 'NFT Avatarı Kaldır',
+  'nft.noNfts': 'Cüzdanınızda NFT bulunamadı',
 
   // Forgot / Reset password
   'forgot.link': 'Şifrenizi mi unuttunuz?',
