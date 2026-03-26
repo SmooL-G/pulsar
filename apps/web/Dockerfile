@@ -8,6 +8,8 @@ COPY . .
 RUN cd packages/shared && npm install && npx tsc || true
 RUN cd packages/ui && npm install
 RUN cd apps/web && npm install
+ARG VITE_PLATFORM_WALLET
+ENV VITE_PLATFORM_WALLET=${VITE_PLATFORM_WALLET}
 RUN cd apps/web && npx vite build
 
 # Serve with nginx
