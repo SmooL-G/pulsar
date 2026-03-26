@@ -247,7 +247,6 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
               )}
 
               <div className="space-y-1">
-                <InfoAction icon={<AtSign size={18} />} label={t('auth.username')} value={`@${other.username}`} />
                 {other.isOnline ? (
                   <InfoAction icon={<div className="w-2.5 h-2.5 rounded-full bg-green-500 ml-1" />} label={t('chat.status')} value={t('chat.online')} />
                 ) : other.lastSeenAt ? (

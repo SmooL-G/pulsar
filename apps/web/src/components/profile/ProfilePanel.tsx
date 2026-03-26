@@ -113,7 +113,16 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
             <p className="text-sm text-gray-400 mt-2">
               {uploading ? t('common.loading') : t('profile.changeAvatar')}
             </p>
-            <p className="text-lg font-semibold mt-1 flex items-center gap-1.5">@{user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={16} /></p>
+            {user.displayName && user.displayName !== user.username && (
+              <p className="text-lg font-semibold mt-1 flex items-center gap-1.5">
+                {user.displayName}
+                <PulsarBadge level={(user as any).verificationLevel || 0} size={16} />
+              </p>
+            )}
+            <p className={`flex items-center gap-1.5 ${user.displayName && user.displayName !== user.username ? 'text-sm text-gray-400' : 'text-lg font-semibold mt-1'}`}>
+              @{user.username}
+              {(!user.displayName || user.displayName === user.username) && <PulsarBadge level={(user as any).verificationLevel || 0} size={16} />}
+            </p>
           </div>
 
           {/* Display Name */}
