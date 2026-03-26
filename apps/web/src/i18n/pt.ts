@@ -94,6 +94,7 @@ export const pt = {
   'profile.saved': 'Perfil salvo!',
   'profile.saveError': 'Erro ao salvar perfil',
   'profile.copyWallet': 'Copiado!',
+  'profile.socialLinks': 'Redes Sociais',
 
   // Settings
   'settings.title': 'Configurações',
@@ -340,6 +341,8 @@ export const pt = {
   'wallet.buy': 'Comprar',
   'wallet.levelUp': 'Nível alcançado',
   'wallet.connectFirst': 'Conecte sua carteira Solana para depositar',
+  'wallet.badges': 'Emblemas de Perfil',
+  'wallet.badgeObtained': 'Emblema obtido:',
 
   // Forgot / Reset password
   'forgot.link': 'Esqueceu a senha?',

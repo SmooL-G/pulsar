@@ -7,6 +7,7 @@ import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
 import { useChatStore } from '../../store/chatStore';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
@@ -142,6 +143,7 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
             >
               {message.sender?.displayName || message.sender?.username}
               <PulsarBadge level={(message.sender as any)?.verificationLevel || 0} size={12} />
+              <ProfileBadgeIcon badge={(message.sender as any)?.profileBadge} size={12} />
             </p>
           )}
 

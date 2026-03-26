@@ -94,6 +94,7 @@ export const tr = {
   'profile.saved': 'Profil kaydedildi!',
   'profile.saveError': 'Profil kaydedilirken hata oluştu',
   'profile.copyWallet': 'Kopyalandı!',
+  'profile.socialLinks': 'Sosyal Bağlantılar',
 
   // Settings
   'settings.title': 'Ayarlar',
@@ -340,6 +341,8 @@ export const tr = {
   'wallet.buy': 'Satın Al',
   'wallet.levelUp': 'Seviye yükseltildi',
   'wallet.connectFirst': 'Yatırma yapmak için Solana cüzdanınızı bağlayın',
+  'wallet.badges': 'Profil Rozetleri',
+  'wallet.badgeObtained': 'Rozet alındı:',
 
   // Forgot / Reset password
   'forgot.link': 'Şifrenizi mi unuttunuz?',

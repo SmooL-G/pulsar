@@ -94,6 +94,7 @@ export const ru = {
   'profile.saved': 'Профиль сохранён!',
   'profile.saveError': 'Ошибка сохранения',
   'profile.copyWallet': 'Скопировано!',
+  'profile.socialLinks': 'Социальные сети',
 
   // Settings
   'settings.title': 'Настройки',
@@ -341,6 +342,8 @@ export const ru = {
   'wallet.buy': 'Купить',
   'wallet.levelUp': 'Повышен до уровня',
   'wallet.connectFirst': 'Подключите Solana-кошелёк для пополнения',
+  'wallet.badges': 'Профильные значки',
+  'wallet.badgeObtained': 'Получен значок',
 
   // Forgot / Reset password
   'forgot.link': 'Забыли пароль?',

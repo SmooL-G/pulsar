@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
-import { X, Camera, Copy, Check, Wallet } from 'lucide-react';
+import { X, Camera, Copy, Check, Wallet, Send, Globe } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { api } from '../../services/api';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { ProfileBadgeTag } from '../ui/ProfileBadgeIcon';
 import toast from 'react-hot-toast';
 
 interface ProfilePanelProps {
@@ -17,6 +18,15 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
 
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [bio, setBio] = useState(user?.bio || '');
+  const links = (user as any)?.socialLinks || {};
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({
+    telegram: links.telegram || '',
+    twitter: links.twitter || '',
+    youtube: links.youtube || '',
+    instagram: links.instagram || '',
+    github: links.github || '',
+    website: links.website || '',
+  });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -26,9 +36,15 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Filter out empty social links
+      const cleanLinks: Record<string, string> = {};
+      for (const [k, v] of Object.entries(socialLinks)) {
+        if (v.trim()) cleanLinks[k] = v.trim();
+      }
       const { data } = await api.patch('/users/me', {
         displayName: displayName || null,
         bio: bio || null,
+        socialLinks: cleanLinks,
       });
       setUser({ ...user, ...data });
       toast.success(t('profile.saved'));
@@ -123,6 +139,7 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
               @{user.username}
               {(!user.displayName || user.displayName === user.username) && <PulsarBadge level={(user as any).verificationLevel || 0} size={16} />}
             </p>
+            {(user as any).profileBadge && <ProfileBadgeTag badge={(user as any).profileBadge} />}
           </div>
 
           {/* Display Name */}
@@ -149,6 +166,32 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
               className="w-full px-4 py-2.5 bg-gray-100 dark:bg-dark-600 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-primary-500 resize-none"
             />
             <p className="text-xs text-gray-400 text-right mt-1">{bio.length}/500</p>
+          </div>
+
+          {/* Social Links */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">{t('profile.socialLinks')}</label>
+            <div className="space-y-2">
+              {([
+                { key: 'telegram', icon: '✈️', placeholder: '@username' },
+                { key: 'twitter', icon: '𝕏', placeholder: '@handle' },
+                { key: 'youtube', icon: '▶️', placeholder: 'youtube.com/...' },
+                { key: 'instagram', icon: '📷', placeholder: '@username' },
+                { key: 'github', icon: '🐙', placeholder: 'github.com/...' },
+                { key: 'website', icon: '🌐', placeholder: 'https://...' },
+              ] as const).map(({ key, icon, placeholder }) => (
+                <div key={key} className="flex items-center gap-2">
+                  <span className="text-sm w-6 text-center shrink-0">{icon}</span>
+                  <input
+                    type="text"
+                    value={socialLinks[key] || ''}
+                    onChange={(e) => setSocialLinks((prev) => ({ ...prev, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="flex-1 px-3 py-2 bg-gray-100 dark:bg-dark-600 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Wallet */}

@@ -94,6 +94,7 @@ export const uk = {
   'profile.saved': 'Профіль збережено!',
   'profile.saveError': 'Помилка збереження профілю',
   'profile.copyWallet': 'Скопійовано!',
+  'profile.socialLinks': 'Соціальні мережі',
 
   // Settings
   'settings.title': 'Налаштування',
@@ -340,6 +341,8 @@ export const uk = {
   'wallet.buy': 'Купити',
   'wallet.levelUp': 'Підвищено до рівня',
   'wallet.connectFirst': 'Підключіть Solana-гаманець для внесення коштів',
+  'wallet.badges': 'Значки профілю',
+  'wallet.badgeObtained': 'Отримано значок:',
 
   // Forgot / Reset password
   'forgot.link': 'Забули пароль?',

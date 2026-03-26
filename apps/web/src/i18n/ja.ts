@@ -94,6 +94,7 @@ export const ja = {
   'profile.saved': 'プロフィールを保存しました！',
   'profile.saveError': 'プロフィールの保存に失敗しました',
   'profile.copyWallet': 'コピーしました！',
+  'profile.socialLinks': 'ソーシャルリンク',
 
   // Settings
   'settings.title': '設定',
@@ -340,6 +341,8 @@ export const ja = {
   'wallet.buy': '購入',
   'wallet.levelUp': 'レベルアップ',
   'wallet.connectFirst': '入金するにはSolanaウォレットを接続してください',
+  'wallet.badges': 'プロフィールバッジ',
+  'wallet.badgeObtained': 'バッジ取得：',
 
   // Forgot / Reset password
   'forgot.link': 'パスワードをお忘れですか？',

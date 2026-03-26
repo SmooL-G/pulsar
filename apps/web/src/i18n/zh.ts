@@ -94,6 +94,7 @@ export const zh = {
   'profile.saved': '资料已保存！',
   'profile.saveError': '保存资料出错',
   'profile.copyWallet': '已复制！',
+  'profile.socialLinks': '社交链接',
 
   // Settings
   'settings.title': '设置',
@@ -340,6 +341,8 @@ export const zh = {
   'wallet.buy': '购买',
   'wallet.levelUp': '已升级到等级',
   'wallet.connectFirst': '连接 Solana 钱包以进行存款',
+  'wallet.badges': '个人徽章',
+  'wallet.badgeObtained': '获得徽章：',
 
   // Forgot / Reset password
   'forgot.link': '忘记密码？',

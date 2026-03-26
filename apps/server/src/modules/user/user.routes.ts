@@ -35,6 +35,7 @@ export async function userRoutes(app: FastifyInstance) {
         isOnline: true,
         lastSeenAt: true,
         verificationLevel: true,
+        profileBadge: true,
       },
       take: Math.min(Number(limit), 50),
       skip: Number(offset),
@@ -58,6 +59,8 @@ export async function userRoutes(app: FastifyInstance) {
         lastSeenAt: true,
         createdAt: true,
         verificationLevel: true,
+        socialLinks: true,
+        profileBadge: true,
       },
     });
 
@@ -70,15 +73,33 @@ export async function userRoutes(app: FastifyInstance) {
 
   // Update own profile
   app.patch('/me', async (request) => {
-    const { displayName, bio, avatarUrl } = request.body as {
+    const { displayName, bio, avatarUrl, socialLinks } = request.body as {
       displayName?: string;
       bio?: string;
       avatarUrl?: string;
+      socialLinks?: Record<string, string>;
     };
+
+    // Sanitize socialLinks — only allow known keys
+    let cleanLinks: Record<string, string> | undefined;
+    if (socialLinks && typeof socialLinks === 'object') {
+      const allowed = ['telegram', 'twitter', 'youtube', 'instagram', 'github', 'website'];
+      cleanLinks = {};
+      for (const key of allowed) {
+        if (socialLinks[key] && typeof socialLinks[key] === 'string') {
+          cleanLinks[key] = socialLinks[key].trim().slice(0, 200);
+        }
+      }
+    }
 
     const user = await prisma.user.update({
       where: { id: request.user!.userId },
-      data: { displayName, bio, avatarUrl },
+      data: {
+        displayName,
+        bio,
+        avatarUrl,
+        ...(cleanLinks !== undefined ? { socialLinks: cleanLinks } : {}),
+      },
       select: {
         id: true,
         username: true,
@@ -87,6 +108,8 @@ export async function userRoutes(app: FastifyInstance) {
         bio: true,
         walletAddress: true,
         verificationLevel: true,
+        socialLinks: true,
+        profileBadge: true,
       },
     });
 

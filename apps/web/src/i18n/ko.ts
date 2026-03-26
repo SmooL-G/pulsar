@@ -94,6 +94,7 @@ export const ko = {
   'profile.saved': '프로필이 저장되었습니다!',
   'profile.saveError': '프로필 저장 중 오류 발생',
   'profile.copyWallet': '복사되었습니다!',
+  'profile.socialLinks': '소셜 링크',
 
   // Settings
   'settings.title': '설정',
@@ -340,6 +341,8 @@ export const ko = {
   'wallet.buy': '구매',
   'wallet.levelUp': '레벨 업',
   'wallet.connectFirst': '입금하려면 Solana 지갑을 연결하세요',
+  'wallet.badges': '프로필 배지',
+  'wallet.badgeObtained': '배지 획득:',
 
   // Forgot / Reset password
   'forgot.link': '비밀번호를 잊으셨나요?',

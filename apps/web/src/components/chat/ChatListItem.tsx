@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ru as ruLocale } from 'date-fns/locale/ru';
 import { Trash2, LogOut, Eraser } from 'lucide-react';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { useI18n } from '../../i18n';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
@@ -125,6 +126,7 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
             <span className="font-medium text-sm truncate flex items-center gap-1">
               {name}
               <PulsarBadge level={(chat.type === 'DIRECT' ? (chat.otherUser as any)?.verificationLevel : 0) || 0} size={13} />
+              {chat.type === 'DIRECT' && <ProfileBadgeIcon badge={(chat.otherUser as any)?.profileBadge} size={13} />}
             </span>
             {time && <span className="text-xs text-gray-400 shrink-0 ml-2">{time}</span>}
           </div>
@@ -133,6 +135,7 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
               <span className="text-gray-600 dark:text-gray-300 inline-flex items-center gap-0.5">
                 {lastMsg.sender.displayName || lastMsg.sender.username}
                 <PulsarBadge level={(lastMsg.sender as any)?.verificationLevel || 0} size={10} />
+                <ProfileBadgeIcon badge={(lastMsg.sender as any)?.profileBadge} size={10} />
                 :{' '}
               </span>
             )}

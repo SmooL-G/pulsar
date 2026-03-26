@@ -241,4 +241,63 @@ export async function walletRoutes(app: FastifyInstance) {
       verificationLevel: updatedUser.verificationLevel,
     };
   });
+
+  // Purchase profile badge
+  const BADGE_PRICES: Record<string, bigint> = {
+    BLOGGER: BigInt(10000),
+    AUTHOR: BigInt(10000),
+    BUSINESS: BigInt(50000),
+  };
+
+  app.post('/purchase-badge', async (request: FastifyRequest<{
+    Body: { badge: string };
+  }>, reply) => {
+    const userId = request.user!.userId;
+    const { badge } = request.body as { badge: string };
+
+    if (!BADGE_PRICES[badge]) {
+      return reply.status(400).send({ error: 'INVALID', message: 'Invalid badge type' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { profileBadge: true } });
+    if (!user) return reply.status(404).send({ error: 'NOT_FOUND' });
+
+    if (user.profileBadge === badge) {
+      return reply.status(400).send({ error: 'ALREADY_HAVE', message: 'You already have this badge' });
+    }
+
+    const price = BADGE_PRICES[badge];
+    const wallet = await getOrCreateWallet(userId);
+
+    if (wallet.balance < price) {
+      return reply.status(400).send({ error: 'INSUFFICIENT', message: 'Not enough PLS' });
+    }
+
+    const [updatedWallet, , updatedUser] = await prisma.$transaction([
+      prisma.plsWallet.update({
+        where: { id: wallet.id },
+        data: { balance: { decrement: price } },
+      }),
+      prisma.plsTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'PURCHASE',
+          amount: price,
+          description: `Profile Badge: ${badge}`,
+          status: 'COMPLETED',
+        },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { profileBadge: badge },
+        select: { id: true, profileBadge: true },
+      }),
+    ]);
+
+    return {
+      success: true,
+      balance: updatedWallet.balance.toString(),
+      profileBadge: updatedUser.profileBadge,
+    };
+  });
 }

@@ -94,6 +94,7 @@ export const de = {
   'profile.saved': 'Profil gespeichert!',
   'profile.saveError': 'Fehler beim Speichern des Profils',
   'profile.copyWallet': 'Kopiert!',
+  'profile.socialLinks': 'Soziale Netzwerke',
 
   // Settings
   'settings.title': 'Einstellungen',
@@ -340,6 +341,8 @@ export const de = {
   'wallet.buy': 'Kaufen',
   'wallet.levelUp': 'Aufgestiegen auf Level',
   'wallet.connectFirst': 'Verbinde dein Solana-Wallet zum Einzahlen',
+  'wallet.badges': 'Profilabzeichen',
+  'wallet.badgeObtained': 'Abzeichen erhalten:',
 
   // Forgot / Reset password
   'forgot.link': 'Passwort vergessen?',

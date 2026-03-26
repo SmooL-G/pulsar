@@ -145,6 +145,8 @@ export async function handleGetMe(request: FastifyRequest, reply: FastifyReply) 
       isOnline: true,
       createdAt: true,
       verificationLevel: true,
+      socialLinks: true,
+      profileBadge: true,
     },
   });
 

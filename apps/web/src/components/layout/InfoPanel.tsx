@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { X, Users, Bell, BellOff, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2 } from 'lucide-react';
+import { X, Users, Bell, BellOff, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2, ExternalLink } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { api } from '../../services/api';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { ProfileBadgeTag } from '../ui/ProfileBadgeIcon';
 
 interface InfoPanelProps {
   onClose: () => void;
@@ -234,6 +235,40 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                 <p className="text-sm text-gray-400">@{other.username}</p>
                 {other.bio && (
                   <p className="text-sm text-gray-300 mt-2 px-2">{other.bio}</p>
+                )}
+                {other.profileBadge && (
+                  <div className="mt-2">
+                    <ProfileBadgeTag badge={other.profileBadge} />
+                  </div>
+                )}
+                {/* Social links */}
+                {other.socialLinks && Object.keys(other.socialLinks).some((k: string) => (other.socialLinks as any)[k]) && (
+                  <div className="flex items-center gap-2 mt-3">
+                    {([
+                      { key: 'telegram', icon: '✈️', prefix: 'https://t.me/' },
+                      { key: 'twitter', icon: '𝕏', prefix: 'https://x.com/' },
+                      { key: 'youtube', icon: '▶️', prefix: '' },
+                      { key: 'instagram', icon: '📷', prefix: 'https://instagram.com/' },
+                      { key: 'github', icon: '🐙', prefix: 'https://github.com/' },
+                      { key: 'website', icon: '🌐', prefix: '' },
+                    ] as const).map(({ key, icon, prefix }) => {
+                      const val = (other.socialLinks as any)?.[key];
+                      if (!val) return null;
+                      const href = val.startsWith('http') ? val : (prefix ? `${prefix}${val.replace('@', '')}` : val);
+                      return (
+                        <a
+                          key={key}
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-dark-600 hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors text-sm"
+                          title={key}
+                        >
+                          {icon}
+                        </a>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 
