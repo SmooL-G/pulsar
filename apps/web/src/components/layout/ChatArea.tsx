@@ -71,8 +71,10 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
           <h2 className="font-semibold truncate flex items-center gap-1">
             {chatName}
             {activeChat.type === 'DIRECT' && (
-              <PulsarBadge level={(activeChat as any).otherUser?.verificationLevel || 0} size={14} />
-              <ProfileBadgeIcon badge={(activeChat as any).otherUser?.profileBadge} size={14} />
+              <>
+                <PulsarBadge level={(activeChat as any).otherUser?.verificationLevel || 0} size={14} />
+                <ProfileBadgeIcon badge={(activeChat as any).otherUser?.profileBadge} size={14} />
+              </>
             )}
           </h2>
           <p className="text-xs text-gray-400">
