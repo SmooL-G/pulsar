@@ -33,6 +33,7 @@ export async function chatRoutes(app: FastifyInstance) {
                     displayName: true,
                     avatarUrl: true,
                     isOnline: true,
+                    verificationLevel: true,
                   },
                 },
               },
