@@ -198,14 +198,16 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
           return (
             <div className="space-y-4">
               <div className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold mb-3 overflow-hidden relative">
-                  {other.avatarUrl ? (
-                    <img src={other.avatarUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    (other.displayName || other.username)?.[0]?.toUpperCase() || '?'
-                  )}
+                <div className="relative mb-3">
+                  <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+                    {other.avatarUrl ? (
+                      <img src={other.avatarUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      (other.displayName || other.username)?.[0]?.toUpperCase() || '?'
+                    )}
+                  </div>
                   {other.isOnline && (
-                    <div className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-dark-700" />
+                    <div className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-white dark:border-dark-700" />
                   )}
                 </div>
                 <h4 className="font-semibold text-lg flex items-center gap-1.5">
