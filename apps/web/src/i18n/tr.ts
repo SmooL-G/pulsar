@@ -74,6 +74,7 @@ export const tr = {
   'info.planned': 'Planlandı',
   'info.sharedMedia': 'Paylaşılan Medya',
   'info.on': 'Açık',
+  'info.off': 'Kapalı',
   'info.share': 'Paylaş',
   'info.shareWith': 'Paylaş...',
   'info.copied': 'Bağlantı kopyalandı!',

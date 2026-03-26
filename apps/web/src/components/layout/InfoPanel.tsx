@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Users, Bell, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2 } from 'lucide-react';
+import { X, Users, Bell, BellOff, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -23,8 +23,25 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
   const [sharedTo, setSharedTo] = useState<Set<string>>(new Set());
   const [friendStatus, setFriendStatus] = useState<'none' | 'friends' | 'pending' | 'loading'>('loading');
   const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
 
   const isGroup = activeChat?.type === 'GROUP';
+
+  // Init muted state from activeChat
+  useEffect(() => {
+    setMuted(!!(activeChat as any)?.muted);
+  }, [activeChat?.id]);
+
+  const toggleMute = async () => {
+    if (!activeChat) return;
+    const newMuted = !muted;
+    setMuted(newMuted);
+    try {
+      await api.patch(`/chats/${activeChat.id}/mute`, { muted: newMuted });
+    } catch {
+      setMuted(!newMuted);
+    }
+  };
   const otherUserId = !isGroup ? (activeChat as any)?.otherUser?.id : null;
 
   // Check friend status for DM contacts
@@ -257,7 +274,13 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                 {other.walletAddress && (
                   <InfoAction icon={<Wallet size={18} />} label="Wallet" value={`${other.walletAddress.slice(0, 4)}...${other.walletAddress.slice(-4)}`} />
                 )}
-                <InfoAction icon={<Bell size={18} />} label={t('info.notifications')} value={t('info.on')} />
+                <div onClick={toggleMute} className="cursor-pointer">
+                  <InfoAction
+                    icon={muted ? <BellOff size={18} /> : <Bell size={18} />}
+                    label={t('info.notifications')}
+                    value={muted ? t('info.off') : t('info.on')}
+                  />
+                </div>
                 <InfoAction icon={<Shield size={18} />} label={t('info.encryption')} value={t('info.planned')} />
               </div>
             </div>
@@ -368,7 +391,13 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
         {isGroup && (
           <div className="space-y-1">
             <InfoAction icon={<Users size={18} />} label={t('info.members')} value={`${members.length}`} />
-            <InfoAction icon={<Bell size={18} />} label={t('info.notifications')} value={t('info.on')} />
+            <div onClick={toggleMute} className="cursor-pointer">
+              <InfoAction
+                icon={muted ? <BellOff size={18} /> : <Bell size={18} />}
+                label={t('info.notifications')}
+                value={muted ? t('info.off') : t('info.on')}
+              />
+            </div>
             <InfoAction icon={<Shield size={18} />} label={t('info.encryption')} value={t('info.planned')} />
           </div>
         )}

@@ -74,6 +74,7 @@ export const ru = {
   'info.planned': 'Планируется',
   'info.sharedMedia': 'Общие медиа',
   'info.on': 'Вкл',
+  'info.off': 'Выкл',
   'info.share': 'Поделиться',
   'info.shareWith': 'Поделиться с...',
   'info.copied': 'Ссылка скопирована!',

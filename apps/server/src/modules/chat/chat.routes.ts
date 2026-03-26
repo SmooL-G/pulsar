@@ -57,6 +57,7 @@ export async function chatRoutes(app: FastifyInstance) {
         ownerId: m.chat.ownerId,
         memberCount: m.chat._count.members,
         myRole: m.role,
+        muted: !!m.mutedUntil,
         updatedAt: m.chat.updatedAt.toISOString(),
         lastMessage: lastMessage
           ? {
@@ -218,4 +219,28 @@ export async function chatRoutes(app: FastifyInstance) {
 
     return reply.status(201).send({ chat });
   });
+
+  // Mute / unmute chat
+  app.patch<{ Params: { chatId: string }; Body: { muted: boolean } }>(
+    '/:chatId/mute',
+    async (request, reply) => {
+      const userId = request.user!.userId;
+      const { chatId } = request.params;
+      const { muted } = request.body as { muted: boolean };
+
+      const membership = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId, userId } },
+      });
+      if (!membership || membership.leftAt) {
+        return reply.status(404).send({ error: 'NOT_FOUND' });
+      }
+
+      await prisma.chatMember.update({
+        where: { id: membership.id },
+        data: { mutedUntil: muted ? new Date('2099-12-31') : null },
+      });
+
+      return { success: true, muted };
+    }
+  );
 }

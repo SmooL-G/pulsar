@@ -74,6 +74,7 @@ export const ko = {
   'info.planned': '예정됨',
   'info.sharedMedia': '공유 미디어',
   'info.on': '켜짐',
+  'info.off': '끔',
   'info.share': '공유',
   'info.shareWith': '공유 대상...',
   'info.copied': '링크가 복사되었습니다!',

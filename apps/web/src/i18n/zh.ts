@@ -74,6 +74,7 @@ export const zh = {
   'info.planned': '计划中',
   'info.sharedMedia': '共享媒体',
   'info.on': '开启',
+  'info.off': '关闭',
   'info.share': '分享',
   'info.shareWith': '分享给...',
   'info.copied': '链接已复制！',

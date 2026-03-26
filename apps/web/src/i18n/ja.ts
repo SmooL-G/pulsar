@@ -74,6 +74,7 @@ export const ja = {
   'info.planned': '実装予定',
   'info.sharedMedia': '共有メディア',
   'info.on': 'オン',
+  'info.off': 'オフ',
   'info.share': '共有',
   'info.shareWith': '共有先...',
   'info.copied': 'リンクをコピーしました！',

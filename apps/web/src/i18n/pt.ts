@@ -74,6 +74,7 @@ export const pt = {
   'info.planned': 'Planejado',
   'info.sharedMedia': 'Mídia Compartilhada',
   'info.on': 'Ativado',
+  'info.off': 'Desligado',
   'info.share': 'Compartilhar',
   'info.shareWith': 'Compartilhar com...',
   'info.copied': 'Link copiado!',

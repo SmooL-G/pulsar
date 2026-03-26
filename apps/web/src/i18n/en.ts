@@ -74,6 +74,7 @@ export const en = {
   'info.planned': 'Planned',
   'info.sharedMedia': 'Shared Media',
   'info.on': 'On',
+  'info.off': 'Off',
   'info.share': 'Share',
   'info.shareWith': 'Share with...',
   'info.copied': 'Link copied!',

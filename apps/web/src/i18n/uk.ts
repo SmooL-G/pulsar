@@ -74,6 +74,7 @@ export const uk = {
   'info.planned': 'Заплановано',
   'info.sharedMedia': 'Спільні медіа',
   'info.on': 'Увімкнено',
+  'info.off': 'Вимк',
   'info.share': 'Поділитися',
   'info.shareWith': 'Поділитися з...',
   'info.copied': 'Посилання скопійовано!',
