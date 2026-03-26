@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Shield, ShieldCheck, ShieldAlert, Ban, Trash2, UserCheck, ChevronDown } from 'lucide-react';
+import { Search, Shield, ShieldCheck, ShieldAlert, Ban, Trash2, UserCheck, ChevronDown, Gift, X, Loader2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -31,6 +31,7 @@ export function AdminUsers() {
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [rewardUser, setRewardUser] = useState<{ id: string; username: string } | null>(null);
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   const limit = 15;
@@ -180,7 +181,7 @@ export function AdminUsers() {
 
                   {/* Expanded actions */}
                   {isExpanded && (
-                    <div className="px-3 pb-3 pt-1 border-t border-dark-500 space-y-3">
+                    <div className="px-3 pb-3 pt-1 border-t border-gray-200 dark:border-dark-500 space-y-3">
                       {/* Info */}
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
@@ -208,7 +209,7 @@ export function AdminUsers() {
                             <select
                               value={u.role}
                               onChange={(e) => changeRole(u.id, e.target.value)}
-                              className="text-xs bg-dark-700 rounded-lg px-2 py-1.5 border border-dark-500 outline-none"
+                              className="text-xs bg-gray-100 dark:bg-dark-700 rounded-lg px-2 py-1.5 border border-gray-300 dark:border-dark-500 outline-none text-gray-900 dark:text-gray-100"
                             >
                               <option value="USER">USER</option>
                               <option value="MODERATOR">MODERATOR</option>
@@ -221,7 +222,7 @@ export function AdminUsers() {
                           <select
                             value={u.verificationLevel}
                             onChange={(e) => changeVerification(u.id, parseInt(e.target.value))}
-                            className="text-xs bg-dark-700 rounded-lg px-2 py-1.5 border border-dark-500 outline-none"
+                            className="text-xs bg-gray-100 dark:bg-dark-700 rounded-lg px-2 py-1.5 border border-gray-300 dark:border-dark-500 outline-none text-gray-900 dark:text-gray-100"
                           >
                             {Array.from({ length: maxVerLevel + 1 }, (_, i) => (
                               <option key={i} value={i}>✦ Lv.{i}</option>
@@ -241,6 +242,15 @@ export function AdminUsers() {
                               {u.status === 'BANNED' ? t('admin.unban') : t('admin.ban')}
                             </button>
                           )}
+
+                          {/* Reward */}
+                          <button
+                            onClick={() => setRewardUser({ id: u.id, username: u.username })}
+                            className="text-xs px-3 py-1.5 rounded-lg font-medium bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
+                          >
+                            <Gift size={12} className="inline mr-1" />
+                            {t('admin.giveReward')}
+                          </button>
 
                           {/* Delete */}
                           {isSuperAdmin && u.role !== 'SUPER_ADMIN' && (
@@ -267,7 +277,7 @@ export function AdminUsers() {
               <button
                 onClick={() => searchUsers(search, offset - limit)}
                 disabled={offset === 0}
-                className="px-3 py-1.5 text-xs bg-dark-600 rounded-lg disabled:opacity-30"
+                className="px-3 py-1.5 text-xs bg-gray-200 dark:bg-dark-600 rounded-lg disabled:opacity-30"
               >
                 ← {t('admin.prev')}
               </button>
@@ -277,7 +287,7 @@ export function AdminUsers() {
               <button
                 onClick={() => searchUsers(search, offset + limit)}
                 disabled={offset + limit >= total}
-                className="px-3 py-1.5 text-xs bg-dark-600 rounded-lg disabled:opacity-30"
+                className="px-3 py-1.5 text-xs bg-gray-200 dark:bg-dark-600 rounded-lg disabled:opacity-30"
               >
                 {t('admin.next')} →
               </button>
@@ -285,6 +295,102 @@ export function AdminUsers() {
           )}
         </>
       )}
+      {/* Reward Modal */}
+      {rewardUser && (
+        <AdminRewardModal
+          userId={rewardUser.id}
+          username={rewardUser.username}
+          onClose={() => setRewardUser(null)}
+          t={t}
+        />
+      )}
+    </div>
+  );
+}
+
+function AdminRewardModal({ userId, username, onClose, t }: { userId: string; username: string; onClose: () => void; t: (k: string) => string }) {
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const presets = [100, 500, 1000, 5000, 10000];
+
+  const handleReward = async () => {
+    const num = parseInt(amount);
+    if (!num || num <= 0) return;
+    setLoading(true);
+    try {
+      await api.post('/admin/reward', { userId, amount: num, description: description || `Reward for @${username}` });
+      setSuccess(true);
+      toast.success(`+${num.toLocaleString()} PLS → @${username}`);
+      setTimeout(onClose, 1500);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white dark:bg-dark-700 rounded-2xl w-full max-w-sm mx-4 shadow-2xl animate-fade-in" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-dark-500">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Gift size={18} className="text-amber-400" />
+            {t('admin.giveReward')}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-white"><X size={20} /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          {success ? (
+            <div className="text-center py-6">
+              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-3">
+                <Gift size={28} className="text-amber-400" />
+              </div>
+              <p className="font-bold text-lg text-amber-500">+{parseInt(amount).toLocaleString()} PLS</p>
+              <p className="text-sm text-gray-400 mt-1">→ @{username}</p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-gray-100 dark:bg-dark-600 rounded-xl px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium">
+                  {username[0]?.toUpperCase() || '?'}
+                </div>
+                <span className="text-sm font-medium">@{username}</span>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 dark:text-gray-400 mb-1.5">{t('admin.rewardAmount')}</label>
+                <input
+                  type="number" min="1" max="1000000" value={amount}
+                  onChange={(e) => setAmount(e.target.value)} placeholder="0"
+                  className="w-full px-4 py-3 bg-gray-100 dark:bg-dark-600 rounded-lg text-lg font-mono border-none outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {presets.map((p) => (
+                  <button key={p} onClick={() => setAmount(p.toString())}
+                    className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-dark-600 hover:bg-gray-200 dark:hover:bg-dark-500 rounded-lg transition-colors text-amber-500"
+                  >{p.toLocaleString()} PLS</button>
+                ))}
+              </div>
+              <div>
+                <label className="block text-sm text-gray-500 dark:text-gray-400 mb-1.5">{t('admin.rewardReason')}</label>
+                <input type="text" value={description} onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t('admin.rewardReasonPlaceholder')}
+                  className="w-full px-4 py-2.5 bg-gray-100 dark:bg-dark-600 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <button onClick={handleReward} disabled={!amount || parseInt(amount) <= 0 || loading}
+                className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 size={16} className="animate-spin" />}
+                {t('admin.sendReward')}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
