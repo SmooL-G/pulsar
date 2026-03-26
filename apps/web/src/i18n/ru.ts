@@ -336,6 +336,10 @@ export const ru = {
   'wallet.payNow': 'Оплатить',
   'wallet.sending': 'Отправка...',
   'wallet.confirming': 'Подтверждение...',
+  'wallet.verification': 'Верификация',
+  'wallet.owned': 'Есть',
+  'wallet.buy': 'Купить',
+  'wallet.levelUp': 'Повышен до уровня',
   'wallet.connectFirst': 'Подключите Solana-кошелёк для пополнения',
 
   // Forgot / Reset password

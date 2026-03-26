@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { X, Wallet, Copy, Check } from 'lucide-react';
+import { X, Wallet, Copy, Check, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
+import { api } from '../../services/api';
 import { DepositModal } from './DepositModal';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import toast from 'react-hot-toast';
@@ -13,8 +14,10 @@ interface WalletPanelProps {
 export function WalletPanel({ onClose }: WalletPanelProps) {
   const { t } = useI18n();
   const { user } = useAuthStore();
+  const { setUser } = useAuthStore();
   const [showDeposit, setShowDeposit] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [buying, setBuying] = useState<number | null>(null);
 
   if (!user) return null;
 
@@ -61,6 +64,74 @@ export function WalletPanel({ onClose }: WalletPanelProps) {
             >
               {t('wallet.topUp')}
             </button>
+          </div>
+
+          {/* Verification Levels */}
+          <div className="bg-gray-50 dark:bg-dark-600 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <ShieldCheck size={16} className="text-primary-500" />
+              <span className="text-sm font-medium">{t('wallet.verification')}</span>
+            </div>
+            <div className="space-y-2">
+              {([
+                { level: 1, price: 1000, color: 'from-gray-400 to-gray-500' },
+                { level: 2, price: 5000, color: 'from-green-400 to-green-600' },
+                { level: 3, price: 25000, color: 'from-amber-400 to-amber-600' },
+              ] as const).map(({ level, price, color }) => {
+                const currentLevel = (user as any).verificationLevel || 0;
+                const owned = currentLevel >= level;
+                const canAfford = plsBalance >= BigInt(price);
+
+                return (
+                  <div
+                    key={level}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors ${
+                      owned
+                        ? 'border-green-500/30 bg-green-500/5'
+                        : 'border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${color} flex items-center justify-center`}>
+                      <PulsarBadge level={level} size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Level {level}</p>
+                      <p className="text-xs text-gray-400 font-mono">{price.toLocaleString()} PLS</p>
+                    </div>
+                    {owned ? (
+                      <span className="text-xs text-green-400 font-medium px-2 py-1 bg-green-500/10 rounded-lg">
+                        <Check size={12} className="inline mr-0.5" />
+                        {t('wallet.owned')}
+                      </span>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          setBuying(level);
+                          try {
+                            const { data } = await api.post('/wallet/purchase-verification', { level });
+                            setUser({ ...user, verificationLevel: data.verificationLevel, plsBalance: data.balance });
+                            toast.success(`${t('wallet.levelUp')} ${level}!`);
+                          } catch (err: any) {
+                            toast.error(err.response?.data?.message || 'Error');
+                          } finally {
+                            setBuying(null);
+                          }
+                        }}
+                        disabled={!canAfford || buying !== null}
+                        className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 ${
+                          canAfford
+                            ? 'bg-primary-500 hover:bg-primary-600 text-white'
+                            : 'bg-gray-200 dark:bg-dark-500 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {buying === level && <Loader2 size={12} className="animate-spin" />}
+                        {t('wallet.buy')}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Solana Wallet */}

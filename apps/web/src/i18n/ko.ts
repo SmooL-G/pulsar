@@ -335,6 +335,10 @@ export const ko = {
   'wallet.payNow': '지금 결제',
   'wallet.sending': '전송 중...',
   'wallet.confirming': '확인 중...',
+  'wallet.verification': '인증',
+  'wallet.owned': '보유',
+  'wallet.buy': '구매',
+  'wallet.levelUp': '레벨 업',
   'wallet.connectFirst': '입금하려면 Solana 지갑을 연결하세요',
 
   // Forgot / Reset password

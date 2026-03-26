@@ -181,4 +181,64 @@ export async function walletRoutes(app: FastifyInstance) {
       return reply.status(500).send({ error: 'VERIFY_FAILED', message: 'Failed to verify transaction' });
     }
   });
+
+  // Purchase verification level
+  const VERIFICATION_PRICES: Record<number, bigint> = {
+    1: BigInt(1000),
+    2: BigInt(5000),
+    3: BigInt(25000),
+  };
+
+  app.post('/purchase-verification', async (request: FastifyRequest<{
+    Body: { level: number };
+  }>, reply) => {
+    const userId = request.user!.userId;
+    const { level } = request.body as { level: number };
+
+    if (![1, 2, 3].includes(level)) {
+      return reply.status(400).send({ error: 'INVALID', message: 'Level must be 1, 2 or 3' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { verificationLevel: true } });
+    if (!user) return reply.status(404).send({ error: 'NOT_FOUND' });
+
+    if (user.verificationLevel >= level) {
+      return reply.status(400).send({ error: 'ALREADY_HAVE', message: 'You already have this level or higher' });
+    }
+
+    const price = VERIFICATION_PRICES[level];
+    const wallet = await getOrCreateWallet(userId);
+
+    if (wallet.balance < price) {
+      return reply.status(400).send({ error: 'INSUFFICIENT', message: 'Not enough PLS' });
+    }
+
+    // Deduct PLS and upgrade level
+    const [updatedWallet, , updatedUser] = await prisma.$transaction([
+      prisma.plsWallet.update({
+        where: { id: wallet.id },
+        data: { balance: { decrement: price } },
+      }),
+      prisma.plsTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'PURCHASE',
+          amount: price,
+          description: `Verification Lv.${level}`,
+          status: 'COMPLETED',
+        },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { verificationLevel: level },
+        select: { id: true, verificationLevel: true },
+      }),
+    ]);
+
+    return {
+      success: true,
+      balance: updatedWallet.balance.toString(),
+      verificationLevel: updatedUser.verificationLevel,
+    };
+  });
 }

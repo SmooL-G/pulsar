@@ -335,6 +335,10 @@ export const ja = {
   'wallet.payNow': '今すぐ支払う',
   'wallet.sending': '送信中...',
   'wallet.confirming': '確認中...',
+  'wallet.verification': '認証',
+  'wallet.owned': '所有',
+  'wallet.buy': '購入',
+  'wallet.levelUp': 'レベルアップ',
   'wallet.connectFirst': '入金するにはSolanaウォレットを接続してください',
 
   // Forgot / Reset password

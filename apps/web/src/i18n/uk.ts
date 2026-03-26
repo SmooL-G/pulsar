@@ -335,6 +335,10 @@ export const uk = {
   'wallet.payNow': 'Сплатити зараз',
   'wallet.sending': 'Надсилання...',
   'wallet.confirming': 'Підтвердження...',
+  'wallet.verification': 'Верифікація',
+  'wallet.owned': 'Є',
+  'wallet.buy': 'Купити',
+  'wallet.levelUp': 'Підвищено до рівня',
   'wallet.connectFirst': 'Підключіть Solana-гаманець для внесення коштів',
 
   // Forgot / Reset password

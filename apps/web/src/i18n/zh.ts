@@ -335,6 +335,10 @@ export const zh = {
   'wallet.payNow': '立即支付',
   'wallet.sending': '发送中...',
   'wallet.confirming': '确认中...',
+  'wallet.verification': '认证',
+  'wallet.owned': '已拥有',
+  'wallet.buy': '购买',
+  'wallet.levelUp': '已升级到等级',
   'wallet.connectFirst': '连接 Solana 钱包以进行存款',
 
   // Forgot / Reset password

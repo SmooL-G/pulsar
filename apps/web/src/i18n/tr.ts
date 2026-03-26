@@ -335,6 +335,10 @@ export const tr = {
   'wallet.payNow': 'Şimdi Öde',
   'wallet.sending': 'Gönderiliyor...',
   'wallet.confirming': 'Onaylanıyor...',
+  'wallet.verification': 'Doğrulama',
+  'wallet.owned': 'Sahip',
+  'wallet.buy': 'Satın Al',
+  'wallet.levelUp': 'Seviye yükseltildi',
   'wallet.connectFirst': 'Yatırma yapmak için Solana cüzdanınızı bağlayın',
 
   // Forgot / Reset password

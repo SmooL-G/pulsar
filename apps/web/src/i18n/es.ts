@@ -335,6 +335,10 @@ export const es = {
   'wallet.payNow': 'Pagar ahora',
   'wallet.sending': 'Enviando...',
   'wallet.confirming': 'Confirmando...',
+  'wallet.verification': 'Verificación',
+  'wallet.owned': 'Adquirido',
+  'wallet.buy': 'Comprar',
+  'wallet.levelUp': 'Nivel alcanzado',
   'wallet.connectFirst': 'Conecta tu billetera Solana para depositar',
 
   // Forgot / Reset password
