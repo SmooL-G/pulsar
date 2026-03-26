@@ -167,7 +167,7 @@ export function AdminDashboard() {
             <div className="bg-dark-700/60 rounded-lg p-2.5">
               <span className="text-[10px] text-gray-400">{t('admin.totalSupply')}</span>
               <p className="text-sm font-bold font-mono text-gray-300 mt-0.5">
-                22T
+                22Q
               </p>
             </div>
           </div>

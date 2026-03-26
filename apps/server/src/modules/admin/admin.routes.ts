@@ -283,7 +283,7 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'FORBIDDEN', message: 'SUPER_ADMIN required' });
     }
 
-    const totalSupply = BigInt('22000000000000');
+    const totalSupply = BigInt('22000000000000000');
 
     // Sum all user wallets
     const result = await prisma.plsWallet.aggregate({
@@ -335,7 +335,7 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     // Check bank balance
-    const totalSupply = BigInt('22000000000000');
+    const totalSupply = BigInt('22000000000000000');
     const agg = await prisma.plsWallet.aggregate({ _sum: { balance: true } });
     const distributed = agg._sum.balance ?? BigInt(0);
     const bankBalance = totalSupply - distributed;

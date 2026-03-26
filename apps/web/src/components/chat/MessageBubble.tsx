@@ -216,6 +216,18 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
             <CheckSquare size={16} className="text-gray-400" />
             {t('chat.select')}
           </button>
+          {isStaff && !isOwn && message.sender && (
+            <>
+              <div className="h-px bg-dark-500 mx-2 my-1" />
+              <button
+                onClick={() => { setContextMenu(null); setShowReward(true); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-amber-400 hover:bg-dark-600 transition-colors"
+              >
+                <Gift size={16} />
+                {t('admin.giveReward')}
+              </button>
+            </>
+          )}
           <div className="h-px bg-dark-500 mx-2 my-1" />
           {!deleteSubmenu ? (
             <button
