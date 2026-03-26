@@ -1,15 +1,18 @@
 import { useState, useRef } from 'react';
-import { Send, Paperclip, Smile } from 'lucide-react';
+import { Send, Paperclip, Smile, Lock } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
 import { useI18n } from '../../i18n';
 import { signMessage } from '../../crypto/messageSigner';
+import { encryptMessage } from '../../crypto/e2eEncrypt';
 
 interface MessageInputProps {
   chatId: string;
+  chatType?: 'DIRECT' | 'GROUP';
+  recipientUserId?: string;
 }
 
-export function MessageInput({ chatId }: MessageInputProps) {
+export function MessageInput({ chatId, chatType, recipientUserId }: MessageInputProps) {
   const { t } = useI18n();
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -21,7 +24,7 @@ export function MessageInput({ chatId }: MessageInputProps) {
 
     const socket = getSocket();
     if (socket?.connected) {
-      // Sign message with Solana wallet if available
+      // Подпись сообщения кошельком Solana
       const signed = await signMessage(
         chatId,
         content,
@@ -29,11 +32,19 @@ export function MessageInput({ chatId }: MessageInputProps) {
         publicKey?.toBase58(),
       );
 
+      // E2E шифрование для DM
+      let encryptedContent: string | undefined;
+      if (chatType === 'DIRECT' && recipientUserId) {
+        const encrypted = await encryptMessage(content, recipientUserId);
+        if (encrypted) encryptedContent = encrypted;
+      }
+
       socket.emit('message:send', {
         chatId,
-        content,
+        content: encryptedContent ? undefined : content,
         type: 'TEXT',
         ...(signed && { signature: signed.signature, signerWallet: signed.signerWallet }),
+        ...(encryptedContent && { encryptedContent }),
       });
     }
 
@@ -65,6 +76,12 @@ export function MessageInput({ chatId }: MessageInputProps) {
 
   return (
     <div className="px-4 py-3 border-t border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
+      {chatType === 'DIRECT' && (
+        <div className="flex items-center gap-1 mb-1 ml-1">
+          <Lock size={10} className="text-green-500" />
+          <span className="text-[10px] text-green-500">{t('chat.e2eEncrypted')}</span>
+        </div>
+      )}
       <div className="flex items-end gap-2">
         <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-400 shrink-0">
           <Paperclip size={20} />

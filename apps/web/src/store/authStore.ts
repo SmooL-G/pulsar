@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { User } from '@pulsar/shared';
 import { api } from '../services/api';
+import { initializeE2EKeys, clearLocalKeys } from '../crypto/keyManager';
 
 interface AuthState {
   user: User | null;
@@ -27,6 +28,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data } = await api.get('/auth/me');
       set({ user: data });
+      // Инициализация E2E ключей (в фоне)
+      initializeE2EKeys().catch(() => {});
     } catch {
       // Will be handled by interceptor
     }
@@ -39,6 +42,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       // Ignore errors during logout
     }
     localStorage.removeItem('accessToken');
+    clearLocalKeys().catch(() => {});
     set({ user: null, isAuthenticated: false });
   },
 
@@ -47,6 +51,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data } = await api.get('/auth/me');
       set({ user: data, isAuthenticated: true, isLoading: false });
+      initializeE2EKeys().catch(() => {});
     } catch {
       set({ user: null, isAuthenticated: false, isLoading: false });
       localStorage.removeItem('accessToken');

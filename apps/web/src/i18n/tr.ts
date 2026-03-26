@@ -353,6 +353,8 @@ export const tr = {
   'nft.setAvatar': 'NFT Avatar',
   'nft.clearAvatar': 'NFT Avatarı Kaldır',
   'nft.noNfts': 'Cüzdanınızda NFT bulunamadı',
+  'chat.e2eEncrypted': 'Uçtan uca şifreli',
+  'chat.encryptedMessage': 'Şifreli mesaj',
 
   // Forgot / Reset password
   'forgot.link': 'Şifrenizi mi unuttunuz?',

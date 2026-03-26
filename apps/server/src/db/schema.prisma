@@ -42,6 +42,7 @@ model User {
   sentRequests      Friendship[]       @relation("requester")
   receivedRequests  Friendship[]       @relation("addressee")
   plsWallet         PlsWallet?
+  keyBundle         UserKeyBundle?
 
   @@map("users")
 }
@@ -150,8 +151,10 @@ model Message {
   isEdited  Boolean     @default(false) @map("is_edited")
   isDeleted Boolean     @default(false) @map("is_deleted")
   metadata     Json?
-  signature    String?  @db.VarChar(128)
-  signerWallet String?  @map("signer_wallet") @db.VarChar(64)
+  signature        String?  @db.VarChar(128)
+  signerWallet     String?  @map("signer_wallet") @db.VarChar(64)
+  encryptedContent String?  @map("encrypted_content") @db.Text
+  encryptionType   String?  @map("encryption_type") @db.VarChar(32)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -342,6 +345,22 @@ enum PlsTransactionStatus {
   PENDING
   COMPLETED
   FAILED
+}
+
+// ─── E2E KEY BUNDLES ────────────────────────────────────
+
+model UserKeyBundle {
+  id              String @id @default(uuid()) @db.Uuid
+  userId          String @unique @map("user_id") @db.Uuid
+  identityKeyPub  String @map("identity_key_pub")
+  preKeyPub       String @map("pre_key_pub")
+  preKeySignature String @map("pre_key_signature")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_key_bundles")
 }
 
 // ─── NFT CACHE ──────────────────────────────────────────

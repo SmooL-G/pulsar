@@ -353,6 +353,8 @@ export const zh = {
   'nft.setAvatar': 'NFT 头像',
   'nft.clearAvatar': '移除 NFT 头像',
   'nft.noNfts': '钱包中未找到 NFT',
+  'chat.e2eEncrypted': '端到端加密',
+  'chat.encryptedMessage': '加密消息',
 
   // Forgot / Reset password
   'forgot.link': '忘记密码？',

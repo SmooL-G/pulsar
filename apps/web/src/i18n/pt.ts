@@ -353,6 +353,8 @@ export const pt = {
   'nft.setAvatar': 'Avatar NFT',
   'nft.clearAvatar': 'Remover avatar NFT',
   'nft.noNfts': 'Nenhum NFT encontrado na sua carteira',
+  'chat.e2eEncrypted': 'Criptografia de ponta a ponta',
+  'chat.encryptedMessage': 'Mensagem criptografada',
 
   // Forgot / Reset password
   'forgot.link': 'Esqueceu a senha?',

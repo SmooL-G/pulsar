@@ -11,6 +11,7 @@ export interface ClientToServerEvents {
     attachmentIds?: string[];
     signature?: string;
     signerWallet?: string;
+    encryptedContent?: string;
   }) => void;
 
   'message:edit': (data: {

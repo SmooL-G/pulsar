@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
-import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck } from 'lucide-react';
+import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck, Lock } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -11,6 +11,7 @@ import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
+import { decryptMessage } from '../../crypto/e2eEncrypt';
 import toast from 'react-hot-toast';
 
 interface MessageBubbleProps {
@@ -29,6 +30,19 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
   const menuRef = useRef<HTMLDivElement>(null);
   const currentUser = useAuthStore((s) => s.user);
   const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+  const [decryptedContent, setDecryptedContent] = useState<string | null>(null);
+
+  // Дешифровка E2E сообщений
+  useEffect(() => {
+    if (message.encryptedContent && !message.content && !decryptedContent) {
+      decryptMessage(message.encryptedContent, message.senderId).then((text) => {
+        if (text) setDecryptedContent(text);
+      });
+    }
+  }, [message.encryptedContent, message.content, message.senderId, decryptedContent]);
+
+  const displayContent = message.content || decryptedContent;
+  const isEncrypted = !!message.encryptedContent;
 
   // Close context menu on click outside — must be before early returns
   useEffect(() => {
@@ -179,10 +193,19 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
               </div>
             )}
 
-            {message.content && <MessageContent content={message.content} isOwn={isOwn} metadata={message.metadata} />}
+            {displayContent && <MessageContent content={displayContent} isOwn={isOwn} metadata={message.metadata} />}
+            {isEncrypted && !displayContent && (
+              <p className="text-xs italic text-gray-400 flex items-center gap-1">
+                <Lock size={11} />
+                {t('chat.encryptedMessage')}
+              </p>
+            )}
 
             {/* Time, signature, edited & status indicator */}
             <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              {isEncrypted && displayContent && (
+                <Lock size={10} className={isOwn ? 'text-green-300' : 'text-green-500'} />
+              )}
               {message.signature && (
                 <span title={`Signed by ${message.signerWallet?.slice(0, 8)}...`}>
                   <ShieldCheck size={11} className={isOwn ? 'text-green-300' : 'text-green-500'} />

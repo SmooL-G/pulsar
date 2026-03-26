@@ -353,6 +353,8 @@ export const uk = {
   'nft.setAvatar': 'NFT Аватар',
   'nft.clearAvatar': 'Прибрати NFT аватар',
   'nft.noNfts': 'У вашому гаманці немає NFT',
+  'chat.e2eEncrypted': 'Наскрізне шифрування',
+  'chat.encryptedMessage': 'Зашифроване повідомлення',
 
   // Forgot / Reset password
   'forgot.link': 'Забули пароль?',

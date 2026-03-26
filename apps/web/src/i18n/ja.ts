@@ -353,6 +353,8 @@ export const ja = {
   'nft.setAvatar': 'NFTアバター',
   'nft.clearAvatar': 'NFTアバターを削除',
   'nft.noNfts': 'ウォレットにNFTが見つかりません',
+  'chat.e2eEncrypted': 'エンドツーエンド暗号化',
+  'chat.encryptedMessage': '暗号化されたメッセージ',
 
   // Forgot / Reset password
   'forgot.link': 'パスワードをお忘れですか？',

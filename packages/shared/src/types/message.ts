@@ -21,6 +21,8 @@ export interface Message {
   metadata: Record<string, unknown> | null;
   signature?: string | null;
   signerWallet?: string | null;
+  encryptedContent?: string | null;
+  encryptionType?: string | null;
   createdAt: string;
   updatedAt: string;
   status?: MessageStatus;

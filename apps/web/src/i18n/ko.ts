@@ -353,6 +353,8 @@ export const ko = {
   'nft.setAvatar': 'NFT 아바타',
   'nft.clearAvatar': 'NFT 아바타 제거',
   'nft.noNfts': '지갑에 NFT가 없습니다',
+  'chat.e2eEncrypted': '종단간 암호화',
+  'chat.encryptedMessage': '암호화된 메시지',
 
   // Forgot / Reset password
   'forgot.link': '비밀번호를 잊으셨나요?',

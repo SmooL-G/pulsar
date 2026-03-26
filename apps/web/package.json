@@ -29,7 +29,10 @@
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.3.0",
     "date-fns": "^3.6.0",
-    "react-hot-toast": "^2.4.0"
+    "react-hot-toast": "^2.4.0",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
+    "idb-keyval": "^6.2.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",
