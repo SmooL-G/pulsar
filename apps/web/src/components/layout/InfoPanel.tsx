@@ -22,6 +22,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
   const [shareSearch, setShareSearch] = useState('');
   const [sharedTo, setSharedTo] = useState<Set<string>>(new Set());
   const [friendStatus, setFriendStatus] = useState<'none' | 'friends' | 'pending' | 'loading'>('loading');
+  const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
 
   const isGroup = activeChat?.type === 'GROUP';
   const otherUserId = !isGroup ? (activeChat as any)?.otherUser?.id : null;
@@ -38,10 +39,14 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
       const outgoing: any[] = reqRes.data.outgoing || [];
       if (friends.some((f: any) => f.id === otherUserId)) {
         setFriendStatus('friends');
-      } else if (outgoing.some((r: any) => r.user.id === otherUserId)) {
-        setFriendStatus('pending');
       } else {
-        setFriendStatus('none');
+        const outReq = outgoing.find((r: any) => r.user.id === otherUserId);
+        if (outReq) {
+          setFriendStatus('pending');
+          setFriendRequestId(outReq.id);
+        } else {
+          setFriendStatus('none');
+        }
       }
     });
   }, [otherUserId]);
@@ -52,8 +57,21 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
     try {
       const { data } = await api.post('/friends/request', { targetUserId: otherUserId });
       setFriendStatus(data.autoAccepted ? 'friends' : 'pending');
+      if (data.friendship?.id) setFriendRequestId(data.friendship.id);
     } catch {
       setFriendStatus('none');
+    }
+  };
+
+  const cancelFriendRequest = async () => {
+    if (!friendRequestId) return;
+    setFriendStatus('loading');
+    try {
+      await api.delete(`/friends/${friendRequestId}`);
+      setFriendStatus('none');
+      setFriendRequestId(null);
+    } catch {
+      setFriendStatus('pending');
     }
   };
 
@@ -201,22 +219,26 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
               </div>
 
               {/* Add friend button */}
-              {friendStatus !== 'loading' && friendStatus !== 'friends' && (
+              {friendStatus === 'none' && (
                 <button
                   onClick={sendFriendRequest}
-                  disabled={friendStatus === 'pending'}
-                  className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                    friendStatus === 'pending'
-                      ? 'bg-gray-500/10 text-gray-400 cursor-default'
-                      : 'bg-primary-500/10 hover:bg-primary-500/20 text-primary-500'
-                  }`}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors bg-primary-500/10 hover:bg-primary-500/20 text-primary-500"
                 >
-                  {friendStatus === 'pending' ? (
-                    <><UserCheck size={16} /> {t('friends.sent')}</>
-                  ) : (
-                    <><UserPlus size={16} /> {t('friends.add')}</>
-                  )}
+                  <UserPlus size={16} /> {t('friends.add')}
                 </button>
+              )}
+              {friendStatus === 'pending' && (
+                <button
+                  onClick={cancelFriendRequest}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors bg-amber-500/10 hover:bg-red-500/10 text-amber-400 hover:text-red-400"
+                >
+                  <X size={16} /> {t('chat.cancel')}
+                </button>
+              )}
+              {friendStatus === 'loading' && (
+                <div className="flex items-center justify-center py-2.5">
+                  <Loader2 size={16} className="animate-spin text-gray-400" />
+                </div>
               )}
               {friendStatus === 'friends' && (
                 <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-green-500/10 text-green-400">
