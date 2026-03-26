@@ -130,7 +130,16 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
         <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
           {/* Sender name */}
           {!isOwn && showAvatar && (
-            <p className="text-xs font-medium text-primary-500 mb-0.5 ml-1 flex items-center gap-1">
+            <p
+              className="text-xs font-medium text-primary-500 mb-0.5 ml-1 flex items-center gap-1 cursor-pointer hover:underline"
+              onContextMenu={(e) => {
+                if (isStaff && message.sender) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowReward(true);
+                }
+              }}
+            >
               {message.sender?.displayName || message.sender?.username}
               <PulsarBadge level={(message.sender as any)?.verificationLevel || 0} size={12} />
             </p>
@@ -207,15 +216,6 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
             <CheckSquare size={16} className="text-gray-400" />
             {t('chat.select')}
           </button>
-          {isStaff && !isOwn && message.sender && (
-            <button
-              onClick={() => { setContextMenu(null); setShowReward(true); }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-amber-400 hover:bg-dark-600 transition-colors"
-            >
-              <Gift size={16} />
-              {t('admin.giveReward')}
-            </button>
-          )}
           <div className="h-px bg-dark-500 mx-2 my-1" />
           {!deleteSubmenu ? (
             <button
