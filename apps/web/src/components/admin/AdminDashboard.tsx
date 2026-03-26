@@ -152,19 +152,19 @@ export function AdminDashboard() {
             <p className="text-sm font-medium text-amber-400">{t('admin.plsBank')}</p>
           </div>
           <div className="grid grid-cols-3 gap-2 mb-3">
-            <div className="bg-dark-700/60 rounded-lg p-2.5">
+            <div className="bg-amber-900/20 dark:bg-dark-700/60 rounded-lg p-2.5">
               <span className="text-[10px] text-gray-400">{t('admin.bankBalance')}</span>
               <p className="text-sm font-bold font-mono text-amber-400 mt-0.5">
                 {BigInt(bank.bankBalance).toLocaleString()}
               </p>
             </div>
-            <div className="bg-dark-700/60 rounded-lg p-2.5">
+            <div className="bg-amber-900/20 dark:bg-dark-700/60 rounded-lg p-2.5">
               <span className="text-[10px] text-gray-400">{t('admin.distributed')}</span>
               <p className="text-sm font-bold font-mono text-green-400 mt-0.5">
                 {BigInt(bank.distributed).toLocaleString()}
               </p>
             </div>
-            <div className="bg-dark-700/60 rounded-lg p-2.5">
+            <div className="bg-amber-900/20 dark:bg-dark-700/60 rounded-lg p-2.5">
               <span className="text-[10px] text-gray-400">{t('admin.totalSupply')}</span>
               <p className="text-sm font-bold font-mono text-gray-300 mt-0.5">
                 22Q
@@ -181,7 +181,7 @@ export function AdminDashboard() {
               </p>
               <div className="space-y-1 max-h-32 overflow-y-auto scrollbar-hidden">
                 {bank.recentRewards.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between text-xs bg-dark-700/40 rounded-lg px-2.5 py-1.5">
+                  <div key={r.id} className="flex items-center justify-between text-xs bg-amber-900/10 dark:bg-dark-700/40 rounded-lg px-2.5 py-1.5">
                     <span className="text-gray-300 flex items-center gap-1">@{r.user.username}</span>
                     <span className="text-amber-400 font-mono font-medium">+{BigInt(r.amount).toLocaleString()} PLS</span>
                   </div>
@@ -200,19 +200,19 @@ export function AdminDashboard() {
             <p className="text-sm font-medium">{t('admin.systemInfo')}</p>
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-dark-700 rounded-lg p-2.5">
+            <div className="bg-gray-100 dark:bg-dark-700 rounded-lg p-2.5">
               <span className="text-gray-400">Uptime</span>
               <p className="font-mono mt-0.5">{formatUptime(system.uptime)}</p>
             </div>
-            <div className="bg-dark-700 rounded-lg p-2.5">
+            <div className="bg-gray-100 dark:bg-dark-700 rounded-lg p-2.5">
               <span className="text-gray-400">Node.js</span>
               <p className="font-mono mt-0.5">{system.nodeVersion}</p>
             </div>
-            <div className="bg-dark-700 rounded-lg p-2.5">
+            <div className="bg-gray-100 dark:bg-dark-700 rounded-lg p-2.5">
               <span className="text-gray-400">Heap</span>
               <p className="font-mono mt-0.5">{formatBytes(system.memoryUsage.heapUsed)} / {formatBytes(system.memoryUsage.heapTotal)}</p>
             </div>
-            <div className="bg-dark-700 rounded-lg p-2.5">
+            <div className="bg-gray-100 dark:bg-dark-700 rounded-lg p-2.5">
               <span className="text-gray-400">Redis</span>
               <p className="font-mono mt-0.5">{system.redisMemory}</p>
             </div>
