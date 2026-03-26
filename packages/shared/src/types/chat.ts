@@ -6,6 +6,7 @@ export enum ChatType {
 
 export enum MemberRole {
   MEMBER = 'MEMBER',
+  AUTHOR = 'AUTHOR',
   MODERATOR = 'MODERATOR',
   ADMIN = 'ADMIN',
   OWNER = 'OWNER',

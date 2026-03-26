@@ -132,6 +132,7 @@ model ChatMember {
 
 enum MemberRole {
   MEMBER
+  AUTHOR
   MODERATOR
   ADMIN
   OWNER

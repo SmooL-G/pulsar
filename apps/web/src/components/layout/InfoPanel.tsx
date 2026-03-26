@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Users, Bell, BellOff, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2, ExternalLink } from 'lucide-react';
+import { X, Users, Bell, BellOff, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2, ExternalLink, ChevronDown, UserMinus } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -25,6 +25,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
   const [friendStatus, setFriendStatus] = useState<'none' | 'friends' | 'pending' | 'loading'>('loading');
   const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<string | null>(null);
 
   const isGroup = activeChat?.type === 'GROUP';
 
@@ -153,6 +154,31 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
   };
 
   const isOwner = isGroup && activeChat.ownerId === user?.id;
+
+  const ROLE_HIERARCHY: Record<string, number> = { MEMBER: 0, AUTHOR: 1, MODERATOR: 2, ADMIN: 3, OWNER: 4 };
+  const ROLE_LABELS: Record<string, string> = { OWNER: 'Admin', ADMIN: 'Admin', MODERATOR: t('group.moderator'), AUTHOR: t('group.author'), MEMBER: t('group.user') };
+  const myMembership = members.find((m: any) => m.user.id === user?.id);
+  const myLevel = ROLE_HIERARCHY[myMembership?.role] ?? 0;
+
+  const changeRole = async (targetUserId: string, role: string) => {
+    if (!activeChat) return;
+    try {
+      await api.patch(`/groups/${activeChat.id}/members/${targetUserId}/role`, { role });
+      setMembers((prev) => prev.map((m: any) =>
+        m.user.id === targetUserId ? { ...m, role } : m
+      ));
+      setSelectedMember(null);
+    } catch {}
+  };
+
+  const kickMember = async (targetUserId: string) => {
+    if (!activeChat) return;
+    try {
+      await api.delete(`/groups/${activeChat.id}/members/${targetUserId}`);
+      setMembers((prev) => prev.filter((m: any) => m.user.id !== targetUserId));
+      setSelectedMember(null);
+    } catch {}
+  };
 
   const handleDeleteGroup = async () => {
     if (!confirmDelete) {
@@ -444,29 +470,83 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
               {t('info.members')} ({members.length})
             </h5>
             <div className="space-y-1">
-              {members.map((m: any) => (
-                <div key={m.user.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-600">
-                  <div className="relative">
-                    <div className="w-9 h-9 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium">
-                      {(m.user.displayName || m.user.username)?.[0]?.toUpperCase() || '?'}
+              {members.map((m: any) => {
+                const targetLevel = ROLE_HIERARCHY[m.role] ?? 0;
+                const canManage = myLevel >= 3 && targetLevel < myLevel && m.user.id !== user?.id;
+                const canKick = myLevel >= 2 && targetLevel < myLevel && m.user.id !== user?.id;
+                const isSelected = selectedMember === m.user.id;
+
+                return (
+                  <div key={m.user.id} className="relative">
+                    <div
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-600 ${(canManage || canKick) ? 'cursor-pointer' : ''}`}
+                      onClick={() => (canManage || canKick) && setSelectedMember(isSelected ? null : m.user.id)}
+                    >
+                      <div className="relative">
+                        <div className="w-9 h-9 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+                          {m.user.avatarUrl ? (
+                            <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            (m.user.displayName || m.user.username)?.[0]?.toUpperCase() || '?'
+                          )}
+                        </div>
+                        {m.user.isOnline && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-white dark:border-dark-700" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate flex items-center gap-1">
+                          {m.user.displayName || m.user.username}
+                          <PulsarBadge level={m.user.verificationLevel || 0} size={13} />
+                        </p>
+                        {m.role !== 'MEMBER' && (
+                          <p className="text-xs text-primary-400">
+                            {ROLE_LABELS[m.role] || m.role.charAt(0) + m.role.slice(1).toLowerCase()}
+                          </p>
+                        )}
+                      </div>
+                      {(canManage || canKick) && (
+                        <ChevronDown size={14} className={`text-gray-400 transition-transform ${isSelected ? 'rotate-180' : ''}`} />
+                      )}
                     </div>
-                    {m.user.isOnline && (
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-dark-700" />
+
+                    {/* Role management dropdown */}
+                    {isSelected && (
+                      <div className="ml-12 mr-3 mb-1 p-2 bg-gray-50 dark:bg-dark-600 rounded-xl space-y-1 animate-fade-in">
+                        {canManage && (
+                          <>
+                            <p className="text-[10px] text-gray-400 font-medium px-2 mb-1">{t('group.changeRole')}</p>
+                            {(['ADMIN', 'MODERATOR', 'AUTHOR', 'MEMBER'] as const)
+                              .filter((r) => ROLE_HIERARCHY[r] < myLevel)
+                              .map((role) => (
+                                <button
+                                  key={role}
+                                  onClick={(e) => { e.stopPropagation(); changeRole(m.user.id, role); }}
+                                  className={`w-full text-left px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-between ${
+                                    m.role === role
+                                      ? 'bg-primary-500/10 text-primary-400 font-medium'
+                                      : 'hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-600 dark:text-gray-300'
+                                  }`}
+                                >
+                                  <span>{ROLE_LABELS[role] || role.charAt(0) + role.slice(1).toLowerCase()}</span>
+                                  {m.role === role && <Check size={12} />}
+                                </button>
+                              ))}
+                          </>
+                        )}
+                        {canKick && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); kickMember(m.user.id); }}
+                            className="w-full text-left px-3 py-1.5 text-xs rounded-lg text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1.5 mt-1"
+                          >
+                            <UserMinus size={12} /> {t('group.kick')}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate flex items-center gap-1">
-                      {m.user.displayName || m.user.username}
-                      <PulsarBadge level={m.user.verificationLevel || 0} size={13} />
-                    </p>
-                    {m.role !== 'MEMBER' && (
-                      <p className="text-xs text-primary-400">
-                        {m.role === 'OWNER' ? 'Admin' : m.role.charAt(0) + m.role.slice(1).toLowerCase()}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

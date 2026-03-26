@@ -165,6 +165,119 @@ export async function groupRoutes(app: FastifyInstance) {
     return { success: true };
   });
 
+  // Change member role
+  const ROLE_HIERARCHY: Record<string, number> = {
+    MEMBER: 0,
+    AUTHOR: 1,
+    MODERATOR: 2,
+    ADMIN: 3,
+    OWNER: 4,
+  };
+
+  app.patch<{ Params: { groupId: string; userId: string } }>(
+    '/:groupId/members/:userId/role',
+    async (request, reply) => {
+      const requesterId = request.user!.userId;
+      const { groupId, userId: targetUserId } = request.params;
+      const { role: newRole } = request.body as { role: string };
+
+      if (!['MEMBER', 'AUTHOR', 'MODERATOR', 'ADMIN'].includes(newRole)) {
+        return reply.status(400).send({ error: 'INVALID', message: 'Invalid role' });
+      }
+
+      const chat = await prisma.chat.findUnique({ where: { id: groupId } });
+      if (!chat || chat.type !== 'GROUP') {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: 'Group not found' });
+      }
+
+      const requester = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId: groupId, userId: requesterId } },
+      });
+      if (!requester || requester.leftAt) {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'Not a member' });
+      }
+
+      const target = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId: groupId, userId: targetUserId } },
+      });
+      if (!target || target.leftAt) {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: 'Target not found' });
+      }
+
+      const requesterLevel = ROLE_HIERARCHY[requester.role] ?? 0;
+      const targetLevel = ROLE_HIERARCHY[target.role] ?? 0;
+      const newLevel = ROLE_HIERARCHY[newRole] ?? 0;
+
+      // Must be ADMIN+ to change roles, and can only change roles below own level
+      if (requesterLevel < 3) {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'Only admins can change roles' });
+      }
+      if (targetLevel >= requesterLevel) {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'Cannot change role of equal or higher rank' });
+      }
+      if (newLevel >= requesterLevel) {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'Cannot promote to own level or higher' });
+      }
+
+      await prisma.chatMember.update({
+        where: { id: target.id },
+        data: { role: newRole as any },
+      });
+
+      return { success: true, role: newRole };
+    }
+  );
+
+  // Kick member from group
+  app.delete<{ Params: { groupId: string; userId: string } }>(
+    '/:groupId/members/:userId',
+    async (request, reply) => {
+      const requesterId = request.user!.userId;
+      const { groupId, userId: targetUserId } = request.params;
+
+      if (requesterId === targetUserId) {
+        return reply.status(400).send({ error: 'INVALID', message: 'Cannot kick yourself' });
+      }
+
+      const chat = await prisma.chat.findUnique({ where: { id: groupId } });
+      if (!chat || chat.type !== 'GROUP') {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: 'Group not found' });
+      }
+
+      const requester = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId: groupId, userId: requesterId } },
+      });
+      if (!requester || requester.leftAt) {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'Not a member' });
+      }
+
+      const target = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId: groupId, userId: targetUserId } },
+      });
+      if (!target || target.leftAt) {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: 'Target not found' });
+      }
+
+      const requesterLevel = ROLE_HIERARCHY[requester.role] ?? 0;
+      const targetLevel = ROLE_HIERARCHY[target.role] ?? 0;
+
+      // Moderators+ can kick, but only lower ranks
+      if (requesterLevel < 2) {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'Insufficient permissions' });
+      }
+      if (targetLevel >= requesterLevel) {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'Cannot kick equal or higher rank' });
+      }
+
+      await prisma.chatMember.update({
+        where: { id: target.id },
+        data: { leftAt: new Date() },
+      });
+
+      return { success: true };
+    }
+  );
+
   // Get group members
   app.get<{ Params: { groupId: string } }>('/:groupId/members', async (request) => {
     const { groupId } = request.params;
@@ -183,7 +296,7 @@ export async function groupRoutes(app: FastifyInstance) {
           },
         },
       },
-      orderBy: { joinedAt: 'asc' },
+      orderBy: [{ role: 'desc' }, { joinedAt: 'asc' }],
     });
 
     return { members };
