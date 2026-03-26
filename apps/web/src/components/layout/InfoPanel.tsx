@@ -364,13 +364,13 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
           </div>
         )}
 
-        <div className="space-y-1">
-          {isGroup && (
+        {isGroup && (
+          <div className="space-y-1">
             <InfoAction icon={<Users size={18} />} label={t('info.members')} value={`${members.length}`} />
-          )}
-          <InfoAction icon={<Bell size={18} />} label={t('info.notifications')} value={t('info.on')} />
-          <InfoAction icon={<Shield size={18} />} label={t('info.encryption')} value={t('info.planned')} />
-        </div>
+            <InfoAction icon={<Bell size={18} />} label={t('info.notifications')} value={t('info.on')} />
+            <InfoAction icon={<Shield size={18} />} label={t('info.encryption')} value={t('info.planned')} />
+          </div>
+        )}
 
         {/* Members list */}
         {isGroup && members.length > 0 && (
