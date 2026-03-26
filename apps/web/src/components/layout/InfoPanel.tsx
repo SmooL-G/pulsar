@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Users, Bell, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign } from 'lucide-react';
+import { X, Users, Bell, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2 } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -21,8 +21,41 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
   const [friends, setFriends] = useState<any[]>([]);
   const [shareSearch, setShareSearch] = useState('');
   const [sharedTo, setSharedTo] = useState<Set<string>>(new Set());
+  const [friendStatus, setFriendStatus] = useState<'none' | 'friends' | 'pending' | 'loading'>('loading');
 
   const isGroup = activeChat?.type === 'GROUP';
+  const otherUserId = !isGroup ? (activeChat as any)?.otherUser?.id : null;
+
+  // Check friend status for DM contacts
+  useEffect(() => {
+    if (!otherUserId) return;
+    setFriendStatus('loading');
+    Promise.all([
+      api.get('/friends').catch(() => ({ data: { friends: [] } })),
+      api.get('/friends/requests').catch(() => ({ data: { outgoing: [] } })),
+    ]).then(([friendsRes, reqRes]) => {
+      const friends: any[] = friendsRes.data.friends || [];
+      const outgoing: any[] = reqRes.data.outgoing || [];
+      if (friends.some((f: any) => f.id === otherUserId)) {
+        setFriendStatus('friends');
+      } else if (outgoing.some((r: any) => r.user.id === otherUserId)) {
+        setFriendStatus('pending');
+      } else {
+        setFriendStatus('none');
+      }
+    });
+  }, [otherUserId]);
+
+  const sendFriendRequest = async () => {
+    if (!otherUserId) return;
+    setFriendStatus('loading');
+    try {
+      const { data } = await api.post('/friends/request', { targetUserId: otherUserId });
+      setFriendStatus(data.autoAccepted ? 'friends' : 'pending');
+    } catch {
+      setFriendStatus('none');
+    }
+  };
 
   useEffect(() => {
     if (!isGroup || !activeChat?.id) return;
@@ -166,6 +199,30 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                   <p className="text-sm text-gray-300 mt-2 px-2">{other.bio}</p>
                 )}
               </div>
+
+              {/* Add friend button */}
+              {friendStatus !== 'loading' && friendStatus !== 'friends' && (
+                <button
+                  onClick={sendFriendRequest}
+                  disabled={friendStatus === 'pending'}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    friendStatus === 'pending'
+                      ? 'bg-gray-500/10 text-gray-400 cursor-default'
+                      : 'bg-primary-500/10 hover:bg-primary-500/20 text-primary-500'
+                  }`}
+                >
+                  {friendStatus === 'pending' ? (
+                    <><UserCheck size={16} /> {t('friends.sent')}</>
+                  ) : (
+                    <><UserPlus size={16} /> {t('friends.add')}</>
+                  )}
+                </button>
+              )}
+              {friendStatus === 'friends' && (
+                <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-green-500/10 text-green-400">
+                  <UserCheck size={16} /> {t('friends.already')}
+                </div>
+              )}
 
               <div className="space-y-1">
                 <InfoAction icon={<AtSign size={18} />} label={t('auth.username')} value={`@${other.username}`} />
