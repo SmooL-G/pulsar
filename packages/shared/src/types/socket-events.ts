@@ -9,6 +9,8 @@ export interface ClientToServerEvents {
     type?: string;
     replyToId?: string;
     attachmentIds?: string[];
+    signature?: string;
+    signerWallet?: string;
   }) => void;
 
   'message:edit': (data: {

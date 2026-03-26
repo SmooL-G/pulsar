@@ -19,6 +19,8 @@ export interface Message {
   isEdited: boolean;
   isDeleted: boolean;
   metadata: Record<string, unknown> | null;
+  signature?: string | null;
+  signerWallet?: string | null;
   createdAt: string;
   updatedAt: string;
   status?: MessageStatus;

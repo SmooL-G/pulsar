@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
 import { Send, Paperclip, Smile } from 'lucide-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
 import { useI18n } from '../../i18n';
+import { signMessage } from '../../crypto/messageSigner';
 
 interface MessageInputProps {
   chatId: string;
@@ -11,14 +13,28 @@ export function MessageInput({ chatId }: MessageInputProps) {
   const { t } = useI18n();
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { signMessage: walletSignMessage, publicKey } = useWallet();
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const content = text.trim();
     if (!content) return;
 
     const socket = getSocket();
     if (socket?.connected) {
-      socket.emit('message:send', { chatId, content, type: 'TEXT' });
+      // Sign message with Solana wallet if available
+      const signed = await signMessage(
+        chatId,
+        content,
+        walletSignMessage ?? undefined,
+        publicKey?.toBase58(),
+      );
+
+      socket.emit('message:send', {
+        chatId,
+        content,
+        type: 'TEXT',
+        ...(signed && { signature: signed.signature, signerWallet: signed.signerWallet }),
+      });
     }
 
     setText('');

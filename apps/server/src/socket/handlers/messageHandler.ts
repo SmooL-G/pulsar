@@ -74,6 +74,8 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
           content: data.content,
           type: (data.type as 'TEXT' | 'FILE' | 'IMAGE' | 'SYSTEM') || 'TEXT',
           replyToId: data.replyToId,
+          signature: data.signature || null,
+          signerWallet: data.signerWallet || null,
         },
         include: {
           sender: {
@@ -103,6 +105,8 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
         isEdited: message.isEdited,
         isDeleted: message.isDeleted,
         metadata: message.metadata as Record<string, unknown> | null,
+        signature: message.signature,
+        signerWallet: message.signerWallet,
         createdAt: message.createdAt.toISOString(),
         updatedAt: message.updatedAt.toISOString(),
         sender: message.sender,
@@ -168,6 +172,8 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
         isEdited: message.isEdited,
         isDeleted: message.isDeleted,
         metadata: message.metadata as Record<string, unknown> | null,
+        signature: message.signature,
+        signerWallet: message.signerWallet,
         createdAt: message.createdAt.toISOString(),
         updatedAt: message.updatedAt.toISOString(),
         sender: message.sender,

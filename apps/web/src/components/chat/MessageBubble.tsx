@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
-import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2 } from 'lucide-react';
+import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -172,8 +172,13 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
 
             {message.content && <MessageContent content={message.content} isOwn={isOwn} metadata={message.metadata} />}
 
-            {/* Time, edited & status indicator */}
+            {/* Time, signature, edited & status indicator */}
             <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              {message.signature && (
+                <span title={`Signed by ${message.signerWallet?.slice(0, 8)}...`}>
+                  <ShieldCheck size={11} className={isOwn ? 'text-green-300' : 'text-green-500'} />
+                </span>
+              )}
               {message.isEdited && (
                 <span className={`text-[10px] ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>
                   {t('chat.edited')}

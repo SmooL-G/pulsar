@@ -149,9 +149,11 @@ model Message {
   replyToId String?     @map("reply_to_id") @db.Uuid
   isEdited  Boolean     @default(false) @map("is_edited")
   isDeleted Boolean     @default(false) @map("is_deleted")
-  metadata  Json?
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
+  metadata     Json?
+  signature    String?  @db.VarChar(128)
+  signerWallet String?  @map("signer_wallet") @db.VarChar(64)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   chat         Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
   sender       User              @relation(fields: [senderId], references: [id])
