@@ -6,7 +6,7 @@ import { socketAuthMiddleware } from './middleware/socketAuth.js';
 import { registerChatHandlers } from './handlers/chatHandler.js';
 import { registerMessageHandlers } from './handlers/messageHandler.js';
 import { registerTypingHandlers } from './handlers/typingHandler.js';
-import { registerPresenceHandlers } from './handlers/presenceHandler.js';
+import { registerPresenceHandlers, cleanupPresenceOnStart } from './handlers/presenceHandler.js';
 
 export type AppSocket = Server<ClientToServerEvents, ServerToClientEvents>;
 
@@ -25,6 +25,9 @@ export function initSocketServer(httpServer: HttpServer) {
     pingTimeout: 60000,
     pingInterval: 25000,
   });
+
+  // Clean up stale presence from previous server instance
+  cleanupPresenceOnStart();
 
   // Auth middleware
   io.use(socketAuthMiddleware);

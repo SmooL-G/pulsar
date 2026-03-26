@@ -5,6 +5,28 @@ import { prisma } from '../../config/database.js';
 const PRESENCE_TTL = 60; // seconds
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 
+// Clean up stale presence data on server start (call once)
+let cleanedUp = false;
+export async function cleanupPresenceOnStart() {
+  if (cleanedUp) return;
+  cleanedUp = true;
+
+  // Clear all socket sets from Redis
+  const keys = await redis.keys('user:sockets:*');
+  const onlineKeys = await redis.keys('user:online:*');
+  if (keys.length > 0 || onlineKeys.length > 0) {
+    await redis.del(...keys, ...onlineKeys);
+  }
+
+  // Reset all users to offline
+  await prisma.user.updateMany({
+    where: { isOnline: true },
+    data: { isOnline: false, lastSeenAt: new Date() },
+  });
+
+  console.log(`Presence cleanup: cleared ${keys.length} socket sets, ${onlineKeys.length} online keys`);
+}
+
 export function registerPresenceHandlers(io: Server, socket: Socket) {
   const userId = socket.data.userId as string;
 
