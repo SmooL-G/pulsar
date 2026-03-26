@@ -18,9 +18,9 @@ export function DepositModal({ onClose }: DepositModalProps) {
   const { t } = useI18n();
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const { user, fetchMe } = useAuthStore();
+  const { user } = useAuthStore();
   const [amount, setAmount] = useState('');
-  const [step, setStep] = useState<'input' | 'sending' | 'confirming' | 'done'>('input');
+  const [step, setStep] = useState<'input' | 'sending' | 'confirming' | 'crediting' | 'done'>('input');
   const [copied, setCopied] = useState(false);
 
   const solAmount = parseFloat(amount) || 0;
@@ -54,12 +54,13 @@ export function DepositModal({ onClose }: DepositModalProps) {
       await connection.confirmTransaction(signature, 'confirmed');
 
       // Register deposit on server
+      setStep('crediting');
       await api.post('/wallet/deposit', {
         solSignature: signature,
         solAmount: solAmount,
       });
 
-      await fetchMe();
+      // Balance updates via socket event automatically
       setStep('done');
       toast.success(`+${plsAmount.toLocaleString()} PLS`);
     } catch (err: any) {
@@ -162,11 +163,11 @@ export function DepositModal({ onClose }: DepositModalProps) {
                 disabled={!isValid || step !== 'input'}
                 className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {step === 'sending' && <Loader2 size={16} className="animate-spin" />}
-                {step === 'confirming' && <Loader2 size={16} className="animate-spin" />}
+                {step !== 'input' && <Loader2 size={16} className="animate-spin" />}
                 {step === 'input' && t('wallet.payNow')}
                 {step === 'sending' && t('wallet.sending')}
                 {step === 'confirming' && t('wallet.confirming')}
+                {step === 'crediting' && t('wallet.crediting')}
               </button>
 
               {!publicKey && (

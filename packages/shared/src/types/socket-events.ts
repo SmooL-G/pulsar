@@ -73,6 +73,12 @@ export interface ServerToClientEvents {
 
   'chat:updated': (data: Chat) => void;
 
+  'wallet:balance-updated': (data: {
+    balance: string;
+    change: string;
+    type: 'DEPOSIT' | 'PURCHASE' | 'REWARD';
+  }) => void;
+
   'error': (data: {
     code: string;
     message: string;

@@ -4,6 +4,7 @@ import { redis } from '../../config/redis.js';
 import { authMiddleware } from '../../middleware/auth.js';
 import { env } from '../../config/env.js';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { getIO } from '../../socket/index.js';
 
 const PLS_PER_SOL = 100_000;
 
@@ -165,6 +166,16 @@ export async function walletRoutes(app: FastifyInstance) {
         }),
       ]);
 
+      // Emit real-time balance update
+      try {
+        const io = getIO();
+        io.to(`user:${request.user!.userId}`).emit('wallet:balance-updated', {
+          balance: updatedWallet.balance.toString(),
+          change: `+${plsAmount.toString()}`,
+          type: 'DEPOSIT' as const,
+        });
+      } catch {}
+
       return {
         success: true,
         balance: updatedWallet.balance.toString(),
@@ -235,6 +246,15 @@ export async function walletRoutes(app: FastifyInstance) {
       }),
     ]);
 
+    try {
+      const io = getIO();
+      io.to(`user:${userId}`).emit('wallet:balance-updated', {
+        balance: updatedWallet.balance.toString(),
+        change: `-${price.toString()}`,
+        type: 'PURCHASE' as const,
+      });
+    } catch {}
+
     return {
       success: true,
       balance: updatedWallet.balance.toString(),
@@ -293,6 +313,15 @@ export async function walletRoutes(app: FastifyInstance) {
         select: { id: true, profileBadge: true },
       }),
     ]);
+
+    try {
+      const io = getIO();
+      io.to(`user:${userId}`).emit('wallet:balance-updated', {
+        balance: updatedWallet.balance.toString(),
+        change: `-${price.toString()}`,
+        type: 'PURCHASE' as const,
+      });
+    } catch {}
 
     return {
       success: true,

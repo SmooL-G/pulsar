@@ -346,6 +346,7 @@ export const ja = {
   'wallet.buy': '購入',
   'wallet.levelUp': 'レベルアップ',
   'wallet.connectFirst': '入金するにはSolanaウォレットを接続してください',
+  'wallet.crediting': '入金処理中...',
   'wallet.badges': 'プロフィールバッジ',
   'wallet.badgeObtained': 'バッジ取得：',
 

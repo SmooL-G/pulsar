@@ -346,6 +346,7 @@ export const tr = {
   'wallet.buy': 'Satın Al',
   'wallet.levelUp': 'Seviye yükseltildi',
   'wallet.connectFirst': 'Yatırma yapmak için Solana cüzdanınızı bağlayın',
+  'wallet.crediting': 'Yükleniyor...',
   'wallet.badges': 'Profil Rozetleri',
   'wallet.badgeObtained': 'Rozet alındı:',
 

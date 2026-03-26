@@ -346,6 +346,7 @@ export const zh = {
   'wallet.buy': '购买',
   'wallet.levelUp': '已升级到等级',
   'wallet.connectFirst': '连接 Solana 钱包以进行存款',
+  'wallet.crediting': '入账中...',
   'wallet.badges': '个人徽章',
   'wallet.badgeObtained': '获得徽章：',
 

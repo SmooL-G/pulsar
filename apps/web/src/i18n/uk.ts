@@ -346,6 +346,7 @@ export const uk = {
   'wallet.buy': 'Купити',
   'wallet.levelUp': 'Підвищено до рівня',
   'wallet.connectFirst': 'Підключіть Solana-гаманець для внесення коштів',
+  'wallet.crediting': 'Зарахування...',
   'wallet.badges': 'Значки профілю',
   'wallet.badgeObtained': 'Отримано значок:',
 

@@ -346,6 +346,7 @@ export const pt = {
   'wallet.buy': 'Comprar',
   'wallet.levelUp': 'Nível alcançado',
   'wallet.connectFirst': 'Conecte sua carteira Solana para depositar',
+  'wallet.crediting': 'Creditando...',
   'wallet.badges': 'Emblemas de Perfil',
   'wallet.badgeObtained': 'Emblema obtido:',
 

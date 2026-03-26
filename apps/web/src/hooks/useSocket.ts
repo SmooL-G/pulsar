@@ -80,6 +80,14 @@ export function useSocket() {
       addChat(chat);
     });
 
+    // Wallet events
+    socket.on('wallet:balance-updated', (data: { balance: string; change: string; type: string }) => {
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) {
+        useAuthStore.getState().setUser({ ...currentUser, plsBalance: data.balance } as any);
+      }
+    });
+
     // Typing events
     socket.on('typing:update', (_data: { chatId: string; userId: string; username: string; isTyping: boolean }) => {
       // TODO: show typing indicator in UI

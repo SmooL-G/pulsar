@@ -346,6 +346,7 @@ export const ko = {
   'wallet.buy': '구매',
   'wallet.levelUp': '레벨 업',
   'wallet.connectFirst': '입금하려면 Solana 지갑을 연결하세요',
+  'wallet.crediting': '입금 중...',
   'wallet.badges': '프로필 배지',
   'wallet.badgeObtained': '배지 획득:',
 

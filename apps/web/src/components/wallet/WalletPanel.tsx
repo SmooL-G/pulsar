@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Wallet, Copy, Check, Loader2, ShieldCheck, Award } from 'lucide-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { api } from '../../services/api';
@@ -20,6 +22,22 @@ export function WalletPanel({ onClose }: WalletPanelProps) {
   const [copied, setCopied] = useState(false);
   const [buying, setBuying] = useState<number | null>(null);
   const [buyingBadge, setBuyingBadge] = useState<string | null>(null);
+  const [solBalance, setSolBalance] = useState<number | null>(null);
+  const { connection } = useConnection();
+  const { publicKey } = useWallet();
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        const addr = publicKey || (user?.walletAddress ? new PublicKey(user.walletAddress) : null);
+        if (addr && connection) {
+          const lamports = await connection.getBalance(addr instanceof PublicKey ? addr : new PublicKey(addr));
+          setSolBalance(lamports / LAMPORTS_PER_SOL);
+        }
+      } catch {}
+    };
+    fetchBalance();
+  }, [publicKey, user?.walletAddress, connection]);
 
   if (!user) return null;
 
@@ -60,6 +78,11 @@ export function WalletPanel({ onClose }: WalletPanelProps) {
               {plsBalance.toLocaleString()}
             </p>
             <p className="text-[10px] text-gray-500 mt-1">PLS</p>
+            {solBalance !== null && (
+              <p className="text-xs text-gray-400 mt-1 font-mono">
+                ◎ {solBalance.toFixed(4)} SOL
+              </p>
+            )}
             <button
               onClick={() => setShowDeposit(true)}
               className="mt-4 w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-sm font-bold transition-colors"

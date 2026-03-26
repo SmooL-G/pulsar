@@ -342,6 +342,7 @@ export const ru = {
   'wallet.payNow': 'Оплатить',
   'wallet.sending': 'Отправка...',
   'wallet.confirming': 'Подтверждение...',
+  'wallet.crediting': 'Зачисление...',
   'wallet.verification': 'Верификация',
   'wallet.owned': 'Есть',
   'wallet.buy': 'Купить',

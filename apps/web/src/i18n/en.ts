@@ -342,6 +342,7 @@ export const en = {
   'wallet.payNow': 'Pay Now',
   'wallet.sending': 'Sending...',
   'wallet.confirming': 'Confirming...',
+  'wallet.crediting': 'Crediting...',
   'wallet.verification': 'Verification',
   'wallet.owned': 'Owned',
   'wallet.buy': 'Buy',
