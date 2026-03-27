@@ -6,6 +6,8 @@ import { useI18n } from '../../i18n';
 import { api } from '../../services/api';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeTag } from '../ui/ProfileBadgeIcon';
+import { NftAvatarBorder } from '../ui/NftAvatarBorder';
+import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 
 interface InfoPanelProps {
   onClose: () => void;
@@ -243,13 +245,15 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
             <div className="space-y-4">
               <div className="flex flex-col items-center text-center">
                 <div className="relative mb-3">
+                  <NftAvatarBorder isNft={!!other.nftAvatarMint} size={80}>
                   <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
                     {other.avatarUrl ? (
                       <img src={other.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      (other.displayName || other.username)?.[0]?.toUpperCase() || '?'
+                      <GenerativeAvatar seed={other.id} size={80} />
                     )}
                   </div>
+                  </NftAvatarBorder>
                   {other.isOnline && (
                     <div className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-white dark:border-dark-700" />
                   )}
@@ -348,8 +352,12 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
           );
         })() : (
           <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold mb-3">
-              {(activeChat.name || '?')[0]?.toUpperCase()}
+            <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold mb-3 overflow-hidden">
+              {(activeChat as any).avatarUrl ? (
+                <img src={(activeChat as any).avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <GenerativeAvatar seed={activeChat.id} size={80} />
+              )}
             </div>
             <h4 className="font-semibold text-lg">{activeChat.name || t('chat.directMessage')}</h4>
             {activeChat.description && (
@@ -412,8 +420,12 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                   {shareList.map((u: any) => (
                     <div key={u.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-dark-600 transition-colors">
                       <div className="relative">
-                        <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-medium">
-                          {(u.displayName || u.username)?.[0]?.toUpperCase() || '?'}
+                        <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-medium overflow-hidden">
+                          {u.avatarUrl ? (
+                            <img src={u.avatarUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <GenerativeAvatar seed={u.id} size={32} />
+                          )}
                         </div>
                         {u.isOnline && (
                           <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-dark-700" />
@@ -487,7 +499,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                           {m.user.avatarUrl ? (
                             <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            (m.user.displayName || m.user.username)?.[0]?.toUpperCase() || '?'
+                            <GenerativeAvatar seed={m.user.id} size={36} />
                           )}
                         </div>
                         {m.user.isOnline && (

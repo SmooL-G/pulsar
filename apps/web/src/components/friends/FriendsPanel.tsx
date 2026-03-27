@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { useChatStore } from '../../store/chatStore';
 import { useI18n } from '../../i18n';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 
 interface FriendsPanelProps {
   onClose: () => void;
@@ -327,14 +328,14 @@ function TabButton({ active, onClick, children, badge }: { active: boolean; onCl
   );
 }
 
-function UserAvatar({ user }: { user: { displayName?: string | null; username: string; avatarUrl?: string | null; isOnline?: boolean } }) {
+function UserAvatar({ user }: { user: { id?: string; displayName?: string | null; username: string; avatarUrl?: string | null; isOnline?: boolean } }) {
   return (
     <div className="relative">
       <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium overflow-hidden">
         {user.avatarUrl ? (
           <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
         ) : (
-          (user.displayName || user.username)?.[0]?.toUpperCase() || '?'
+          <GenerativeAvatar seed={user.id || user.username} size={40} />
         )}
       </div>
       {user.isOnline && (

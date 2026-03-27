@@ -4,6 +4,8 @@ import { MessageList } from '../chat/MessageList';
 import { MessageInput } from '../chat/MessageInput';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
+import { NftAvatarBorder } from '../ui/NftAvatarBorder';
+import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { useI18n } from '../../i18n';
 
 interface ChatAreaProps {
@@ -63,9 +65,15 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
           <ArrowLeft size={20} />
         </button>
 
-        <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium">
-          {chatName[0]?.toUpperCase() || '?'}
-        </div>
+        <NftAvatarBorder isNft={!!(activeChat as any).otherUser?.nftAvatarMint} size={40}>
+          <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium overflow-hidden">
+            {(activeChat as any).otherUser?.avatarUrl || (activeChat as any).avatarUrl ? (
+              <img src={(activeChat as any).otherUser?.avatarUrl || (activeChat as any).avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <GenerativeAvatar seed={(activeChat as any).otherUser?.id || activeChat.id} size={40} />
+            )}
+          </div>
+        </NftAvatarBorder>
 
         <div className="flex-1 min-w-0">
           <h2 className="font-semibold truncate flex items-center gap-1">
