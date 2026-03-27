@@ -355,6 +355,12 @@ export const tr = {
   'nft.noNfts': 'Cüzdanınızda NFT bulunamadı',
   'chat.e2eEncrypted': 'Uçtan uca şifreli',
   'chat.encryptedMessage': 'Şifreli mesaj',
+  'avatar.gallery': 'Avatar Galerisi',
+  'avatar.generate': 'Benzersiz',
+  'avatar.free': 'Ücretsiz',
+  'avatar.comingSoon': 'Yeni avatarlar yakında!',
+  'avatar.apply': 'Uygula',
+  'avatar.buy': 'Satın Al',
 
   // Forgot / Reset password
   'forgot.link': 'Şifrenizi mi unuttunuz?',

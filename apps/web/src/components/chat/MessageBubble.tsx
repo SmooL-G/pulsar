@@ -9,6 +9,7 @@ import { useChatStore } from '../../store/chatStore';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
+import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
 import { decryptMessage } from '../../crypto/e2eEncrypt';
@@ -143,7 +144,7 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
                 {message.sender?.avatarUrl ? (
                   <img src={message.sender.avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  message.sender?.username?.[0]?.toUpperCase() || '?'
+                  <GenerativeAvatar seed={message.senderId} size={32} />
                 )}
               </div>
             </NftAvatarBorder>

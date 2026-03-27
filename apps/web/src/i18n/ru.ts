@@ -356,6 +356,12 @@ export const ru = {
   'nft.noNfts': 'В вашем кошельке нет NFT',
   'chat.e2eEncrypted': 'Сквозное шифрование',
   'chat.encryptedMessage': 'Зашифрованное сообщение',
+  'avatar.gallery': 'Галерея аватаров',
+  'avatar.generate': 'Уникальные',
+  'avatar.free': 'Бесплатные',
+  'avatar.comingSoon': 'Новые аватары скоро появятся!',
+  'avatar.apply': 'Применить',
+  'avatar.buy': 'Купить',
 
   // Forgot / Reset password
   'forgot.link': 'Забыли пароль?',

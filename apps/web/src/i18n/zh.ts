@@ -355,6 +355,12 @@ export const zh = {
   'nft.noNfts': '钱包中未找到 NFT',
   'chat.e2eEncrypted': '端到端加密',
   'chat.encryptedMessage': '加密消息',
+  'avatar.gallery': '头像画廊',
+  'avatar.generate': '独特',
+  'avatar.free': '免费',
+  'avatar.comingSoon': '新头像即将推出！',
+  'avatar.apply': '应用',
+  'avatar.buy': '购买',
 
   // Forgot / Reset password
   'forgot.link': '忘记密码？',

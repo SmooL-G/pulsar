@@ -355,6 +355,12 @@ export const uk = {
   'nft.noNfts': 'У вашому гаманці немає NFT',
   'chat.e2eEncrypted': 'Наскрізне шифрування',
   'chat.encryptedMessage': 'Зашифроване повідомлення',
+  'avatar.gallery': 'Галерея аватарів',
+  'avatar.generate': 'Унікальні',
+  'avatar.free': 'Безкоштовні',
+  'avatar.comingSoon': 'Нові аватари незабаром!',
+  'avatar.apply': 'Застосувати',
+  'avatar.buy': 'Купити',
 
   // Forgot / Reset password
   'forgot.link': 'Забули пароль?',

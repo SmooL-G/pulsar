@@ -355,6 +355,12 @@ export const pt = {
   'nft.noNfts': 'Nenhum NFT encontrado na sua carteira',
   'chat.e2eEncrypted': 'Criptografia de ponta a ponta',
   'chat.encryptedMessage': 'Mensagem criptografada',
+  'avatar.gallery': 'Galeria de avatares',
+  'avatar.generate': 'Único',
+  'avatar.free': 'Grátis',
+  'avatar.comingSoon': 'Novos avatares em breve!',
+  'avatar.apply': 'Aplicar',
+  'avatar.buy': 'Comprar',
 
   // Forgot / Reset password
   'forgot.link': 'Esqueceu a senha?',

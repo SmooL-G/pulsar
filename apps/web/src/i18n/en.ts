@@ -356,6 +356,12 @@ export const en = {
   'nft.noNfts': 'No NFTs found in your wallet',
   'chat.e2eEncrypted': 'End-to-end encrypted',
   'chat.encryptedMessage': 'Encrypted message',
+  'avatar.gallery': 'Avatar Gallery',
+  'avatar.generate': 'Unique',
+  'avatar.free': 'Free',
+  'avatar.comingSoon': 'New avatars coming soon!',
+  'avatar.apply': 'Apply',
+  'avatar.buy': 'Buy',
 
   // Forgot / Reset password
   'forgot.link': 'Forgot password?',

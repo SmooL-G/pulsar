@@ -355,6 +355,12 @@ export const ko = {
   'nft.noNfts': '지갑에 NFT가 없습니다',
   'chat.e2eEncrypted': '종단간 암호화',
   'chat.encryptedMessage': '암호화된 메시지',
+  'avatar.gallery': '아바타 갤러리',
+  'avatar.generate': '유니크',
+  'avatar.free': '무료',
+  'avatar.comingSoon': '새 아바타가 곧 출시됩니다!',
+  'avatar.apply': '적용',
+  'avatar.buy': '구매',
 
   // Forgot / Reset password
   'forgot.link': '비밀번호를 잊으셨나요?',

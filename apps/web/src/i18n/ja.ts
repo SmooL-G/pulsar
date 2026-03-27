@@ -355,6 +355,12 @@ export const ja = {
   'nft.noNfts': 'ウォレットにNFTが見つかりません',
   'chat.e2eEncrypted': 'エンドツーエンド暗号化',
   'chat.encryptedMessage': '暗号化されたメッセージ',
+  'avatar.gallery': 'アバターギャラリー',
+  'avatar.generate': 'ユニーク',
+  'avatar.free': '無料',
+  'avatar.comingSoon': '新しいアバターが近日登場！',
+  'avatar.apply': '適用',
+  'avatar.buy': '購入',
 
   // Forgot / Reset password
   'forgot.link': 'パスワードをお忘れですか？',
