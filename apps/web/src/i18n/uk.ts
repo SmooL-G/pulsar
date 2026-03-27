@@ -383,4 +383,10 @@ export const uk = {
   'roadmap.f.plsCurrency': 'Внутрішня валюта PLS',
   'roadmap.f.deposit': 'Внесення SOL → PLS',
   'roadmap.f.passwordReset': 'Відновлення пароля',
+  'roadmap.f.realtimeBalance': 'Баланс в реальному часі',
+  'roadmap.f.platformWallet': 'Гаманець платформи',
+  'roadmap.f.msgSigning': 'Підпис повідомлень (Solana)',
+  'roadmap.f.avatarGallery': 'Галерея аватарів',
+  'roadmap.f.generativeAvatars': 'Генеративні аватари',
+  'roadmap.f.p2p': 'P2P WebRTC',
 };

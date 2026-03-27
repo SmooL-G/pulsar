@@ -384,4 +384,10 @@ export const ru = {
   'roadmap.f.plsCurrency': 'Внутренняя валюта PLS',
   'roadmap.f.deposit': 'Пополнение SOL → PLS',
   'roadmap.f.passwordReset': 'Восстановление пароля',
+  'roadmap.f.realtimeBalance': 'Реал-тайм баланс',
+  'roadmap.f.platformWallet': 'Кошелёк платформы',
+  'roadmap.f.msgSigning': 'Подпись сообщений (Solana)',
+  'roadmap.f.avatarGallery': 'Галерея аватаров',
+  'roadmap.f.generativeAvatars': 'Генеративные аватары',
+  'roadmap.f.p2p': 'P2P WebRTC',
 };

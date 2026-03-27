@@ -383,4 +383,10 @@ export const ko = {
   'roadmap.f.plsCurrency': 'PLS 내부 화폐',
   'roadmap.f.deposit': 'SOL → PLS 입금',
   'roadmap.f.passwordReset': '비밀번호 복구',
+  'roadmap.f.realtimeBalance': '실시간 잔액',
+  'roadmap.f.platformWallet': '플랫폼 지갑',
+  'roadmap.f.msgSigning': '메시지 서명 (Solana)',
+  'roadmap.f.avatarGallery': '아바타 갤러리',
+  'roadmap.f.generativeAvatars': '제너레이티브 아바타',
+  'roadmap.f.p2p': 'P2P WebRTC',
 };

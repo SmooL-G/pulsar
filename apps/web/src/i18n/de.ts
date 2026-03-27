@@ -383,4 +383,10 @@ export const de = {
   'roadmap.f.plsCurrency': 'PLS Interne Währung',
   'roadmap.f.deposit': 'SOL → PLS Einzahlung',
   'roadmap.f.passwordReset': 'Passwort-Wiederherstellung',
+  'roadmap.f.realtimeBalance': 'Echtzeit-Saldo',
+  'roadmap.f.platformWallet': 'Plattform-Wallet',
+  'roadmap.f.msgSigning': 'Nachrichtensignierung (Solana)',
+  'roadmap.f.avatarGallery': 'Avatar-Galerie',
+  'roadmap.f.generativeAvatars': 'Generative Avatare',
+  'roadmap.f.p2p': 'P2P WebRTC',
 };

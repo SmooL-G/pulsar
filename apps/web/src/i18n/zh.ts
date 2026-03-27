@@ -383,4 +383,10 @@ export const zh = {
   'roadmap.f.plsCurrency': 'PLS 内部货币',
   'roadmap.f.deposit': 'SOL → PLS 存入',
   'roadmap.f.passwordReset': '密码恢复',
+  'roadmap.f.realtimeBalance': '实时余额',
+  'roadmap.f.platformWallet': '平台钱包',
+  'roadmap.f.msgSigning': '消息签名 (Solana)',
+  'roadmap.f.avatarGallery': '头像画廊',
+  'roadmap.f.generativeAvatars': '生成式头像',
+  'roadmap.f.p2p': 'P2P WebRTC',
 };

@@ -383,4 +383,10 @@ export const tr = {
   'roadmap.f.plsCurrency': 'PLS Dahili Para Birimi',
   'roadmap.f.deposit': 'SOL → PLS Yatırma',
   'roadmap.f.passwordReset': 'Şifre Kurtarma',
+  'roadmap.f.realtimeBalance': 'Gerçek zamanlı bakiye',
+  'roadmap.f.platformWallet': 'Platform cüzdanı',
+  'roadmap.f.msgSigning': 'Mesaj imzalama (Solana)',
+  'roadmap.f.avatarGallery': 'Avatar galerisi',
+  'roadmap.f.generativeAvatars': 'Jeneratif avatarlar',
+  'roadmap.f.p2p': 'P2P WebRTC',
 };
