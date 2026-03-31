@@ -321,13 +321,22 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
 function LinkWalletSection() {
   const { t } = useI18n();
   const { setUser, user } = useAuthStore();
-  const { publicKey, signMessage, connected, disconnect } = useWallet();
+  const { publicKey, signMessage, connected, disconnect, select, wallets, connect, wallet } = useWallet();
   const { setVisible } = useWalletModal();
   const [loading, setLoading] = useState(false);
+  const [linkPending, setLinkPending] = useState(false);
+
+  // Когда кошелёк подключился и ожидается привязка — автоматически запускаем
+  useEffect(() => {
+    if (linkPending && connected && publicKey && signMessage) {
+      setLinkPending(false);
+      handleLink();
+    }
+  }, [connected, publicKey, linkPending]);
 
   const handleConnect = () => {
-    // Закрываем SettingsPanel не нужно — wallet modal имеет свой z-index
     setVisible(true);
+    setLinkPending(true);
   };
 
   const handleLink = async () => {
@@ -383,7 +392,7 @@ function LinkWalletSection() {
               {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
             </p>
             <button
-              onClick={() => disconnect()}
+              onClick={() => { disconnect(); setLinkPending(false); }}
               className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
             >
               {t('wallet.disconnect')}
