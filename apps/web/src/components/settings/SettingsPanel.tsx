@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor, Shield } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound } from 'lucide-react';
 import { LanguageSelector } from './LanguageSelector';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { AdminModal } from '../admin/AdminModal';
 import { DepositModal } from '../wallet/DepositModal';
+import { exportKeys, importKeys, hasLocalKeys } from '../../crypto/keyManager';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -291,6 +292,9 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   <Shield size={18} className="text-gray-400" />
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('settings.privacy')}</span>
                 </a>
+
+                {/* E2E ключи — экспорт/импорт */}
+                <E2EKeysSection />
               </div>
             )}
 
@@ -301,6 +305,181 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       {showLangSelector && <LanguageSelector onClose={() => setShowLangSelector(false)} />}
       {showAdmin && <AdminModal onClose={() => setShowAdmin(false)} />}
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
+    </div>
+  );
+}
+
+// === E2E ключи: экспорт/импорт ===
+function E2EKeysSection() {
+  const { t } = useI18n();
+  const [mode, setMode] = useState<null | 'export' | 'import'>(null);
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [hasKeys, setHasKeys] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
+
+  useEffect(() => {
+    hasLocalKeys().then(setHasKeys);
+  }, []);
+
+  // Экспорт ключей
+  const handleExport = async () => {
+    if (!password || password.length < 4) {
+      toast.error(t('e2e.passwordTooShort'));
+      return;
+    }
+    setLoading(true);
+    try {
+      const json = await exportKeys(password);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pulsar-e2e-keys-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(t('e2e.exportSuccess'));
+      setMode(null);
+      setPassword('');
+    } catch {
+      toast.error(t('e2e.exportError'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Импорт ключей
+  const handleImport = async () => {
+    if (!password || !fileContent) return;
+    setLoading(true);
+    try {
+      await importKeys(fileContent, password);
+      setHasKeys(true);
+      toast.success(t('e2e.importSuccess'));
+      setMode(null);
+      setPassword('');
+      setFileContent(null);
+    } catch {
+      toast.error(t('e2e.importError'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setFileContent(reader.result as string);
+    reader.readAsText(file);
+  };
+
+  return (
+    <div className="bg-gray-50 dark:bg-dark-600 rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-1">
+        <KeyRound size={16} className="text-green-500" />
+        <span className="text-sm font-medium">{t('e2e.keysTitle')}</span>
+      </div>
+      <p className="text-xs text-gray-400">{t('e2e.keysDescription')}</p>
+
+      {hasKeys && (
+        <div className="flex items-center gap-1.5 text-xs text-green-500">
+          <Lock size={12} />
+          {t('e2e.keysPresent')}
+        </div>
+      )}
+
+      {!mode && (
+        <div className="flex gap-2">
+          <button
+            onClick={() => setMode('export')}
+            disabled={!hasKeys}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download size={14} />
+            {t('e2e.export')}
+          </button>
+          <button
+            onClick={() => setMode('import')}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg text-xs font-medium transition-colors"
+          >
+            <Upload size={14} />
+            {t('e2e.import')}
+          </button>
+        </div>
+      )}
+
+      {/* Экспорт */}
+      {mode === 'export' && (
+        <div className="space-y-2 animate-fade-in">
+          <p className="text-xs text-gray-400">{t('e2e.exportHint')}</p>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t('e2e.passwordPlaceholder')}
+            className="w-full px-3 py-2 bg-dark-500 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-primary-500"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleExport}
+              disabled={loading || password.length < 4}
+              className="flex-1 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              {loading ? t('common.loading') : t('e2e.downloadFile')}
+            </button>
+            <button
+              onClick={() => { setMode(null); setPassword(''); }}
+              className="px-3 py-2 bg-dark-500 hover:bg-dark-400 text-gray-300 rounded-lg text-xs transition-colors"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Импорт */}
+      {mode === 'import' && (
+        <div className="space-y-2 animate-fade-in">
+          <p className="text-xs text-gray-400">{t('e2e.importHint')}</p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json"
+            onChange={handleFile}
+            className="w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-dark-500 file:text-gray-300 hover:file:bg-dark-400"
+          />
+          {fileContent && (
+            <div className="flex items-center gap-1.5 text-xs text-green-500">
+              <Check size={12} />
+              {t('e2e.fileLoaded')}
+            </div>
+          )}
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t('e2e.passwordPlaceholder')}
+            className="w-full px-3 py-2 bg-dark-500 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-amber-500"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleImport}
+              disabled={loading || !password || !fileContent}
+              className="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+            >
+              {loading ? t('common.loading') : t('e2e.restoreKeys')}
+            </button>
+            <button
+              onClick={() => { setMode(null); setPassword(''); setFileContent(null); }}
+              className="px-3 py-2 bg-dark-500 hover:bg-dark-400 text-gray-300 rounded-lg text-xs transition-colors"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
