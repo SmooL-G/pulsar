@@ -1,13 +1,24 @@
 /**
  * E2E Key Manager — генерация и хранение ключей в IndexedDB.
  * Использует X25519 (через nacl.box.keyPair) для обмена ключами.
+ * Ключи привязаны к userId — не теряются при logout/login.
  */
 import nacl from 'tweetnacl';
-import { get, set, del } from 'idb-keyval';
+import { get, set } from 'idb-keyval';
 import { api } from '../services/api';
 
-const IDENTITY_KEY = 'pulsar:e2e:identityKey';
-const PRE_KEY = 'pulsar:e2e:preKey';
+// Текущий userId — устанавливается при initializeE2EKeys
+let currentUserId: string | null = null;
+
+function identityKey(uid?: string): string {
+  const id = uid || currentUserId;
+  return id ? `pulsar:e2e:identityKey:${id}` : 'pulsar:e2e:identityKey';
+}
+
+function preKey(uid?: string): string {
+  const id = uid || currentUserId;
+  return id ? `pulsar:e2e:preKey:${id}` : 'pulsar:e2e:preKey';
+}
 
 export interface KeyPairData {
   publicKey: Uint8Array;
@@ -26,7 +37,7 @@ function fromBase64(str: string): Uint8Array {
  * Получить или сгенерировать identity keypair.
  */
 export async function getIdentityKeyPair(): Promise<KeyPairData> {
-  const stored = await get<string>(IDENTITY_KEY);
+  const stored = await get<string>(identityKey());
   if (stored) {
     const parsed = JSON.parse(stored);
     return {
@@ -36,7 +47,7 @@ export async function getIdentityKeyPair(): Promise<KeyPairData> {
   }
 
   const keyPair = nacl.box.keyPair();
-  await set(IDENTITY_KEY, JSON.stringify({
+  await set(identityKey(), JSON.stringify({
     publicKey: toBase64(keyPair.publicKey),
     secretKey: toBase64(keyPair.secretKey),
   }));
@@ -47,7 +58,7 @@ export async function getIdentityKeyPair(): Promise<KeyPairData> {
  * Получить или сгенерировать pre-key.
  */
 export async function getPreKeyPair(): Promise<KeyPairData> {
-  const stored = await get<string>(PRE_KEY);
+  const stored = await get<string>(preKey());
   if (stored) {
     const parsed = JSON.parse(stored);
     return {
@@ -57,7 +68,7 @@ export async function getPreKeyPair(): Promise<KeyPairData> {
   }
 
   const keyPair = nacl.box.keyPair();
-  await set(PRE_KEY, JSON.stringify({
+  await set(preKey(), JSON.stringify({
     publicKey: toBase64(keyPair.publicKey),
     secretKey: toBase64(keyPair.secretKey),
   }));
@@ -65,20 +76,29 @@ export async function getPreKeyPair(): Promise<KeyPairData> {
 }
 
 /**
- * Инициализация: сгенерировать ключи и загрузить на сервер.
- * Вызывается при первом входе или если ключей нет.
+ * Инициализация: установить userId, сгенерировать ключи если нет, загрузить на сервер.
+ * Ключи НЕ удаляются при logout — они привязаны к userId.
  */
-export async function initializeE2EKeys(): Promise<void> {
+export async function initializeE2EKeys(userId?: string): Promise<void> {
   try {
-    // Проверяем есть ли ключи на сервере
-    const { data } = await api.get('/keys/my-bundle');
-    if (data.hasBundle) {
-      // Ключи уже загружены, проверяем что локальные есть
-      const localIdentity = await get<string>(IDENTITY_KEY);
-      if (localIdentity) return;
-      // Локальных нет — нужно сгенерировать новые
+    // Определяем userId из параметра или из API
+    if (userId) {
+      currentUserId = userId;
+    } else if (!currentUserId) {
+      const { data } = await api.get('/auth/me');
+      currentUserId = data.id;
     }
 
+    // Проверяем локальные ключи
+    const localIdentity = await get<string>(identityKey());
+    if (localIdentity) {
+      // Ключи есть — убеждаемся что загружены на сервер
+      const { data } = await api.get('/keys/my-bundle');
+      if (data.hasBundle) return; // Всё синхронизировано
+      // Локальные есть, на сервере нет — загружаем
+    }
+
+    // Генерируем (или берём существующие) и загружаем
     const identityKP = await getIdentityKeyPair();
     const preKP = await getPreKeyPair();
 
@@ -115,11 +135,10 @@ export async function getRecipientKeys(userId: string): Promise<{
 }
 
 /**
- * Удалить локальные ключи (при logout).
+ * Установить currentUserId (вызывается при login без полной инициализации).
  */
-export async function clearLocalKeys(): Promise<void> {
-  await del(IDENTITY_KEY);
-  await del(PRE_KEY);
+export function setCurrentUserId(userId: string): void {
+  currentUserId = userId;
 }
 
 // === Экспорт/Импорт ключей с шифрованием паролем (PBKDF2 + AES-GCM) ===
@@ -143,11 +162,10 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
 
 /**
  * Экспортировать ключи в зашифрованный JSON (пароль задаёт пользователь).
- * Возвращает строку JSON для скачивания.
  */
 export async function exportKeys(password: string): Promise<string> {
-  const identityRaw = await get<string>(IDENTITY_KEY);
-  const preKeyRaw = await get<string>(PRE_KEY);
+  const identityRaw = await get<string>(identityKey());
+  const preKeyRaw = await get<string>(preKey());
 
   if (!identityRaw || !preKeyRaw) {
     throw new Error('No keys to export');
@@ -157,7 +175,6 @@ export async function exportKeys(password: string): Promise<string> {
   const enc = new TextEncoder();
   const data = enc.encode(payload);
 
-  // Генерируем salt и iv
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(password, salt);
@@ -178,7 +195,6 @@ export async function exportKeys(password: string): Promise<string> {
 
 /**
  * Импортировать ключи из зашифрованного JSON.
- * Дешифрует паролем и сохраняет в IndexedDB.
  */
 export async function importKeys(fileContent: string, password: string): Promise<void> {
   const envelope = JSON.parse(fileContent);
@@ -199,9 +215,9 @@ export async function importKeys(fileContent: string, password: string): Promise
   const dec = new TextDecoder();
   const payload = JSON.parse(dec.decode(decrypted));
 
-  // Сохраняем в IndexedDB
-  await set(IDENTITY_KEY, payload.identity);
-  await set(PRE_KEY, payload.preKey);
+  // Сохраняем в IndexedDB (привязано к текущему userId)
+  await set(identityKey(), payload.identity);
+  await set(preKey(), payload.preKey);
 
   // Обновляем ключи на сервере
   const parsed = JSON.parse(payload.identity);
@@ -224,7 +240,7 @@ export async function importKeys(fileContent: string, password: string): Promise
  * Проверить наличие локальных ключей.
  */
 export async function hasLocalKeys(): Promise<boolean> {
-  const identity = await get<string>(IDENTITY_KEY);
+  const identity = await get<string>(identityKey());
   return !!identity;
 }
 
