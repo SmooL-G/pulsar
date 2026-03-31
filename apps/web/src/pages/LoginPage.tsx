@@ -89,44 +89,44 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900 p-4">
-      {/* Выпадающий выбор языка */}
-      <div ref={langRef} className="fixed top-4 right-4 z-30">
-        <button
-          onClick={() => setLangOpen(!langOpen)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dark-500/50 bg-dark-800/80 backdrop-blur-md hover:border-primary-500/40 transition-all"
-        >
-          <span className="text-base">{LANGUAGES.find((l) => l.id === locale)?.flag}</span>
-          <span className="text-xs text-gray-300 hidden sm:inline">{LANGUAGES.find((l) => l.id === locale)?.name}</span>
-          <ChevronDown size={14} className={`text-gray-400 transition-transform ${langOpen ? 'rotate-180' : ''}`} />
-        </button>
-        {langOpen && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setLangOpen(false)} />
-            <div className="absolute right-0 mt-1 z-20 bg-dark-700 border border-dark-500 rounded-xl shadow-2xl py-1 min-w-[160px] max-h-[70vh] overflow-y-auto animate-fade-in">
-              {LANGUAGES.map((lang) => (
-                <button
-                  key={lang.id}
-                  onClick={() => { setLocale(lang.id); setLangOpen(false); }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
-                    locale === lang.id
-                      ? 'bg-primary-500/15 text-primary-400'
-                      : 'text-gray-300 hover:bg-dark-600'
-                  }`}
-                >
-                  <span className="text-base">{lang.flag}</span>
-                  <span>{lang.name}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">{t('auth.title')}</h1>
           <p className="text-gray-400">{t('auth.subtitle')}</p>
+        </div>
+
+        {/* Выбор языка — над формой */}
+        <div ref={langRef} className="relative flex justify-center mb-4 z-30">
+          <button
+            onClick={() => setLangOpen(!langOpen)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dark-500/50 bg-dark-800/80 backdrop-blur-md hover:border-primary-500/40 transition-all"
+          >
+            <span className="text-base">{LANGUAGES.find((l) => l.id === locale)?.flag}</span>
+            <span className="text-xs text-gray-300">{LANGUAGES.find((l) => l.id === locale)?.name}</span>
+            <ChevronDown size={14} className={`text-gray-400 transition-transform ${langOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {langOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setLangOpen(false)} />
+              <div className="absolute top-full mt-1 z-20 bg-dark-700 border border-dark-500 rounded-xl shadow-2xl py-1 min-w-[160px] max-h-[60vh] overflow-y-auto animate-fade-in">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.id}
+                    onClick={() => { setLocale(lang.id); setLangOpen(false); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
+                      locale === lang.id
+                        ? 'bg-primary-500/15 text-primary-400'
+                        : 'text-gray-300 hover:bg-dark-600'
+                    }`}
+                  >
+                    <span className="text-base">{lang.flag}</span>
+                    <span>{lang.name}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Card */}
