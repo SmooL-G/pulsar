@@ -339,6 +339,7 @@ enum PlsTransactionType {
   WITHDRAWAL
   PURCHASE
   REWARD
+  TRANSFER
 }
 
 enum PlsTransactionStatus {

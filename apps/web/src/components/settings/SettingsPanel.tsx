@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { AdminModal } from '../admin/AdminModal';
 import { DepositModal } from '../wallet/DepositModal';
+import { TransferModal } from '../wallet/TransferModal';
 import { exportKeys, importKeys, hasLocalKeys } from '../../crypto/keyManager';
 import { useWallet } from '@solana/wallet-adapter-react';
 import bs58 from 'bs58';
@@ -31,6 +32,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [showLangSelector, setShowLangSelector] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showDeposit, setShowDeposit] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
   const [theme, setThemeState] = useState<'dark' | 'light' | 'system'>(
     () => (localStorage.getItem('theme') as any) || 'dark'
   );
@@ -251,12 +253,20 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   <p className="text-2xl font-bold font-mono text-amber-400">
                     {BigInt((user as any).plsBalance || '0').toLocaleString()}
                   </p>
-                  <button
-                    onClick={() => setShowDeposit(true)}
-                    className="mt-3 w-full py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-sm font-bold transition-colors"
-                  >
-                    {t('wallet.topUp')}
-                  </button>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={() => setShowDeposit(true)}
+                      className="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-sm font-bold transition-colors"
+                    >
+                      {t('wallet.topUp')}
+                    </button>
+                    <button
+                      onClick={() => setShowTransfer(true)}
+                      className="flex-1 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-bold transition-colors"
+                    >
+                      {t('wallet.transfer')}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Solana Wallet */}
@@ -312,6 +322,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       {showLangSelector && <LanguageSelector onClose={() => setShowLangSelector(false)} />}
       {showAdmin && <AdminModal onClose={() => setShowAdmin(false)} />}
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
+      {showTransfer && <TransferModal onClose={() => setShowTransfer(false)} />}
     </div>
   );
 }

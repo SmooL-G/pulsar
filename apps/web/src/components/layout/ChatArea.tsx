@@ -1,7 +1,9 @@
-import { ArrowLeft, Info, Phone, Video } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Info, Phone, Video, Send } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { MessageList } from '../chat/MessageList';
 import { MessageInput } from '../chat/MessageInput';
+import { TransferModal } from '../wallet/TransferModal';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
@@ -46,6 +48,8 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
       </div>
     );
   }
+
+  const [showTransfer, setShowTransfer] = useState(false);
 
   const chatName =
     activeChat.type === 'DIRECT'
@@ -93,6 +97,15 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         </div>
 
         <div className="flex items-center gap-1">
+          {activeChat.type === 'DIRECT' && (
+            <button
+              onClick={() => setShowTransfer(true)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-amber-500"
+              title={t('wallet.transfer')}
+            >
+              <Send size={18} />
+            </button>
+          )}
           <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500">
             <Phone size={18} />
           </button>
@@ -118,6 +131,13 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         chatType={activeChat.type as 'DIRECT' | 'GROUP'}
         recipientUserId={(activeChat as any).otherUser?.id}
       />
+
+      {showTransfer && (
+        <TransferModal
+          onClose={() => setShowTransfer(false)}
+          prefillUserId={(activeChat as any).otherUser?.id}
+        />
+      )}
     </div>
   );
 }

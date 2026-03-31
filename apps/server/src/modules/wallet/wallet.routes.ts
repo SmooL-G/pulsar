@@ -193,6 +193,97 @@ export async function walletRoutes(app: FastifyInstance) {
     }
   });
 
+  // Перевод PLS другому пользователю
+  app.post('/transfer', async (request: FastifyRequest<{
+    Body: { toUserId: string; amount: number };
+  }>, reply) => {
+    const fromUserId = request.user!.userId;
+    const { toUserId, amount } = request.body as { toUserId: string; amount: number };
+
+    if (!toUserId || !amount || amount < 1) {
+      return reply.status(400).send({ error: 'INVALID', message: 'Invalid transfer params. Min 1 PLS' });
+    }
+
+    if (fromUserId === toUserId) {
+      return reply.status(400).send({ error: 'SELF_TRANSFER', message: 'Cannot transfer to yourself' });
+    }
+
+    const plsAmount = BigInt(Math.floor(amount));
+
+    // Проверяем что получатель существует
+    const recipient = await prisma.user.findUnique({
+      where: { id: toUserId, status: 'ACTIVE' },
+      select: { id: true, username: true },
+    });
+    if (!recipient) {
+      return reply.status(404).send({ error: 'USER_NOT_FOUND', message: 'Recipient not found' });
+    }
+
+    const fromWallet = await getOrCreateWallet(fromUserId);
+    if (fromWallet.balance < plsAmount) {
+      return reply.status(400).send({ error: 'INSUFFICIENT', message: 'Not enough PLS' });
+    }
+
+    const toWallet = await getOrCreateWallet(toUserId);
+
+    // Атомарный перевод: списание + зачисление + 2 транзакции
+    const sender = await prisma.user.findUnique({
+      where: { id: fromUserId },
+      select: { username: true },
+    });
+
+    const [updatedFromWallet, updatedToWallet] = await prisma.$transaction([
+      prisma.plsWallet.update({
+        where: { id: fromWallet.id },
+        data: { balance: { decrement: plsAmount } },
+      }),
+      prisma.plsWallet.update({
+        where: { id: toWallet.id },
+        data: { balance: { increment: plsAmount } },
+      }),
+      prisma.plsTransaction.create({
+        data: {
+          walletId: fromWallet.id,
+          type: 'TRANSFER',
+          amount: plsAmount,
+          description: `Transfer to @${recipient.username}`,
+          status: 'COMPLETED',
+        },
+      }),
+      prisma.plsTransaction.create({
+        data: {
+          walletId: toWallet.id,
+          type: 'TRANSFER',
+          amount: plsAmount,
+          description: `Transfer from @${sender?.username || 'unknown'}`,
+          status: 'COMPLETED',
+        },
+      }),
+    ]);
+
+    // Уведомляем обоих через сокет
+    try {
+      const io = getIO();
+      io.to(`user:${fromUserId}`).emit('wallet:balance-updated', {
+        balance: updatedFromWallet.balance.toString(),
+        change: `-${plsAmount.toString()}`,
+        type: 'TRANSFER' as const,
+      });
+      io.to(`user:${toUserId}`).emit('wallet:balance-updated', {
+        balance: updatedToWallet.balance.toString(),
+        change: `+${plsAmount.toString()}`,
+        type: 'TRANSFER' as const,
+      });
+    } catch {}
+
+    return {
+      success: true,
+      balance: updatedFromWallet.balance.toString(),
+      transferred: plsAmount.toString(),
+      toUser: recipient.username,
+    };
+  });
+
   // Purchase verification level
   const VERIFICATION_PRICES: Record<number, bigint> = {
     1: BigInt(1000),
