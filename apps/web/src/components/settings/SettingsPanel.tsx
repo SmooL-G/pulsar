@@ -11,7 +11,6 @@ import { AdminModal } from '../admin/AdminModal';
 import { DepositModal } from '../wallet/DepositModal';
 import { exportKeys, importKeys, hasLocalKeys } from '../../crypto/keyManager';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import bs58 from 'bs58';
 
 interface SettingsPanelProps {
@@ -321,22 +320,27 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
 function LinkWalletSection() {
   const { t } = useI18n();
   const { setUser, user } = useAuthStore();
-  const { publicKey, signMessage, connected, disconnect, select, wallets, connect, wallet } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { publicKey, signMessage, connected, disconnect, select, wallets, wallet } = useWallet();
   const [loading, setLoading] = useState(false);
-  const [linkPending, setLinkPending] = useState(false);
+  const [showWallets, setShowWallets] = useState(false);
 
-  // Когда кошелёк подключился и ожидается привязка — автоматически запускаем
+  // После подключения кошелька — автоматически запускаем привязку
+  const autoLinkRef = useRef(false);
   useEffect(() => {
-    if (linkPending && connected && publicKey && signMessage) {
-      setLinkPending(false);
+    if (autoLinkRef.current && connected && publicKey && signMessage) {
+      autoLinkRef.current = false;
       handleLink();
     }
-  }, [connected, publicKey, linkPending]);
+  }, [connected, publicKey]);
 
-  const handleConnect = () => {
-    setVisible(true);
-    setLinkPending(true);
+  const handleSelectWallet = async (walletName: string) => {
+    try {
+      select(walletName as any);
+      autoLinkRef.current = true;
+      setShowWallets(false);
+    } catch (err) {
+      console.error('Wallet select error:', err);
+    }
   };
 
   const handleLink = async () => {
@@ -370,6 +374,10 @@ function LinkWalletSection() {
     }
   };
 
+  // Фильтруем установленные кошельки
+  const installedWallets = wallets.filter(w => w.readyState === 'Installed');
+  const otherWallets = wallets.filter(w => w.readyState !== 'Installed');
+
   return (
     <div className="bg-gradient-to-br from-green-500/10 to-emerald-600/5 border border-green-500/20 rounded-2xl p-5 space-y-3">
       <div className="flex items-center gap-2">
@@ -379,20 +387,52 @@ function LinkWalletSection() {
       <p className="text-xs text-gray-400">{t('wallet.linkDescription')}</p>
 
       {!connected ? (
-        <button
-          onClick={handleConnect}
-          className="w-full py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-lg text-sm font-medium transition-all"
-        >
-          {t('auth.connectWallet')}
-        </button>
+        <div className="space-y-2">
+          {!showWallets ? (
+            <button
+              onClick={() => setShowWallets(true)}
+              className="w-full py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-lg text-sm font-medium transition-all"
+            >
+              {t('auth.connectWallet')}
+            </button>
+          ) : (
+            <div className="space-y-1.5 animate-fade-in">
+              {installedWallets.map((w) => (
+                <button
+                  key={w.adapter.name}
+                  onClick={() => handleSelectWallet(w.adapter.name)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 bg-dark-500/50 hover:bg-dark-500 rounded-lg transition-colors"
+                >
+                  <img src={w.adapter.icon} alt={w.adapter.name} className="w-6 h-6" />
+                  <span className="text-sm font-medium">{w.adapter.name}</span>
+                  <span className="ml-auto text-[10px] text-green-400">Installed</span>
+                </button>
+              ))}
+              {installedWallets.length === 0 && (
+                <p className="text-xs text-gray-500 text-center py-2">
+                  {t('wallet.connectFirst')}
+                </p>
+              )}
+              <button
+                onClick={() => setShowWallets(false)}
+                className="w-full py-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="space-y-2">
           <div className="flex items-center justify-between bg-dark-500/50 rounded-lg px-3 py-2">
-            <p className="text-xs text-gray-300 font-mono">
-              {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
-            </p>
+            <div className="flex items-center gap-2">
+              {wallet && <img src={wallet.adapter.icon} alt="" className="w-4 h-4" />}
+              <p className="text-xs text-gray-300 font-mono">
+                {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
+              </p>
+            </div>
             <button
-              onClick={() => { disconnect(); setLinkPending(false); }}
+              onClick={() => disconnect()}
               className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
             >
               {t('wallet.disconnect')}
