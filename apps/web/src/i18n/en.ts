@@ -355,6 +355,7 @@ export const en = {
   'wallet.linkButton': 'Link wallet',
   'wallet.linkSuccess': 'Wallet linked successfully!',
   'wallet.linkError': 'Failed to link wallet',
+  'wallet.disconnect': 'Disconnect',
   'nft.gallery': 'NFT Gallery',
   'nft.setAvatar': 'NFT Avatar',
   'nft.clearAvatar': 'Remove NFT Avatar',

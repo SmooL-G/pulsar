@@ -354,6 +354,7 @@ export const de = {
   'wallet.linkButton': 'Wallet verbinden',
   'wallet.linkSuccess': 'Wallet erfolgreich verbunden!',
   'wallet.linkError': 'Fehler beim Verbinden des Wallets',
+  'wallet.disconnect': 'Trennen',
   'nft.gallery': 'NFT-Galerie',
   'nft.setAvatar': 'NFT-Avatar',
   'nft.clearAvatar': 'NFT-Avatar entfernen',

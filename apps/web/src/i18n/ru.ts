@@ -355,6 +355,7 @@ export const ru = {
   'wallet.linkButton': 'Привязать кошелёк',
   'wallet.linkSuccess': 'Кошелёк успешно привязан!',
   'wallet.linkError': 'Ошибка привязки кошелька',
+  'wallet.disconnect': 'Отключить',
   'nft.gallery': 'Галерея NFT',
   'nft.setAvatar': 'NFT Аватар',
   'nft.clearAvatar': 'Убрать NFT аватар',

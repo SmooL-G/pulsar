@@ -354,6 +354,7 @@ export const ko = {
   'wallet.linkButton': '지갑 연결',
   'wallet.linkSuccess': '지갑이 성공적으로 연결되었습니다!',
   'wallet.linkError': '지갑 연결에 실패했습니다',
+  'wallet.disconnect': '연결 해제',
   'nft.gallery': 'NFT 갤러리',
   'nft.setAvatar': 'NFT 아바타',
   'nft.clearAvatar': 'NFT 아바타 제거',

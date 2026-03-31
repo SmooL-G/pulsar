@@ -354,6 +354,7 @@ export const ja = {
   'wallet.linkButton': 'ウォレットを接続',
   'wallet.linkSuccess': 'ウォレットが正常に接続されました！',
   'wallet.linkError': 'ウォレットの接続に失敗しました',
+  'wallet.disconnect': '切断',
   'nft.gallery': 'NFTギャラリー',
   'nft.setAvatar': 'NFTアバター',
   'nft.clearAvatar': 'NFTアバターを削除',

@@ -354,6 +354,7 @@ export const uk = {
   'wallet.linkButton': "Прив'язати гаманець",
   'wallet.linkSuccess': 'Гаманець успішно прив\'язано!',
   'wallet.linkError': "Помилка прив'язки гаманця",
+  'wallet.disconnect': 'Від\'єднати',
   'nft.gallery': 'Галерея NFT',
   'nft.setAvatar': 'NFT Аватар',
   'nft.clearAvatar': 'Прибрати NFT аватар',

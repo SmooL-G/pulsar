@@ -54,6 +54,11 @@
   }
 }
 
+/* Wallet adapter modal — поверх всех модалок */
+.wallet-adapter-modal-wrapper {
+  z-index: 9999 !important;
+}
+
 /* NFT аватар — анимация градиентной рамки */
 @keyframes nft-border-spin {
   0% { background-position: 0% 50%; }

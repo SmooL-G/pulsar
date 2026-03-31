@@ -354,6 +354,7 @@ export const pt = {
   'wallet.linkButton': 'Vincular carteira',
   'wallet.linkSuccess': 'Carteira vinculada com sucesso!',
   'wallet.linkError': 'Erro ao vincular carteira',
+  'wallet.disconnect': 'Desconectar',
   'nft.gallery': 'Galeria NFT',
   'nft.setAvatar': 'Avatar NFT',
   'nft.clearAvatar': 'Remover avatar NFT',

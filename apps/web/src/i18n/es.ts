@@ -354,6 +354,7 @@ export const es = {
   'wallet.linkButton': 'Vincular billetera',
   'wallet.linkSuccess': '¡Billetera vinculada exitosamente!',
   'wallet.linkError': 'Error al vincular la billetera',
+  'wallet.disconnect': 'Desconectar',
   'nft.gallery': 'Galería NFT',
   'nft.setAvatar': 'Avatar NFT',
   'nft.clearAvatar': 'Quitar avatar NFT',

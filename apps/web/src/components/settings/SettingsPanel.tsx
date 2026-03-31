@@ -11,7 +11,7 @@ import { AdminModal } from '../admin/AdminModal';
 import { DepositModal } from '../wallet/DepositModal';
 import { exportKeys, importKeys, hasLocalKeys } from '../../crypto/keyManager';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import bs58 from 'bs58';
 
 interface SettingsPanelProps {
@@ -321,8 +321,14 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
 function LinkWalletSection() {
   const { t } = useI18n();
   const { setUser, user } = useAuthStore();
-  const { publicKey, signMessage, connected } = useWallet();
+  const { publicKey, signMessage, connected, disconnect } = useWallet();
+  const { setVisible } = useWalletModal();
   const [loading, setLoading] = useState(false);
+
+  const handleConnect = () => {
+    // Закрываем SettingsPanel не нужно — wallet modal имеет свой z-index
+    setVisible(true);
+  };
 
   const handleLink = async () => {
     if (!publicKey || !signMessage) return;
@@ -364,14 +370,25 @@ function LinkWalletSection() {
       <p className="text-xs text-gray-400">{t('wallet.linkDescription')}</p>
 
       {!connected ? (
-        <div className="flex justify-center">
-          <WalletMultiButton />
-        </div>
+        <button
+          onClick={handleConnect}
+          className="w-full py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-lg text-sm font-medium transition-all"
+        >
+          {t('auth.connectWallet')}
+        </button>
       ) : (
         <div className="space-y-2">
-          <p className="text-xs text-gray-400 font-mono text-center">
-            {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
-          </p>
+          <div className="flex items-center justify-between bg-dark-500/50 rounded-lg px-3 py-2">
+            <p className="text-xs text-gray-300 font-mono">
+              {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
+            </p>
+            <button
+              onClick={() => disconnect()}
+              className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              {t('wallet.disconnect')}
+            </button>
+          </div>
           <button
             onClick={handleLink}
             disabled={loading}

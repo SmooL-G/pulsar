@@ -354,6 +354,7 @@ export const fr = {
   'wallet.linkButton': 'Lier le portefeuille',
   'wallet.linkSuccess': 'Portefeuille lié avec succès !',
   'wallet.linkError': 'Erreur lors de la liaison du portefeuille',
+  'wallet.disconnect': 'Déconnecter',
   'nft.gallery': 'Galerie NFT',
   'nft.setAvatar': 'Avatar NFT',
   'nft.clearAvatar': 'Retirer l\'avatar NFT',

@@ -354,6 +354,7 @@ export const zh = {
   'wallet.linkButton': '绑定钱包',
   'wallet.linkSuccess': '钱包绑定成功！',
   'wallet.linkError': '钱包绑定失败',
+  'wallet.disconnect': '断开连接',
   'nft.gallery': 'NFT 画廊',
   'nft.setAvatar': 'NFT 头像',
   'nft.clearAvatar': '移除 NFT 头像',

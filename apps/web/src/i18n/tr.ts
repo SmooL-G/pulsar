@@ -354,6 +354,7 @@ export const tr = {
   'wallet.linkButton': 'Cüzdanı bağla',
   'wallet.linkSuccess': 'Cüzdan başarıyla bağlandı!',
   'wallet.linkError': 'Cüzdan bağlama hatası',
+  'wallet.disconnect': 'Bağlantıyı kes',
   'nft.gallery': 'NFT Galerisi',
   'nft.setAvatar': 'NFT Avatar',
   'nft.clearAvatar': 'NFT Avatarı Kaldır',
