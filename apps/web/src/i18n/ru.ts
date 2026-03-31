@@ -355,6 +355,7 @@ export const ru = {
   'nft.clearAvatar': 'Убрать NFT аватар',
   'nft.noNfts': 'В вашем кошельке нет NFT',
   'chat.e2eEncrypted': 'Сквозное шифрование',
+  'chat.e2eDisabled': 'Шифрование отключено',
   'chat.encryptedMessage': 'Зашифрованное сообщение',
   'avatar.gallery': 'Галерея аватаров',
   'avatar.generate': 'Уникальные',

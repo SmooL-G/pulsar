@@ -354,6 +354,7 @@ export const zh = {
   'nft.clearAvatar': '移除 NFT 头像',
   'nft.noNfts': '钱包中未找到 NFT',
   'chat.e2eEncrypted': '端到端加密',
+  'chat.e2eDisabled': '加密已关闭',
   'chat.encryptedMessage': '加密消息',
   'avatar.gallery': '头像画廊',
   'avatar.generate': '独特',

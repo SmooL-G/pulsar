@@ -354,6 +354,7 @@ export const ko = {
   'nft.clearAvatar': 'NFT 아바타 제거',
   'nft.noNfts': '지갑에 NFT가 없습니다',
   'chat.e2eEncrypted': '종단간 암호화',
+  'chat.e2eDisabled': '암호화 비활성화',
   'chat.encryptedMessage': '암호화된 메시지',
   'avatar.gallery': '아바타 갤러리',
   'avatar.generate': '유니크',

@@ -108,7 +108,11 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         </div>
       </div>
 
-      <MessageList chatId={activeChat.id} />
+      <MessageList
+        chatId={activeChat.id}
+        chatType={activeChat.type as 'DIRECT' | 'GROUP'}
+        otherUserId={(activeChat as any).otherUser?.id}
+      />
       <MessageInput
         chatId={activeChat.id}
         chatType={activeChat.type as 'DIRECT' | 'GROUP'}

@@ -354,6 +354,7 @@ export const pt = {
   'nft.clearAvatar': 'Remover avatar NFT',
   'nft.noNfts': 'Nenhum NFT encontrado na sua carteira',
   'chat.e2eEncrypted': 'Criptografia de ponta a ponta',
+  'chat.e2eDisabled': 'Criptografia desativada',
   'chat.encryptedMessage': 'Mensagem criptografada',
   'avatar.gallery': 'Galeria de avatares',
   'avatar.generate': 'Único',

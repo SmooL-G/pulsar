@@ -354,6 +354,7 @@ export const tr = {
   'nft.clearAvatar': 'NFT Avatarı Kaldır',
   'nft.noNfts': 'Cüzdanınızda NFT bulunamadı',
   'chat.e2eEncrypted': 'Uçtan uca şifreli',
+  'chat.e2eDisabled': 'Şifreleme kapalı',
   'chat.encryptedMessage': 'Şifreli mesaj',
   'avatar.gallery': 'Avatar Galerisi',
   'avatar.generate': 'Benzersiz',

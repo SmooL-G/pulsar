@@ -6,9 +6,11 @@ import { getSocket } from '../../hooks/useSocket';
 
 interface MessageListProps {
   chatId: string;
+  chatType?: 'DIRECT' | 'GROUP';
+  otherUserId?: string;
 }
 
-export function MessageList({ chatId }: MessageListProps) {
+export function MessageList({ chatId, chatType, otherUserId }: MessageListProps) {
   const { messages, fetchMessages, isLoading } = useMessageStore();
   const user = useAuthStore((s) => s.user);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,8 @@ export function MessageList({ chatId }: MessageListProps) {
             message={message}
             isOwn={isOwn}
             showAvatar={showAvatar}
+            chatType={chatType}
+            otherUserId={otherUserId}
           />
         );
       })}

@@ -354,6 +354,7 @@ export const uk = {
   'nft.clearAvatar': 'Прибрати NFT аватар',
   'nft.noNfts': 'У вашому гаманці немає NFT',
   'chat.e2eEncrypted': 'Наскрізне шифрування',
+  'chat.e2eDisabled': 'Шифрування вимкнено',
   'chat.encryptedMessage': 'Зашифроване повідомлення',
   'avatar.gallery': 'Галерея аватарів',
   'avatar.generate': 'Унікальні',

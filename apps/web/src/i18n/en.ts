@@ -355,6 +355,7 @@ export const en = {
   'nft.clearAvatar': 'Remove NFT Avatar',
   'nft.noNfts': 'No NFTs found in your wallet',
   'chat.e2eEncrypted': 'End-to-end encrypted',
+  'chat.e2eDisabled': 'Encryption disabled',
   'chat.encryptedMessage': 'Encrypted message',
   'avatar.gallery': 'Avatar Gallery',
   'avatar.generate': 'Unique',

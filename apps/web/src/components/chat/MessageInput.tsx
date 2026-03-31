@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Send, Paperclip, Smile, Lock } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Send, Paperclip, Smile, Lock, LockOpen } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
 import { useI18n } from '../../i18n';
@@ -12,11 +12,28 @@ interface MessageInputProps {
   recipientUserId?: string;
 }
 
+// Настройка E2E шифрования — localStorage
+function getE2EEnabled(): boolean {
+  return localStorage.getItem('pulsar_e2e_enabled') !== 'false';
+}
+function setE2EEnabled(v: boolean) {
+  localStorage.setItem('pulsar_e2e_enabled', v ? 'true' : 'false');
+}
+
 export function MessageInput({ chatId, chatType, recipientUserId }: MessageInputProps) {
   const { t } = useI18n();
   const [text, setText] = useState('');
+  const [e2eOn, setE2eOn] = useState(getE2EEnabled);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { signMessage: walletSignMessage, publicKey } = useWallet();
+
+  const toggleE2E = useCallback(() => {
+    setE2eOn((prev) => {
+      const next = !prev;
+      setE2EEnabled(next);
+      return next;
+    });
+  }, []);
 
   const handleSend = async () => {
     const content = text.trim();
@@ -32,9 +49,9 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
         publicKey?.toBase58(),
       );
 
-      // E2E шифрование для DM
+      // E2E шифрование только для DM и если включено
       let encryptedContent: string | undefined;
-      if (chatType === 'DIRECT' && recipientUserId) {
+      if (e2eOn && chatType === 'DIRECT' && recipientUserId) {
         const encrypted = await encryptMessage(content, recipientUserId);
         if (encrypted) encryptedContent = encrypted;
       }
@@ -77,10 +94,16 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
   return (
     <div className="px-4 py-3 border-t border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
       {chatType === 'DIRECT' && (
-        <div className="flex items-center gap-1 mb-1 ml-1">
-          <Lock size={10} className="text-green-500" />
-          <span className="text-[10px] text-green-500">{t('chat.e2eEncrypted')}</span>
-        </div>
+        <button
+          onClick={toggleE2E}
+          className={`flex items-center gap-1 mb-1 ml-1 transition-colors ${
+            e2eOn ? 'text-green-500' : 'text-gray-500'
+          }`}
+          title={e2eOn ? t('chat.e2eEncrypted') : t('chat.e2eDisabled')}
+        >
+          {e2eOn ? <Lock size={10} /> : <LockOpen size={10} />}
+          <span className="text-[10px]">{e2eOn ? t('chat.e2eEncrypted') : t('chat.e2eDisabled')}</span>
+        </button>
       )}
       <div className="flex items-end gap-2">
         <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-400 shrink-0">

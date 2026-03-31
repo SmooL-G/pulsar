@@ -354,6 +354,7 @@ export const ja = {
   'nft.clearAvatar': 'NFTアバターを削除',
   'nft.noNfts': 'ウォレットにNFTが見つかりません',
   'chat.e2eEncrypted': 'エンドツーエンド暗号化',
+  'chat.e2eDisabled': '暗号化オフ',
   'chat.encryptedMessage': '暗号化されたメッセージ',
   'avatar.gallery': 'アバターギャラリー',
   'avatar.generate': 'ユニーク',

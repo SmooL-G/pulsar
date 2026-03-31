@@ -19,9 +19,11 @@ interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
   showAvatar: boolean;
+  chatType?: 'DIRECT' | 'GROUP';
+  otherUserId?: string;
 }
 
-export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserId }: MessageBubbleProps) {
   const { t } = useI18n();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showForward, setShowForward] = useState(false);
@@ -34,13 +36,16 @@ export function MessageBubble({ message, isOwn, showAvatar }: MessageBubbleProps
   const [decryptedContent, setDecryptedContent] = useState<string | null>(null);
 
   // Дешифровка E2E сообщений
+  // Для своих сообщений нужен ключ получателя (otherUserId), для чужих — ключ отправителя
   useEffect(() => {
     if (message.encryptedContent && !message.content && !decryptedContent) {
-      decryptMessage(message.encryptedContent, message.senderId).then((text) => {
+      const keyUserId = isOwn ? otherUserId : message.senderId;
+      if (!keyUserId) return;
+      decryptMessage(message.encryptedContent, keyUserId).then((text) => {
         if (text) setDecryptedContent(text);
       });
     }
-  }, [message.encryptedContent, message.content, message.senderId, decryptedContent]);
+  }, [message.encryptedContent, message.content, message.senderId, isOwn, otherUserId, decryptedContent]);
 
   const displayContent = message.content || decryptedContent;
   const isEncrypted = !!message.encryptedContent;
