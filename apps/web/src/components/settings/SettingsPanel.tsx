@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound } from 'lucide-react';
+import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2 } from 'lucide-react';
 import { LanguageSelector } from './LanguageSelector';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -10,6 +10,9 @@ import { PulsarBadge } from '../ui/PulsarBadge';
 import { AdminModal } from '../admin/AdminModal';
 import { DepositModal } from '../wallet/DepositModal';
 import { exportKeys, importKeys, hasLocalKeys } from '../../crypto/keyManager';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import bs58 from 'bs58';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -278,6 +281,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   </div>
                 </div>
 
+                {/* Привязка внешнего кошелька — только для CUSTODIAL */}
+                {user.walletType === 'CUSTODIAL' && (
+                  <LinkWalletSection />
+                )}
+
                 <div className="bg-gray-50 dark:bg-dark-600 rounded-xl p-4">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {t('settings.walletInfo')}
@@ -305,6 +313,74 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       {showLangSelector && <LanguageSelector onClose={() => setShowLangSelector(false)} />}
       {showAdmin && <AdminModal onClose={() => setShowAdmin(false)} />}
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
+    </div>
+  );
+}
+
+// === Привязка внешнего кошелька ===
+function LinkWalletSection() {
+  const { t } = useI18n();
+  const { setUser, user } = useAuthStore();
+  const { publicKey, signMessage, connected } = useWallet();
+  const [loading, setLoading] = useState(false);
+
+  const handleLink = async () => {
+    if (!publicKey || !signMessage) return;
+    setLoading(true);
+    try {
+      const walletAddress = publicKey.toBase58();
+
+      // Шаг 1: получить nonce
+      const { data: nonceData } = await api.post('/users/me/wallet/nonce', { walletAddress });
+
+      // Шаг 2: подписать nonce кошельком
+      const message = new TextEncoder().encode(nonceData.nonce);
+      const signature = await signMessage(message);
+      const signatureB58 = bs58.encode(signature);
+
+      // Шаг 3: отправить подпись на сервер
+      const { data } = await api.post('/users/me/wallet/link', {
+        walletAddress,
+        signature: signatureB58,
+      });
+
+      // Обновляем пользователя в сторе
+      if (user) setUser({ ...user, ...data });
+      toast.success(t('wallet.linkSuccess'));
+    } catch (err: any) {
+      const msg = err.response?.data?.message || t('wallet.linkError');
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-green-500/10 to-emerald-600/5 border border-green-500/20 rounded-2xl p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <Link2 size={18} className="text-green-400" />
+        <span className="text-sm font-medium">{t('wallet.linkTitle')}</span>
+      </div>
+      <p className="text-xs text-gray-400">{t('wallet.linkDescription')}</p>
+
+      {!connected ? (
+        <div className="flex justify-center">
+          <WalletMultiButton />
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs text-gray-400 font-mono text-center">
+            {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
+          </p>
+          <button
+            onClick={handleLink}
+            disabled={loading}
+            className="w-full py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {loading ? t('common.loading') : t('wallet.linkButton')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
