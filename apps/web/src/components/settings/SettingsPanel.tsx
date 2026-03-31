@@ -324,6 +324,17 @@ function LinkWalletSection() {
   const [loading, setLoading] = useState(false);
   const [showWallets, setShowWallets] = useState(false);
 
+  // После select() — когда wallet адаптер готов, вызываем connect()
+  const pendingConnectRef = useRef(false);
+  useEffect(() => {
+    if (pendingConnectRef.current && wallet && !connected) {
+      pendingConnectRef.current = false;
+      wallet.adapter.connect().catch((err: any) => {
+        console.error('Wallet connect error:', err);
+      });
+    }
+  }, [wallet, connected]);
+
   // После подключения кошелька — автоматически запускаем привязку
   const autoLinkRef = useRef(false);
   useEffect(() => {
@@ -333,14 +344,11 @@ function LinkWalletSection() {
     }
   }, [connected, publicKey]);
 
-  const handleSelectWallet = async (walletName: string) => {
-    try {
-      select(walletName as any);
-      autoLinkRef.current = true;
-      setShowWallets(false);
-    } catch (err) {
-      console.error('Wallet select error:', err);
-    }
+  const handleSelectWallet = (walletName: string) => {
+    select(walletName as any);
+    pendingConnectRef.current = true;
+    autoLinkRef.current = true;
+    setShowWallets(false);
   };
 
   const handleLink = async () => {
