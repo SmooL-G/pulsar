@@ -5,6 +5,7 @@ import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { DepositModal } from './DepositModal';
+import { PulsarBadge } from '../ui/PulsarBadge';
 import toast from 'react-hot-toast';
 
 interface WalletPanelProps {
@@ -14,7 +15,6 @@ interface WalletPanelProps {
 export function WalletPanel({ onClose }: WalletPanelProps) {
   const { t } = useI18n();
   const { user } = useAuthStore();
-  const { setUser } = useAuthStore();
   const [showDeposit, setShowDeposit] = useState(false);
   const [copied, setCopied] = useState(false);
   const [solBalance, setSolBalance] = useState<number | null>(null);
