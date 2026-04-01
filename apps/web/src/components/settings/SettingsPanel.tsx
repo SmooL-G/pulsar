@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2 } from 'lucide-react';
+import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2 } from 'lucide-react';
 import { LanguageSelector } from './LanguageSelector';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -7,6 +7,7 @@ import { useNotificationStore } from '../../store/notificationStore';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { BADGE_CONFIG } from '../ui/ProfileBadgeIcon';
 import { AdminModal } from '../admin/AdminModal';
 import { DepositModal } from '../wallet/DepositModal';
 import { TransferModal } from '../wallet/TransferModal';
@@ -33,6 +34,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showDeposit, setShowDeposit] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [showBadges, setShowBadges] = useState(false);
   const [theme, setThemeState] = useState<'dark' | 'light' | 'system'>(
     () => (localStorage.getItem('theme') as any) || 'dark'
   );
@@ -179,6 +182,24 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 >
                   {saving ? t('common.loading') : t('common.save')}
                 </button>
+
+                {/* Верификация и значки */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={() => setShowVerification(true)}
+                    className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 dark:bg-dark-600 hover:bg-primary-500/10 hover:text-primary-500 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <ShieldCheck size={16} />
+                    {t('wallet.verification')}
+                  </button>
+                  <button
+                    onClick={() => setShowBadges(true)}
+                    className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 dark:bg-dark-600 hover:bg-pink-500/10 hover:text-pink-400 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Award size={16} />
+                    {t('wallet.badges')}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -323,6 +344,150 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       {showAdmin && <AdminModal onClose={() => setShowAdmin(false)} />}
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
       {showTransfer && <TransferModal onClose={() => setShowTransfer(false)} />}
+      {showVerification && <VerificationModal onClose={() => setShowVerification(false)} />}
+      {showBadges && <BadgesModal onClose={() => setShowBadges(false)} />}
+    </div>
+  );
+}
+
+// === Модалка верификации ===
+function VerificationModal({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
+  const { user, setUser } = useAuthStore();
+  const [buying, setBuying] = useState<number | null>(null);
+
+  if (!user) return null;
+  const plsBalance = BigInt((user as any).plsBalance || '0');
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+      <div className="bg-white dark:bg-dark-700 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-dark-500">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={18} className="text-primary-500" />
+            <h3 className="font-semibold">{t('wallet.verification')}</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500"><X size={18} /></button>
+        </div>
+        <div className="p-5 space-y-2">
+          <p className="text-xs text-gray-400 mb-3">
+            {t('wallet.plsBalance')}: <span className="text-amber-400 font-mono font-medium">{plsBalance.toLocaleString()} PLS</span>
+          </p>
+          {([
+            { level: 1, price: 1000, color: 'from-gray-400 to-gray-500' },
+            { level: 2, price: 5000, color: 'from-green-400 to-green-600' },
+            { level: 3, price: 25000, color: 'from-amber-400 to-amber-600' },
+          ] as const).map(({ level, price, color }) => {
+            const currentLevel = (user as any).verificationLevel || 0;
+            const owned = currentLevel >= level;
+            const canAfford = plsBalance >= BigInt(price);
+            return (
+              <div key={level} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors ${owned ? 'border-green-500/30 bg-green-500/5' : 'border-gray-200 dark:border-dark-500'}`}>
+                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${color} flex items-center justify-center`}>
+                  <PulsarBadge level={level} size={16} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Level {level}</p>
+                  <p className="text-xs text-gray-400 font-mono">{price.toLocaleString()} PLS</p>
+                </div>
+                {owned ? (
+                  <span className="text-xs text-green-400 font-medium px-2 py-1 bg-green-500/10 rounded-lg flex items-center gap-1">
+                    <Check size={12} />{t('wallet.owned')}
+                  </span>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      setBuying(level);
+                      try {
+                        const { data } = await api.post('/wallet/purchase-verification', { level });
+                        setUser({ ...user, verificationLevel: data.verificationLevel, plsBalance: data.balance } as any);
+                        toast.success(`${t('wallet.levelUp')} ${level}!`);
+                      } catch (err: any) {
+                        toast.error(err.response?.data?.message || 'Error');
+                      } finally { setBuying(null); }
+                    }}
+                    disabled={!canAfford || buying !== null}
+                    className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 ${canAfford ? 'bg-primary-500 hover:bg-primary-600 text-white' : 'bg-gray-200 dark:bg-dark-500 text-gray-400 cursor-not-allowed'}`}
+                  >
+                    {buying === level && <Loader2 size={12} className="animate-spin" />}
+                    {t('wallet.buy')}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// === Модалка профильных значков ===
+function BadgesModal({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
+  const { user, setUser } = useAuthStore();
+  const [buyingBadge, setBuyingBadge] = useState<string | null>(null);
+
+  if (!user) return null;
+  const plsBalance = BigInt((user as any).plsBalance || '0');
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+      <div className="bg-white dark:bg-dark-700 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-dark-500">
+          <div className="flex items-center gap-2">
+            <Award size={18} className="text-pink-400" />
+            <h3 className="font-semibold">{t('wallet.badges')}</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500"><X size={18} /></button>
+        </div>
+        <div className="p-5 space-y-2">
+          <p className="text-xs text-gray-400 mb-3">
+            {t('wallet.plsBalance')}: <span className="text-amber-400 font-mono font-medium">{plsBalance.toLocaleString()} PLS</span>
+          </p>
+          {([
+            { badge: 'BLOGGER', price: 10000 },
+            { badge: 'AUTHOR', price: 10000 },
+            { badge: 'BUSINESS', price: 50000 },
+          ] as const).map(({ badge, price }) => {
+            const owned = (user as any).profileBadge === badge;
+            const canAfford = plsBalance >= BigInt(price);
+            const cfg = BADGE_CONFIG[badge];
+            return (
+              <div key={badge} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors ${owned ? 'border-green-500/30 bg-green-500/5' : 'border-gray-200 dark:border-dark-500'}`}>
+                <span className="text-xl w-8 text-center">{cfg?.emoji}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{cfg?.label}</p>
+                  <p className="text-xs text-gray-400 font-mono">{price.toLocaleString()} PLS</p>
+                </div>
+                {owned ? (
+                  <span className="text-xs text-green-400 font-medium px-2 py-1 bg-green-500/10 rounded-lg flex items-center gap-1">
+                    <Check size={12} />{t('wallet.owned')}
+                  </span>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      setBuyingBadge(badge);
+                      try {
+                        const { data } = await api.post('/wallet/purchase-badge', { badge });
+                        setUser({ ...user, profileBadge: data.profileBadge, plsBalance: data.balance } as any);
+                        toast.success(`${t('wallet.badgeObtained')} ${cfg?.label}!`);
+                      } catch (err: any) {
+                        toast.error(err.response?.data?.message || 'Error');
+                      } finally { setBuyingBadge(null); }
+                    }}
+                    disabled={!canAfford || buyingBadge !== null}
+                    className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 ${canAfford ? 'bg-primary-500 hover:bg-primary-600 text-white' : 'bg-gray-200 dark:bg-dark-500 text-gray-400 cursor-not-allowed'}`}
+                  >
+                    {buyingBadge === badge && <Loader2 size={12} className="animate-spin" />}
+                    {t('wallet.buy')}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
