@@ -18,7 +18,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeChat: null,
   isLoading: false,
 
-  setActiveChat: (chat) => set({ activeChat: chat }),
+  setActiveChat: (chat) => {
+    // Reset unread count when opening a chat
+    if (chat) {
+      set((state) => ({
+        activeChat: chat,
+        chats: state.chats.map((c) => c.id === chat.id ? { ...c, unreadCount: 0 } : c),
+      }));
+    } else {
+      set({ activeChat: null });
+    }
+  },
 
   fetchChats: async () => {
     set({ isLoading: true });

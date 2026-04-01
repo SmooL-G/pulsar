@@ -54,8 +54,17 @@ export function useSocket() {
     // Message events
     socket.on('message:new', (message: Message) => {
       addMessage(message);
+      const activeChatId = useChatStore.getState().activeChat?.id;
+      const currentUserId = useAuthStore.getState().user?.id;
+      const isOwnMessage = message.senderId === currentUserId;
+      const isActiveChat = activeChatId === message.chatId;
+      const chat = useChatStore.getState().chats.find((c) => c.id === message.chatId);
+      const newUnread = (!isOwnMessage && !isActiveChat)
+        ? ((chat?.unreadCount || 0) + 1)
+        : (isActiveChat ? 0 : (chat?.unreadCount || 0));
       updateChat(message.chatId, {
         lastMessage: message,
+        unreadCount: newUnread,
       } as any);
     });
 
