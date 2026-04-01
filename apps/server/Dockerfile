@@ -2,8 +2,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY . .
-RUN cd apps/server && npm install
+# Устанавливаем зависимости из корня — это правильно для npm workspaces
+RUN npm install --workspace=apps/server --workspace=packages/shared --include-workspace-root
 RUN cd packages/shared && npx tsc || true
+# Prisma generate — теперь @prisma/client в root node_modules, типы обновятся
 RUN cd apps/server && npx prisma generate --schema=src/db/schema.prisma
 RUN cd apps/server && npm run build
 
