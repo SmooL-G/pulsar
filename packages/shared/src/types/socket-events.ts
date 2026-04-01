@@ -79,7 +79,7 @@ export interface ServerToClientEvents {
   'wallet:balance-updated': (data: {
     balance: string;
     change: string;
-    type: 'DEPOSIT' | 'PURCHASE' | 'REWARD';
+    type: 'DEPOSIT' | 'PURCHASE' | 'REWARD' | 'TRANSFER';
   }) => void;
 
   'error': (data: {
