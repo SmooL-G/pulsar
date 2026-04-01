@@ -18,6 +18,7 @@ interface ChatAreaProps {
 export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
   const { t } = useI18n();
   const activeChat = useChatStore((s) => s.activeChat);
+  const [showTransfer, setShowTransfer] = useState(false);
 
   if (!activeChat) {
     return (
@@ -48,8 +49,6 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
       </div>
     );
   }
-
-  const [showTransfer, setShowTransfer] = useState(false);
 
   const chatName =
     activeChat.type === 'DIRECT'
