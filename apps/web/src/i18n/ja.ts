@@ -419,4 +419,7 @@ export const ja = {
   'roadmap.f.avatarGallery': 'アバターギャラリー',
   'roadmap.f.generativeAvatars': 'ジェネラティブアバター',
   'roadmap.f.p2p': 'P2P WebRTC',
+  'feed.title': 'アクティビティフィード',
+  'feed.subtitle': 'すべてのチャットの最新メッセージ',
+  'chat.you': 'あなた',
 };

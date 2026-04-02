@@ -419,4 +419,7 @@ export const tr = {
   'roadmap.f.avatarGallery': 'Avatar galerisi',
   'roadmap.f.generativeAvatars': 'Jeneratif avatarlar',
   'roadmap.f.p2p': 'P2P WebRTC',
+  'feed.title': 'Aktivite Akışı',
+  'feed.subtitle': 'Tüm sohbetlerden son mesajlar',
+  'chat.you': 'Siz',
 };

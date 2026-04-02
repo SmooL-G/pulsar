@@ -419,4 +419,7 @@ export const de = {
   'roadmap.f.avatarGallery': 'Avatar-Galerie',
   'roadmap.f.generativeAvatars': 'Generative Avatare',
   'roadmap.f.p2p': 'P2P WebRTC',
+  'feed.title': 'Aktivitäts-Feed',
+  'feed.subtitle': 'Neueste Nachrichten aus allen Chats',
+  'chat.you': 'Du',
 };

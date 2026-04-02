@@ -419,4 +419,7 @@ export const zh = {
   'roadmap.f.avatarGallery': '头像画廊',
   'roadmap.f.generativeAvatars': '生成式头像',
   'roadmap.f.p2p': 'P2P WebRTC',
+  'feed.title': '动态Feed',
+  'feed.subtitle': '所有聊天的最新消息',
+  'chat.you': '你',
 };

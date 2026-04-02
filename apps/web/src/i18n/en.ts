@@ -420,4 +420,7 @@ export const en = {
   'roadmap.f.avatarGallery': 'Avatar Gallery',
   'roadmap.f.generativeAvatars': 'Generative Avatars',
   'roadmap.f.p2p': 'P2P WebRTC',
+  'feed.title': 'Activity Feed',
+  'feed.subtitle': 'Latest messages from all chats',
+  'chat.you': 'You',
 };

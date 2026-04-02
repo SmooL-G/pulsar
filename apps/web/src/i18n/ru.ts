@@ -420,4 +420,7 @@ export const ru = {
   'roadmap.f.avatarGallery': 'Галерея аватаров',
   'roadmap.f.generativeAvatars': 'Генеративные аватары',
   'roadmap.f.p2p': 'P2P WebRTC',
+  'feed.title': 'Лента активности',
+  'feed.subtitle': 'Последние сообщения из всех чатов',
+  'chat.you': 'Вы',
 };

@@ -419,4 +419,7 @@ export const uk = {
   'roadmap.f.avatarGallery': 'Галерея аватарів',
   'roadmap.f.generativeAvatars': 'Генеративні аватари',
   'roadmap.f.p2p': 'P2P WebRTC',
+  'feed.title': 'Стрічка активності',
+  'feed.subtitle': 'Останні повідомлення з усіх чатів',
+  'chat.you': 'Ви',
 };

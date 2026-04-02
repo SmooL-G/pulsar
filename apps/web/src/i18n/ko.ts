@@ -419,4 +419,7 @@ export const ko = {
   'roadmap.f.avatarGallery': '아바타 갤러리',
   'roadmap.f.generativeAvatars': '제너레이티브 아바타',
   'roadmap.f.p2p': 'P2P WebRTC',
+  'feed.title': '활동 피드',
+  'feed.subtitle': '모든 채팅의 최신 메시지',
+  'chat.you': '나',
 };
