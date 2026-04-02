@@ -19,7 +19,7 @@ export function TransferModal({ onClose, prefillUserId }: TransferModalProps) {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<{ received?: string } | null>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   // Если передан prefillUserId — загружаем пользователя
@@ -59,7 +59,7 @@ export function TransferModal({ onClose, prefillUserId }: TransferModalProps) {
         toUserId: selectedUser.id,
         amount: Number(amount),
       });
-      setSuccess(true);
+      setSuccess({ received: data.received });
       if (user) setUser({ ...user, plsBalance: data.balance } as any);
     } catch (err: any) {
       const msg = err.response?.data?.message || t('wallet.transferError');
@@ -92,7 +92,7 @@ export function TransferModal({ onClose, prefillUserId }: TransferModalProps) {
               </div>
               <p className="font-medium">{t('wallet.transferSuccess')}</p>
               <p className="text-sm text-gray-400">
-                {amount} PLS → @{selectedUser?.username}
+                {success.received || amount} PLS → @{selectedUser?.username}
               </p>
               <button
                 onClick={onClose}
@@ -172,6 +172,24 @@ export function TransferModal({ onClose, prefillUserId }: TransferModalProps) {
                     <p className="text-xs text-gray-500 mt-1">
                       {t('wallet.plsBalance')}: {balance.toLocaleString()} PLS
                     </p>
+                    {amount && Number(amount) >= 1 && (() => {
+                      const amt = BigInt(Math.floor(Number(amount)));
+                      const rawFee = amt * 2n / 100n;
+                      const fee = rawFee < 1n ? 1n : rawFee > 10000n ? 10000n : rawFee;
+                      const received = amt - fee;
+                      return (
+                        <div className="mt-2 p-2.5 bg-amber-500/10 rounded-lg space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-400">{t('wallet.fee')} 🔥</span>
+                            <span className="text-amber-500 font-mono">−{fee.toLocaleString()} PLS</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-400">{t('wallet.youWillReceive')}</span>
+                            <span className="text-green-400 font-mono font-medium">{received.toLocaleString()} PLS</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Кнопка перевода */}

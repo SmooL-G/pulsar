@@ -428,4 +428,8 @@ export const zh = {
   'dashboard.marketplace': '市场',
   'dashboard.comingSoon': 'NFT、商品等 — 即将推出',
   'dashboard.wip': '开发中',
+  'wallet.fee': '手续费（销毁）',
+  'wallet.youWillReceive': '收到',
+  'wallet.solanaDev': '开发中',
+  'wallet.transferFeeNote': '2%的金额将被销毁',
 };

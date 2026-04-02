@@ -24,6 +24,7 @@ export async function userRoutes(app: FastifyInstance) {
             OR: [
               { username: { contains: query, mode: 'insensitive' } },
               { displayName: { contains: query, mode: 'insensitive' } },
+              { walletAddress: { contains: query, mode: 'insensitive' } },
             ],
             status: 'ACTIVE',
           }

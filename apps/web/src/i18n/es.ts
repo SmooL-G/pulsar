@@ -428,4 +428,8 @@ export const es = {
   'dashboard.marketplace': 'Mercado',
   'dashboard.comingSoon': 'NFT, productos y más — próximamente',
   'dashboard.wip': 'En desarrollo',
+  'wallet.fee': 'Comisión (quema)',
+  'wallet.youWillReceive': 'Recibirá',
+  'wallet.solanaDev': 'En desarrollo',
+  'wallet.transferFeeNote': 'El 2% del monto se quema',
 };

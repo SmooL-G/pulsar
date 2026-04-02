@@ -94,6 +94,11 @@ export function WalletPanel({ onClose }: WalletPanelProps) {
               <span className="text-[10px] px-1.5 py-0.5 bg-white/20 rounded-full">
                 {user.walletType === 'EXTERNAL' ? t('profile.external') : t('profile.custodial')}
               </span>
+              {user.walletType === 'CUSTODIAL' && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-yellow-400/30 text-yellow-200 rounded-full ml-auto">
+                  🚧 {t('wallet.solanaDev')}
+                </span>
+              )}
             </div>
             <p className="font-mono text-xs break-all opacity-80 mb-3">{user.walletAddress}</p>
             <button

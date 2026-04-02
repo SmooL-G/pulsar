@@ -429,4 +429,8 @@ export const en = {
   'dashboard.marketplace': 'Marketplace',
   'dashboard.comingSoon': 'NFT, goods and more — coming soon',
   'dashboard.wip': 'In development',
+  'wallet.fee': 'Fee (burn)',
+  'wallet.youWillReceive': 'Receives',
+  'wallet.solanaDev': 'In development',
+  'wallet.transferFeeNote': '2% of amount is burned',
 };

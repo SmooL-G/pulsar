@@ -428,4 +428,8 @@ export const tr = {
   'dashboard.marketplace': 'Pazar Yeri',
   'dashboard.comingSoon': 'NFT, ürünler ve daha fazlası — yakında',
   'dashboard.wip': 'Geliştiriliyor',
+  'wallet.fee': 'Ücret (yakma)',
+  'wallet.youWillReceive': 'Alacak',
+  'wallet.solanaDev': 'Geliştiriliyor',
+  'wallet.transferFeeNote': 'Miktarın %2'si yakılır',
 };

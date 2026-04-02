@@ -429,4 +429,8 @@ export const ru = {
   'dashboard.marketplace': 'Маркетплейс',
   'dashboard.comingSoon': 'NFT, товары и многое другое — скоро',
   'dashboard.wip': 'В разработке',
+  'wallet.fee': 'Комиссия (сжигание)',
+  'wallet.youWillReceive': 'Получит',
+  'wallet.solanaDev': 'В разработке',
+  'wallet.transferFeeNote': '2% от суммы сжигается',
 };

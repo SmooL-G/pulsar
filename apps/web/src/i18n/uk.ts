@@ -428,4 +428,8 @@ export const uk = {
   'dashboard.marketplace': 'Маркетплейс',
   'dashboard.comingSoon': 'NFT, товари та більше — незабаром',
   'dashboard.wip': 'У розробці',
+  'wallet.fee': 'Комісія (спалювання)',
+  'wallet.youWillReceive': 'Отримає',
+  'wallet.solanaDev': 'У розробці',
+  'wallet.transferFeeNote': '2% суми спалюється',
 };

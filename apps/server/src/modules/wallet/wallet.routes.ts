@@ -210,6 +210,14 @@ export async function walletRoutes(app: FastifyInstance) {
 
     const plsAmount = BigInt(Math.floor(amount));
 
+    // Burn fee: 2%, min 1 PLS, max 10000 PLS
+    const FEE_PERCENT = 2n;
+    const MIN_FEE = 1n;
+    const MAX_FEE = 10000n;
+    const rawFee = plsAmount * FEE_PERCENT / 100n;
+    const fee = rawFee < MIN_FEE ? MIN_FEE : rawFee > MAX_FEE ? MAX_FEE : rawFee;
+    const receivedAmount = plsAmount - fee;
+
     // Проверяем что получатель существует
     const recipient = await prisma.user.findUnique({
       where: { id: toUserId, status: 'ACTIVE' },
@@ -226,12 +234,12 @@ export async function walletRoutes(app: FastifyInstance) {
 
     const toWallet = await getOrCreateWallet(toUserId);
 
-    // Атомарный перевод: списание + зачисление + 2 транзакции
     const sender = await prisma.user.findUnique({
       where: { id: fromUserId },
       select: { username: true },
     });
 
+    // Атомарный перевод: списать plsAmount, зачислить receivedAmount (fee сгорает)
     const [updatedFromWallet, updatedToWallet] = await prisma.$transaction([
       prisma.plsWallet.update({
         where: { id: fromWallet.id },
@@ -239,14 +247,14 @@ export async function walletRoutes(app: FastifyInstance) {
       }),
       prisma.plsWallet.update({
         where: { id: toWallet.id },
-        data: { balance: { increment: plsAmount } },
+        data: { balance: { increment: receivedAmount } },
       }),
       prisma.plsTransaction.create({
         data: {
           walletId: fromWallet.id,
           type: 'TRANSFER',
           amount: plsAmount,
-          description: `Transfer to @${recipient.username}`,
+          description: `Transfer to @${recipient.username} (fee: ${fee} PLS burned)`,
           status: 'COMPLETED',
         },
       }),
@@ -254,7 +262,7 @@ export async function walletRoutes(app: FastifyInstance) {
         data: {
           walletId: toWallet.id,
           type: 'TRANSFER',
-          amount: plsAmount,
+          amount: receivedAmount,
           description: `Transfer from @${sender?.username || 'unknown'}`,
           status: 'COMPLETED',
         },
@@ -280,6 +288,8 @@ export async function walletRoutes(app: FastifyInstance) {
       success: true,
       balance: updatedFromWallet.balance.toString(),
       transferred: plsAmount.toString(),
+      received: receivedAmount.toString(),
+      fee: fee.toString(),
       toUser: recipient.username,
     };
   });

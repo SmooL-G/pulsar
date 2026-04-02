@@ -428,4 +428,8 @@ export const ko = {
   'dashboard.marketplace': '마켓플레이스',
   'dashboard.comingSoon': 'NFT, 상품 등 — 곧 출시',
   'dashboard.wip': '개발 중',
+  'wallet.fee': '수수료 (소각)',
+  'wallet.youWillReceive': '수령액',
+  'wallet.solanaDev': '개발 중',
+  'wallet.transferFeeNote': '금액의 2%가 소각됩니다',
 };

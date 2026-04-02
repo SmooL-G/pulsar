@@ -428,4 +428,8 @@ export const ja = {
   'dashboard.marketplace': 'マーケットプレイス',
   'dashboard.comingSoon': 'NFT、商品など — 近日公開',
   'dashboard.wip': '開発中',
+  'wallet.fee': '手数料（バーン）',
+  'wallet.youWillReceive': '受け取り額',
+  'wallet.solanaDev': '開発中',
+  'wallet.transferFeeNote': '金額の2%がバーンされます',
 };
