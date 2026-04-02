@@ -422,4 +422,10 @@ export const ja = {
   'feed.title': 'アクティビティフィード',
   'feed.subtitle': 'すべてのチャットの最新メッセージ',
   'chat.you': 'あなた',
+  'dashboard.greeting': 'こんにちは',
+  'dashboard.subtitle': 'Pulsarへようこそ',
+  'dashboard.noVerification': '未認証',
+  'dashboard.marketplace': 'マーケットプレイス',
+  'dashboard.comingSoon': 'NFT、商品など — 近日公開',
+  'dashboard.wip': '開発中',
 };

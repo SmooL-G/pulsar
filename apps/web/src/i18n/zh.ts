@@ -422,4 +422,10 @@ export const zh = {
   'feed.title': '动态Feed',
   'feed.subtitle': '所有聊天的最新消息',
   'chat.you': '你',
+  'dashboard.greeting': '你好',
+  'dashboard.subtitle': '欢迎来到Pulsar',
+  'dashboard.noVerification': '未认证',
+  'dashboard.marketplace': '市场',
+  'dashboard.comingSoon': 'NFT、商品等 — 即将推出',
+  'dashboard.wip': '开发中',
 };

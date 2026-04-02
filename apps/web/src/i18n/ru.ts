@@ -423,4 +423,10 @@ export const ru = {
   'feed.title': 'Лента активности',
   'feed.subtitle': 'Последние сообщения из всех чатов',
   'chat.you': 'Вы',
+  'dashboard.greeting': 'Привет',
+  'dashboard.subtitle': 'Добро пожаловать в Pulsar',
+  'dashboard.noVerification': 'Не верифицирован',
+  'dashboard.marketplace': 'Маркетплейс',
+  'dashboard.comingSoon': 'NFT, товары и многое другое — скоро',
+  'dashboard.wip': 'В разработке',
 };

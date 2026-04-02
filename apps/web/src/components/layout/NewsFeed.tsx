@@ -1,168 +1,183 @@
-import { useChatStore } from '../../store/chatStore';
+import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
-import { formatDistanceToNow } from 'date-fns';
-import { ru as ruLocale } from 'date-fns/locale/ru';
-import { MessageCircle, Users } from 'lucide-react';
-import type { Chat } from '@pulsar/shared';
+import { SettingsPanel } from '../settings/SettingsPanel';
+import { WalletPanel } from '../wallet/WalletPanel';
+import { ShieldCheck, Award, Wallet, ArrowUpRight, ArrowDownLeft, Copy, Check } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export function NewsFeed() {
-  const { t, locale } = useI18n();
-  const { chats, setActiveChat } = useChatStore();
+  const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showWallet, setShowWallet] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  // Sort chats by last message time, take those with messages
-  const feed = [...chats]
-    .filter((c) => c.lastMessage)
-    .sort((a, b) =>
-      new Date(b.lastMessage!.createdAt).getTime() -
-      new Date(a.lastMessage!.createdAt).getTime()
-    );
+  if (!user) return null;
 
-  const noMessages = chats.length === 0 || feed.length === 0;
+  const plsBalance = BigInt((user as any).plsBalance || '0');
+  const verificationLevel = (user as any).verificationLevel || 0;
 
-  return (
-    <div className="flex-1 flex flex-col bg-gray-50 dark:bg-dark-800 overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 shrink-0">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-          {t('feed.title')}
-        </h2>
-        <p className="text-xs text-gray-400 mt-0.5">{t('feed.subtitle')}</p>
-      </div>
-
-      {/* Feed */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
-        {noMessages ? (
-          <EmptyState t={t} />
-        ) : (
-          feed.map((chat) => (
-            <FeedItem
-              key={chat.id}
-              chat={chat}
-              locale={locale}
-              currentUserId={user?.id}
-              onClick={() => setActiveChat(chat)}
-              t={t}
-            />
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-function FeedItem({
-  chat,
-  locale,
-  currentUserId,
-  onClick,
-  t,
-}: {
-  chat: Chat & { otherUser?: any; ownerId?: string };
-  locale: string;
-  currentUserId?: string;
-  onClick: () => void;
-  t: (k: string) => string;
-}) {
-  const msg = chat.lastMessage!;
-  const isGroup = chat.type === 'GROUP';
-  const isOwn = msg.senderId === currentUserId;
-
-  const name = isGroup
-    ? chat.name || t('common.group')
-    : (chat as any).otherUser?.displayName || (chat as any).otherUser?.username || t('common.unknown');
-
-  const senderName = isGroup
-    ? isOwn
-      ? t('chat.you')
-      : msg.sender?.displayName || msg.sender?.username || ''
-    : isOwn
-      ? t('chat.you')
-      : name;
-
-  const preview =
-    msg.type === 'IMAGE'
-      ? `📷 ${t('chat.photo')}`
-      : msg.type === 'FILE'
-        ? `📎 ${t('chat.file')}`
-        : msg.content || '🔒';
-
-  const time = formatDistanceToNow(new Date(msg.createdAt), {
-    addSuffix: true,
-    locale: locale === 'ru' ? ruLocale : undefined,
-  });
-
-  const avatarSeed = isGroup ? chat.id : (chat as any).otherUser?.id || chat.id;
-  const avatarUrl = isGroup ? (chat as any).avatarUrl : (chat as any).otherUser?.avatarUrl;
-  const isNft = !isGroup && !!(chat as any).otherUser?.nftAvatarMint;
+  const copyWallet = () => {
+    navigator.clipboard.writeText(user.walletAddress);
+    setCopied(true);
+    toast.success(t('profile.copyWallet'));
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-start gap-3 p-3.5 bg-white dark:bg-dark-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-dark-600 transition-colors text-left shadow-sm border border-gray-100 dark:border-dark-600"
-    >
-      {/* Avatar */}
-      <div className="relative shrink-0">
-        <NftAvatarBorder isNft={isNft} size={44}>
-          <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium overflow-hidden">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <GenerativeAvatar seed={avatarSeed} size={44} />
-            )}
-          </div>
-        </NftAvatarBorder>
-        {/* Group / DM icon */}
-        <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-dark-700 flex items-center justify-center border border-gray-200 dark:border-dark-500">
-          {isGroup
-            ? <Users size={9} className="text-primary-500" />
-            : <MessageCircle size={9} className="text-primary-400" />}
-        </span>
-      </div>
+    <div className="flex-1 flex flex-col bg-gray-50 dark:bg-dark-800 overflow-y-auto">
+      <div className="p-6 max-w-2xl mx-auto w-full space-y-4">
 
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2 mb-0.5">
-          <span className="font-medium text-sm truncate flex items-center gap-1">
-            {name}
-            {!isGroup && (
-              <>
-                <PulsarBadge level={(chat as any).otherUser?.verificationLevel || 0} size={12} />
-                <ProfileBadgeIcon badge={(chat as any).otherUser?.profileBadge} size={12} />
-              </>
-            )}
-          </span>
-          <span className="text-[11px] text-gray-400 shrink-0">{time}</span>
+        {/* Greeting */}
+        <div className="mb-2">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+            {t('dashboard.greeting')}, {user.displayName || user.username} 👋
+          </h2>
+          <p className="text-sm text-gray-400 mt-0.5">{t('dashboard.subtitle')}</p>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-          <span className="font-medium text-gray-600 dark:text-gray-300">{senderName}: </span>
-          {preview}
-        </p>
+
+        {/* Tiles grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {/* Profile tile */}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="group relative bg-white dark:bg-dark-700 rounded-2xl p-5 text-left shadow-sm border border-gray-100 dark:border-dark-600 hover:border-primary-400 hover:shadow-md transition-all"
+          >
+            <div className="flex items-start gap-4">
+              {/* Avatar */}
+              <NftAvatarBorder isNft={!!(user as any).nftAvatarMint} size={56}>
+                <div className="w-14 h-14 rounded-full bg-primary-500 flex items-center justify-center text-white font-bold text-xl overflow-hidden shrink-0">
+                  {(user as any).avatarUrl ? (
+                    <img src={(user as any).avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <GenerativeAvatar seed={user.id} size={56} />
+                  )}
+                </div>
+              </NftAvatarBorder>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-base truncate flex items-center gap-1.5">
+                  {user.displayName || user.username}
+                  <PulsarBadge level={verificationLevel} size={14} />
+                  <ProfileBadgeIcon badge={(user as any).profileBadge} size={14} />
+                </p>
+                <p className="text-xs text-gray-400">@{user.username}</p>
+
+                {/* Verification & badge row */}
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium
+                    ${verificationLevel > 0
+                      ? 'bg-primary-500/10 text-primary-500'
+                      : 'bg-gray-100 dark:bg-dark-600 text-gray-400'}`}>
+                    <ShieldCheck size={11} />
+                    {verificationLevel > 0 ? `Level ${verificationLevel}` : t('dashboard.noVerification')}
+                  </span>
+                  {(user as any).profileBadge && (
+                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400 font-medium">
+                      <Award size={11} />
+                      {(user as any).profileBadge}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Open hint */}
+            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ArrowUpRight size={16} className="text-primary-400" />
+            </div>
+          </button>
+
+          {/* Wallet tile */}
+          <button
+            onClick={() => setShowWallet(true)}
+            className="group relative bg-gradient-to-br from-amber-500/15 to-amber-600/5 dark:from-amber-500/20 dark:to-amber-600/10 rounded-2xl p-5 text-left shadow-sm border border-amber-500/20 hover:border-amber-400 hover:shadow-md transition-all"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <Wallet size={16} className="text-amber-500" />
+              </div>
+              <span className="text-sm font-medium text-amber-600 dark:text-amber-400">{t('profile.wallet')}</span>
+            </div>
+
+            {/* PLS Balance */}
+            <p className="text-3xl font-bold font-mono text-amber-500 leading-none">
+              {plsBalance.toLocaleString()}
+            </p>
+            <p className="text-xs text-amber-400/70 mt-0.5 mb-4">PLS</p>
+
+            {/* Wallet address */}
+            <div
+              className="flex items-center gap-2 bg-white/50 dark:bg-dark-600/50 rounded-xl px-3 py-2 cursor-pointer hover:bg-white/80 dark:hover:bg-dark-600 transition-colors"
+              onClick={(e) => { e.stopPropagation(); copyWallet(); }}
+            >
+              <span className="font-mono text-[11px] text-gray-500 truncate flex-1">
+                {user.walletAddress.slice(0, 8)}...{user.walletAddress.slice(-6)}
+              </span>
+              {copied ? <Check size={13} className="text-green-500 shrink-0" /> : <Copy size={13} className="text-gray-400 shrink-0" />}
+            </div>
+
+            {/* Wallet type badge */}
+            <div className="mt-3 flex items-center gap-2">
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium
+                ${(user as any).walletType === 'EXTERNAL'
+                  ? 'bg-green-500/10 text-green-500'
+                  : 'bg-gray-200 dark:bg-dark-500 text-gray-400'}`}>
+                {(user as any).walletType === 'EXTERNAL' ? t('profile.external') : t('profile.custodial')}
+              </span>
+            </div>
+
+            {/* Open hint */}
+            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ArrowUpRight size={16} className="text-amber-400" />
+            </div>
+          </button>
+
+        </div>
+
+        {/* Quick actions */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowWallet(true)}
+            className="flex items-center gap-2.5 px-4 py-3 bg-white dark:bg-dark-700 rounded-xl border border-gray-100 dark:border-dark-600 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all text-sm font-medium text-gray-600 dark:text-gray-300"
+          >
+            <ArrowDownLeft size={18} className="text-primary-500" />
+            {t('wallet.topUp')}
+          </button>
+          <button
+            onClick={() => setShowWallet(true)}
+            className="flex items-center gap-2.5 px-4 py-3 bg-white dark:bg-dark-700 rounded-xl border border-gray-100 dark:border-dark-600 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all text-sm font-medium text-gray-600 dark:text-gray-300"
+          >
+            <ArrowUpRight size={18} className="text-amber-500" />
+            {t('wallet.transfer')}
+          </button>
+        </div>
+
+        {/* Marketplace placeholder tile */}
+        <div className="bg-white dark:bg-dark-700 rounded-2xl p-5 border border-dashed border-gray-200 dark:border-dark-500 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center shrink-0">
+            <span className="text-2xl">🛍</span>
+          </div>
+          <div>
+            <p className="font-semibold text-sm text-gray-700 dark:text-gray-200">{t('dashboard.marketplace')}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t('dashboard.comingSoon')}</p>
+          </div>
+          <span className="ml-auto text-[10px] px-2 py-1 bg-purple-500/10 text-purple-400 rounded-full font-medium shrink-0">
+            {t('dashboard.wip')}
+          </span>
+        </div>
+
       </div>
 
-      {/* Unread */}
-      {chat.unreadCount && chat.unreadCount > 0 ? (
-        <span className="shrink-0 self-center bg-primary-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">
-          {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
-function EmptyState({ t }: { t: (k: string) => string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full py-20 text-center">
-      <div className="w-20 h-20 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center mx-auto mb-4">
-        <MessageCircle size={36} className="text-primary-400" />
-      </div>
-      <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300">{t('chat.welcome')}</h3>
-      <p className="text-sm text-gray-400 mt-1">{t('chat.selectChat')}</p>
+      {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+      {showWallet && <WalletPanel onClose={() => setShowWallet(false)} />}
     </div>
   );
 }

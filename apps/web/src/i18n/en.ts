@@ -423,4 +423,10 @@ export const en = {
   'feed.title': 'Activity Feed',
   'feed.subtitle': 'Latest messages from all chats',
   'chat.you': 'You',
+  'dashboard.greeting': 'Hello',
+  'dashboard.subtitle': 'Welcome to Pulsar',
+  'dashboard.noVerification': 'Not verified',
+  'dashboard.marketplace': 'Marketplace',
+  'dashboard.comingSoon': 'NFT, goods and more — coming soon',
+  'dashboard.wip': 'In development',
 };

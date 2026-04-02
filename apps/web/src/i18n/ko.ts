@@ -422,4 +422,10 @@ export const ko = {
   'feed.title': '활동 피드',
   'feed.subtitle': '모든 채팅의 최신 메시지',
   'chat.you': '나',
+  'dashboard.greeting': '안녕하세요',
+  'dashboard.subtitle': 'Pulsar에 오신 것을 환영합니다',
+  'dashboard.noVerification': '미인증',
+  'dashboard.marketplace': '마켓플레이스',
+  'dashboard.comingSoon': 'NFT, 상품 등 — 곧 출시',
+  'dashboard.wip': '개발 중',
 };

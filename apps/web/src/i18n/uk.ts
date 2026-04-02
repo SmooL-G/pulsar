@@ -422,4 +422,10 @@ export const uk = {
   'feed.title': 'Стрічка активності',
   'feed.subtitle': 'Останні повідомлення з усіх чатів',
   'chat.you': 'Ви',
+  'dashboard.greeting': 'Привіт',
+  'dashboard.subtitle': 'Ласкаво просимо до Pulsar',
+  'dashboard.noVerification': 'Не верифікований',
+  'dashboard.marketplace': 'Маркетплейс',
+  'dashboard.comingSoon': 'NFT, товари та більше — незабаром',
+  'dashboard.wip': 'У розробці',
 };

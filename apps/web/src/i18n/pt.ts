@@ -422,4 +422,10 @@ export const pt = {
   'feed.title': 'Feed de atividades',
   'feed.subtitle': 'Mensagens recentes de todos os chats',
   'chat.you': 'Você',
+  'dashboard.greeting': 'Olá',
+  'dashboard.subtitle': 'Bem-vindo ao Pulsar',
+  'dashboard.noVerification': 'Não verificado',
+  'dashboard.marketplace': 'Mercado',
+  'dashboard.comingSoon': 'NFT, produtos e mais — em breve',
+  'dashboard.wip': 'Em desenvolvimento',
 };

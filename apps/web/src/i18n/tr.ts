@@ -422,4 +422,10 @@ export const tr = {
   'feed.title': 'Aktivite Akışı',
   'feed.subtitle': 'Tüm sohbetlerden son mesajlar',
   'chat.you': 'Siz',
+  'dashboard.greeting': 'Merhaba',
+  'dashboard.subtitle': 'Pulsar'a hoş geldiniz',
+  'dashboard.noVerification': 'Doğrulanmamış',
+  'dashboard.marketplace': 'Pazar Yeri',
+  'dashboard.comingSoon': 'NFT, ürünler ve daha fazlası — yakında',
+  'dashboard.wip': 'Geliştiriliyor',
 };
