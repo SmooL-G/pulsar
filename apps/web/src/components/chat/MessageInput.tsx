@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Send, Paperclip, Smile, Lock, LockOpen } from 'lucide-react';
+import { EmojiPicker } from './EmojiPicker';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
 import { useI18n } from '../../i18n';
@@ -24,6 +25,7 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
   const { t } = useI18n();
   const [text, setText] = useState('');
   const [e2eOn, setE2eOn] = useState(getE2EEnabled);
+  const [showEmoji, setShowEmoji] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { signMessage: walletSignMessage, publicKey } = useWallet();
 
@@ -125,9 +127,23 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
           />
         </div>
 
-        <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-400 shrink-0">
-          <Smile size={20} />
-        </button>
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setShowEmoji((v) => !v)}
+            className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 transition-colors ${showEmoji ? 'text-primary-500' : 'text-gray-400'}`}
+          >
+            <Smile size={20} />
+          </button>
+          {showEmoji && (
+            <EmojiPicker
+              onSelect={(emoji) => {
+                setText((prev) => prev + emoji);
+                textareaRef.current?.focus();
+              }}
+              onClose={() => setShowEmoji(false)}
+            />
+          )}
+        </div>
 
         <button
           onClick={handleSend}
