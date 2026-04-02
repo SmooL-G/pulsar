@@ -22,8 +22,13 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 4 | NFT интеграция + аватар | ✅ Готово | 2026-03-27 |
 | 5 | E2E шифрование | ✅ Готово | 2026-03-27 |
 | 6 | Галерея аватаров | ✅ Готово | 2026-03-27 |
-| 7 | P2P WebRTC | 🔲 В очереди | — |
-| 8 | IPFS/Arweave хранение | 🔲 Опционально | — |
+| 7 | E2E ключи привязаны к userId | ✅ Готово | 2026-04-01 |
+| 8 | Привязка внешнего кошелька (Settings) | ✅ Готово | 2026-04-01 |
+| 9 | Внутренние переводы PLS между юзерами | ✅ Готово | 2026-04-01 |
+| 10 | Верификация и значки перенесены в Settings | ✅ Готово | 2026-04-01 |
+| 11 | Счётчик непрочитанных на аватарке в чат-листе | ✅ Готово | 2026-04-01 |
+| 12 | P2P WebRTC | 🔲 В очереди | — |
+| 13 | IPFS/Arweave хранение | 🔲 Опционально | — |
 
 ---
 
@@ -139,7 +144,66 @@ encryptionType   String? @map("encryption_type") @db.VarChar(32)
 
 ---
 
-## 🔲 7. P2P WebRTC Data Channels (следующий)
+## ✅ 7. E2E ключи привязаны к userId
+
+**Реализовано:** Ключи NaCl в IndexedDB хранятся с ключом `e2e-keys-{userId}` — выживают logout/login, не удаляются при смене сессии. `initializeE2EKeys(userId)` вызывается при логине и fetchMe.
+
+**Файлы:**
+- `apps/web/src/store/authStore.ts` — передача userId в initializeE2EKeys
+- `apps/web/src/crypto/keyManager.ts` — ключ IndexedDB включает userId
+
+---
+
+## ✅ 8. Привязка внешнего кошелька (Settings)
+
+**Реализовано:** Пользователи с custodial-кошельком могут привязать Phantom/Solflare в разделе Настройки → Кошелёк. Флоу: nonce → подпись → верификация на сервере → обновление `walletAddress` + `walletType = EXTERNAL`.
+
+**API эндпоинты:**
+- `POST /users/me/wallet/nonce` — генерация 5-минутного nonce (Redis)
+- `POST /users/me/wallet/link` — верификация подписи, обновление кошелька
+
+**Файлы:**
+- `apps/server/src/modules/user/user.routes.ts` — эндпоинты привязки
+- `apps/web/src/components/settings/SettingsPanel.tsx` — `LinkWalletSection`
+
+---
+
+## ✅ 9. Внутренние переводы PLS между юзерами
+
+**Реализовано:** Атомарный перевод PLS между пользователями на уровне БД (без блокчейн-комиссий). Кнопка "Перевести" в Settings → Кошелёк и в хедере DM-чата. Поиск получателя по username, подтверждение суммы. Socket-событие обновляет баланс обоих пользователей реал-тайм.
+
+**API:** `POST /wallet/transfer { toUserId, amount }`
+
+**Файлы:**
+- `apps/server/src/modules/wallet/wallet.routes.ts` — эндпоинт transfer
+- `apps/web/src/components/wallet/TransferModal.tsx` — UI перевода
+- `apps/web/src/components/layout/ChatArea.tsx` — кнопка в хедере DM
+- `packages/shared/src/types/socket-events.ts` — тип TRANSFER добавлен
+
+---
+
+## ✅ 10. Верификация и значки перенесены в Settings
+
+**Реализовано:** Секции "Уровни верификации" и "Профильные значки" убраны из WalletPanel и перенесены в Настройки → Профиль как две кнопки с модальными окнами (z-index 60).
+
+**Файлы:**
+- `apps/web/src/components/settings/SettingsPanel.tsx` — VerificationModal, BadgesModal
+- `apps/web/src/components/wallet/WalletPanel.tsx` — секции удалены
+
+---
+
+## ✅ 11. Счётчик непрочитанных на аватарке
+
+**Реализовано:** При получении нового сообщения в неактивном чате на аватарке в чат-листе появляется красный бейдж с числом. При открытии чата счётчик сбрасывается. Если есть непрочитанные — индикатор онлайна скрывается.
+
+**Файлы:**
+- `apps/web/src/components/chat/ChatListItem.tsx` — бейдж на аватарке
+- `apps/web/src/hooks/useSocket.ts` — инкремент unreadCount на message:new
+- `apps/web/src/store/chatStore.ts` — сброс unreadCount при setActiveChat
+
+---
+
+## 🔲 12. P2P WebRTC Data Channels (следующий)
 
 Прямое P2P-соединение для DM между онлайн-пользователями. Сервер = signaling + fallback.
 
@@ -158,7 +222,7 @@ encryptionType   String? @map("encryption_type") @db.VarChar(32)
 
 ---
 
-## 🔲 8. IPFS/Arweave хранение (опционально)
+## 🔲 13. IPFS/Arweave хранение (опционально)
 
 Зашифрованные сообщения хранятся на IPFS/Arweave для перманентного децентрализованного хранения. CID/tx ID сохраняется в metadata сообщения.
 
