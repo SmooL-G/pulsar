@@ -202,68 +202,70 @@ export function AdminUsers() {
                         </div>
                       </div>
 
-                      {!isSelf && (
-                        <div className="flex flex-wrap gap-2">
-                          {/* Role change */}
-                          {(isSuperAdmin || (currentUser?.role === 'ADMIN' && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN')) && (
+                      <div className="flex flex-wrap gap-2">
+                        {!isSelf && (
+                          <>
+                            {/* Role change */}
+                            {(isSuperAdmin || (currentUser?.role === 'ADMIN' && u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN')) && (
+                              <select
+                                value={u.role}
+                                onChange={(e) => changeRole(u.id, e.target.value)}
+                                className="text-xs bg-gray-100 dark:bg-dark-700 rounded-lg px-2 py-1.5 border border-gray-300 dark:border-dark-500 outline-none text-gray-900 dark:text-gray-100"
+                              >
+                                <option value="USER">USER</option>
+                                <option value="MODERATOR">MODERATOR</option>
+                                {isSuperAdmin && <option value="ADMIN">ADMIN</option>}
+                                {isSuperAdmin && <option value="SUPER_ADMIN">SUPER_ADMIN</option>}
+                              </select>
+                            )}
+
+                            {/* Verification */}
                             <select
-                              value={u.role}
-                              onChange={(e) => changeRole(u.id, e.target.value)}
+                              value={u.verificationLevel}
+                              onChange={(e) => changeVerification(u.id, parseInt(e.target.value))}
                               className="text-xs bg-gray-100 dark:bg-dark-700 rounded-lg px-2 py-1.5 border border-gray-300 dark:border-dark-500 outline-none text-gray-900 dark:text-gray-100"
                             >
-                              <option value="USER">USER</option>
-                              <option value="MODERATOR">MODERATOR</option>
-                              {isSuperAdmin && <option value="ADMIN">ADMIN</option>}
-                              {isSuperAdmin && <option value="SUPER_ADMIN">SUPER_ADMIN</option>}
+                              {Array.from({ length: maxVerLevel + 1 }, (_, i) => (
+                                <option key={i} value={i}>✦ Lv.{i}</option>
+                              ))}
                             </select>
-                          )}
 
-                          {/* Verification */}
-                          <select
-                            value={u.verificationLevel}
-                            onChange={(e) => changeVerification(u.id, parseInt(e.target.value))}
-                            className="text-xs bg-gray-100 dark:bg-dark-700 rounded-lg px-2 py-1.5 border border-gray-300 dark:border-dark-500 outline-none text-gray-900 dark:text-gray-100"
-                          >
-                            {Array.from({ length: maxVerLevel + 1 }, (_, i) => (
-                              <option key={i} value={i}>✦ Lv.{i}</option>
-                            ))}
-                          </select>
+                            {/* Ban/Unban */}
+                            {u.role !== 'SUPER_ADMIN' && (
+                              <button
+                                onClick={() => toggleBan(u.id, u.status)}
+                                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                                  u.status === 'BANNED'
+                                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                    : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                                }`}
+                              >
+                                {u.status === 'BANNED' ? t('admin.unban') : t('admin.ban')}
+                              </button>
+                            )}
 
-                          {/* Ban/Unban */}
-                          {u.role !== 'SUPER_ADMIN' && (
-                            <button
-                              onClick={() => toggleBan(u.id, u.status)}
-                              className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                                u.status === 'BANNED'
-                                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                                  : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                              }`}
-                            >
-                              {u.status === 'BANNED' ? t('admin.unban') : t('admin.ban')}
-                            </button>
-                          )}
+                            {/* Delete */}
+                            {isSuperAdmin && u.role !== 'SUPER_ADMIN' && (
+                              <button
+                                onClick={() => { if (confirm(t('admin.confirmDelete'))) deleteUser(u.id); }}
+                                className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-colors"
+                              >
+                                <Trash2 size={12} className="inline mr-1" />
+                                {t('admin.delete')}
+                              </button>
+                            )}
+                          </>
+                        )}
 
-                          {/* Reward */}
-                          <button
-                            onClick={() => setRewardUser({ id: u.id, username: u.username })}
-                            className="text-xs px-3 py-1.5 rounded-lg font-medium bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
-                          >
-                            <Gift size={12} className="inline mr-1" />
-                            {t('admin.giveReward')}
-                          </button>
-
-                          {/* Delete */}
-                          {isSuperAdmin && u.role !== 'SUPER_ADMIN' && (
-                            <button
-                              onClick={() => { if (confirm(t('admin.confirmDelete'))) deleteUser(u.id); }}
-                              className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-colors"
-                            >
-                              <Trash2 size={12} className="inline mr-1" />
-                              {t('admin.delete')}
-                            </button>
-                          )}
-                        </div>
-                      )}
+                        {/* Reward — доступно и для себя */}
+                        <button
+                          onClick={() => setRewardUser({ id: u.id, username: u.username })}
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
+                        >
+                          <Gift size={12} className="inline mr-1" />
+                          {t('admin.giveReward')}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
