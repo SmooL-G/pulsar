@@ -29,6 +29,7 @@ model User {
   status              UserStatus @default(ACTIVE)
   lastSeenAt          DateTime?  @map("last_seen_at")
   isOnline            Boolean    @default(false) @map("is_online")
+  isBot               Boolean    @default(false) @map("is_bot")
   createdAt           DateTime   @default(now()) @map("created_at")
   updatedAt           DateTime   @updatedAt @map("updated_at")
 
@@ -43,6 +44,10 @@ model User {
   receivedRequests  Friendship[]       @relation("addressee")
   plsWallet         PlsWallet?
   keyBundle         UserKeyBundle?
+  botProfile        Bot?               @relation("botUser")
+  ownedBots         Bot[]              @relation("botOwner")
+  reports           Report[]
+  punishments       UserPunishment[]
 
   @@map("users")
 }
@@ -102,6 +107,7 @@ model Chat {
   members        ChatMember[]
   messages       Message[]
   pinnedMessages PinnedMessage[]
+  isModChannel   Boolean  @default(false) @map("is_mod_channel")
 
   @@index([type])
   @@index([inviteCode])
@@ -166,6 +172,7 @@ model Message {
   readReceipts ReadReceipt[]
   reactions    Reaction[]
   pinned       PinnedMessage?
+  reports      Report[]
 
   @@index([chatId, createdAt(sort: Desc)])
   @@index([senderId])
@@ -377,4 +384,122 @@ model NftCache {
 
   @@index([ownerWallet])
   @@map("nft_cache")
+}
+
+// ─── BOTS ───────────────────────────────────────────────
+
+model Bot {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @unique @map("user_id") @db.Uuid
+  ownerId         String    @map("owner_id") @db.Uuid
+  tokenHash       String    @map("token_hash")
+  webhookUrl      String?   @map("webhook_url")
+  webhookSecret   String?   @map("webhook_secret")
+  commands        Json?     @default("[]")
+  isActive        Boolean   @default(true) @map("is_active")
+  isSystemBot     Boolean   @default(false) @map("is_system_bot")
+  lastSeenAt      DateTime? @map("last_seen_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user    User        @relation("botUser", fields: [userId], references: [id], onDelete: Cascade)
+  owner   User        @relation("botOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  updates BotUpdate[]
+
+  @@index([ownerId])
+  @@map("bots")
+}
+
+model BotUpdate {
+  id        String   @id @default(uuid()) @db.Uuid
+  botId     String   @map("bot_id") @db.Uuid
+  type      String   @db.VarChar(32)
+  payload   Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  bot Bot @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@index([botId, createdAt(sort: Desc)])
+  @@map("bot_updates")
+}
+
+// ─── MODERATION ─────────────────────────────────────────
+
+model Report {
+  id         String       @id @default(uuid()) @db.Uuid
+  messageId  String       @map("message_id") @db.Uuid
+  reporterId String       @map("reporter_id") @db.Uuid
+  reason     ReportReason
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  message     Message          @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reporter    User             @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  votes       ModVote[]
+  punishments UserPunishment[]
+
+  @@index([status])
+  @@index([messageId])
+  @@map("reports")
+}
+
+model ModVote {
+  id          String     @id @default(uuid()) @db.Uuid
+  reportId    String     @map("report_id") @db.Uuid
+  moderatorId String     @map("moderator_id") @db.Uuid
+  verdict     ModVerdict
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, moderatorId])
+  @@map("mod_votes")
+}
+
+model UserPunishment {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @map("user_id") @db.Uuid
+  type      PunishmentType
+  expiresAt DateTime?      @map("expires_at")
+  reason    String?        @db.VarChar(256)
+  reportId  String?        @map("report_id") @db.Uuid
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  report Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("user_punishments")
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  ILLEGAL
+  VIOLENCE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED_WARN
+  RESOLVED_MUTE
+  RESOLVED_BAN
+  DISMISSED
+}
+
+enum ModVerdict {
+  WARN
+  MUTE_1H
+  MUTE_24H
+  MUTE_7D
+  BAN_30D
+  BAN_PERM
+  DISMISS
+}
+
+enum PunishmentType {
+  WARN
+  MUTE
+  BAN
 }
