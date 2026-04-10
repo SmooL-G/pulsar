@@ -82,6 +82,28 @@ export interface ServerToClientEvents {
     type: 'DEPOSIT' | 'PURCHASE' | 'REWARD' | 'TRANSFER';
   }) => void;
 
+  'message:reaction': (data: {
+    messageId: string;
+    chatId: string;
+    reactions: { emoji: string; count: number; userIds: string[] }[];
+  }) => void;
+
+  'message:pinned': (data: {
+    chatId: string;
+    messageId: string;
+    pinnedBy: string;
+  }) => void;
+
+  'message:unpinned': (data: {
+    chatId: string;
+    messageId: string;
+  }) => void;
+
+  'report:votes-updated': (data: {
+    reportId: string;
+    votes: unknown[];
+  }) => void;
+
   'error': (data: {
     code: string;
     message: string;

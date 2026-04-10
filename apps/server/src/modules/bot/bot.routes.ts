@@ -192,16 +192,16 @@ export async function botManagementRoutes(app: FastifyInstance) {
     const botMembers = await prisma.chatMember.findMany({
       where: { chatId: request.params.chatId, leftAt: null, user: { isBot: true } },
       include: {
-        user: { select: { username: true, displayName: true, bot: { select: { commands: true } } } },
+        user: { include: { botProfile: { select: { commands: true } } } },
       },
     });
 
     const result: { botUsername: string; command: string; description: string }[] = [];
     for (const m of botMembers) {
-      const commands = (m.user.bot?.commands as any[]) || [];
+      const commands = ((m.user as any).botProfile?.commands as any[]) || [];
       for (const c of commands) {
         result.push({
-          botUsername: m.user.username,
+          botUsername: (m.user as any).username,
           command: c.command,
           description: c.description || '',
         });

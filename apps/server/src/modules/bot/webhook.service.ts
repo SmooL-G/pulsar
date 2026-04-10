@@ -45,13 +45,13 @@ export async function dispatchBotUpdates(message: MessagePayload) {
       },
       include: {
         user: {
-          include: { bot: true },
+          include: { botProfile: true },
         },
       },
     });
 
     for (const member of botMembers) {
-      const bot = member.user.bot;
+      const bot = (member.user as any).botProfile;
       if (!bot || !bot.isActive || bot.isSystemBot) continue;
 
       const isCommand = message.content?.startsWith('/');

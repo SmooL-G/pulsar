@@ -167,7 +167,7 @@ export async function botApiRoutes(app: FastifyInstance) {
 
       // Immediate fetch
       let updates = await prisma.botUpdate.findMany({
-        where: { botId, id: { gt: offset } },
+        where: { botId, ...(offset ? { id: { gt: String(offset) } } : {}) },
         orderBy: { id: 'asc' },
         take: limit,
       });
@@ -202,7 +202,7 @@ export async function botApiRoutes(app: FastifyInstance) {
       });
 
       updates = await prisma.botUpdate.findMany({
-        where: { botId, id: { gt: offset } },
+        where: { botId, ...(offset ? { id: { gt: String(offset) } } : {}) },
         orderBy: { id: 'asc' },
         take: limit,
       });

@@ -108,6 +108,7 @@ model Chat {
   messages       Message[]
   pinnedMessages PinnedMessage[]
   isModChannel   Boolean  @default(false) @map("is_mod_channel")
+  allowComments  Boolean  @default(true) @map("allow_comments")
 
   @@index([type])
   @@index([inviteCode])
