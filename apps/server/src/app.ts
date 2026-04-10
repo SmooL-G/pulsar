@@ -8,6 +8,7 @@ import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { redis } from './config/redis.js';
+import { prisma } from './config/database.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { userRoutes } from './modules/user/user.routes.js';
 import { chatRoutes } from './modules/chat/chat.routes.js';
@@ -57,12 +58,22 @@ export async function buildApp() {
   // Error handler
   app.setErrorHandler(errorHandler);
 
-  // Health check
-  app.get('/health', async () => ({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  }));
+  // Health check (used by Cloudflare / load balancer)
+  app.get('/health', async (_req, reply) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      await redis.ping();
+      return {
+        status: 'ok',
+        instance: process.env.INSTANCE_ID || 'default',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+      };
+    } catch (e) {
+      reply.status(503);
+      return { status: 'error', message: (e as Error).message };
+    }
+  });
 
   // API routes
   await app.register(authRoutes, { prefix: '/api/v1/auth' });

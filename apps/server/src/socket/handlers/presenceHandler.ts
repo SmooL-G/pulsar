@@ -1,36 +1,29 @@
 import type { Server, Socket } from 'socket.io';
+import crypto from 'crypto';
 import { redis } from '../../config/redis.js';
 import { prisma } from '../../config/database.js';
 
-const PRESENCE_TTL = 60; // seconds
-const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+const PRESENCE_TTL = 60;
+const HEARTBEAT_INTERVAL = 30000;
 
-// Clean up stale presence data on server start (call once)
+const INSTANCE_ID = process.env.INSTANCE_ID || crypto.randomUUID();
+
 let cleanedUp = false;
 export async function cleanupPresenceOnStart() {
   if (cleanedUp) return;
   cleanedUp = true;
 
-  // Clear all socket sets from Redis
-  const keys = await redis.keys('user:sockets:*');
-  const onlineKeys = await redis.keys('user:online:*');
-  if (keys.length > 0 || onlineKeys.length > 0) {
-    await redis.del(...keys, ...onlineKeys);
+  const keys = await redis.keys(`user:sockets:*:${INSTANCE_ID}`);
+  if (keys.length > 0) {
+    await redis.del(...keys);
   }
 
-  // Reset all users to offline
-  await prisma.user.updateMany({
-    where: { isOnline: true },
-    data: { isOnline: false, lastSeenAt: new Date() },
-  });
-
-  console.log(`Presence cleanup: cleared ${keys.length} socket sets, ${onlineKeys.length} online keys`);
+  console.log(`Presence cleanup [${INSTANCE_ID}]: cleared ${keys.length} socket sets`);
 }
 
 export function registerPresenceHandlers(io: Server, socket: Socket) {
   const userId = socket.data.userId as string;
 
-  // Set online on connect
   setOnline(userId, socket.id);
 
   socket.on('presence:heartbeat', () => {
@@ -38,12 +31,15 @@ export function registerPresenceHandlers(io: Server, socket: Socket) {
   });
 
   socket.on('disconnect', async () => {
-    // Remove this socket from user's socket set
-    await redis.srem(`user:sockets:${userId}`, socket.id);
-    const remaining = await redis.scard(`user:sockets:${userId}`);
+    await redis.srem(`user:sockets:${userId}:${INSTANCE_ID}`, socket.id);
 
-    if (remaining === 0) {
-      // No more active sockets — user is offline
+    const allKeys = await redis.keys(`user:sockets:${userId}:*`);
+    let totalSockets = 0;
+    for (const key of allKeys) {
+      totalSockets += await redis.scard(key);
+    }
+
+    if (totalSockets === 0) {
       await redis.del(`user:online:${userId}`);
       await prisma.user.update({
         where: { id: userId },
@@ -56,7 +52,7 @@ export function registerPresenceHandlers(io: Server, socket: Socket) {
 }
 
 async function setOnline(userId: string, socketId: string) {
-  await redis.sadd(`user:sockets:${userId}`, socketId);
+  await redis.sadd(`user:sockets:${userId}:${INSTANCE_ID}`, socketId);
   await redis.setex(`user:online:${userId}`, PRESENCE_TTL, '1');
   await prisma.user.update({
     where: { id: userId },

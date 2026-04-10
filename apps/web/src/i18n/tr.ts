@@ -423,7 +423,7 @@ export const tr = {
   'feed.subtitle': 'Tüm sohbetlerden son mesajlar',
   'chat.you': 'Siz',
   'dashboard.greeting': 'Merhaba',
-  'dashboard.subtitle': 'Pulsar'a hoş geldiniz',
+  'dashboard.subtitle': "Pulsar'a hoş geldiniz",
   'dashboard.noVerification': 'Doğrulanmamış',
   'dashboard.marketplace': 'Pazar Yeri',
   'dashboard.comingSoon': 'NFT, ürünler ve daha fazlası — yakında',
@@ -431,5 +431,5 @@ export const tr = {
   'wallet.fee': 'Ücret (yakma)',
   'wallet.youWillReceive': 'Alacak',
   'wallet.solanaDev': 'Geliştiriliyor',
-  'wallet.transferFeeNote': 'Miktarın %2'si yakılır',
+  'wallet.transferFeeNote': "Miktarın %2'si yakılır",
 };

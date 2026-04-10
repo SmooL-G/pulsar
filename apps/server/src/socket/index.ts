@@ -1,5 +1,7 @@
 import { Server as HttpServer } from 'http';
 import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import Redis from 'ioredis';
 import type { ClientToServerEvents, ServerToClientEvents } from '@pulsar/shared';
 import { env } from '../config/env.js';
 import { socketAuthMiddleware } from './middleware/socketAuth.js';
@@ -17,6 +19,9 @@ export function getIO(): AppSocket {
 }
 
 export function initSocketServer(httpServer: HttpServer) {
+  const pubClient = new Redis(env.REDIS_URL);
+  const subClient = pubClient.duplicate();
+
   io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
     cors: {
       origin: env.CORS_ORIGIN,
@@ -24,22 +29,19 @@ export function initSocketServer(httpServer: HttpServer) {
     },
     pingTimeout: 60000,
     pingInterval: 25000,
+    adapter: createAdapter(pubClient, subClient),
   });
 
-  // Clean up stale presence from previous server instance
   cleanupPresenceOnStart();
 
-  // Auth middleware
   io.use(socketAuthMiddleware);
 
   io.on('connection', (socket) => {
     const userId = (socket.data as { userId: string }).userId;
     console.log(`User connected: ${userId} (socket: ${socket.id})`);
 
-    // Join personal room for targeted events
     socket.join(`user:${userId}`);
 
-    // Register event handlers
     registerChatHandlers(io, socket);
     registerMessageHandlers(io, socket);
     registerTypingHandlers(io, socket);
