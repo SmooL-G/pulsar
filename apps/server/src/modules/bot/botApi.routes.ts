@@ -1,0 +1,274 @@
+import type { FastifyInstance } from 'fastify';
+import { prisma } from '../../config/database.js';
+import { botAuthMiddleware } from '../../middleware/botAuth.js';
+import { redis } from '../../config/redis.js';
+import { getIO } from '../../socket/index.js';
+import { env } from '../../config/env.js';
+
+export async function botApiRoutes(app: FastifyInstance) {
+  app.addHook('preHandler', botAuthMiddleware);
+
+  // GET /me
+  app.get('/me', async (request) => {
+    const { userId, botId } = request.user as any;
+    const bot = await prisma.bot.findUnique({
+      where: { id: botId },
+      include: { user: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
+    });
+    return {
+      id: bot?.id,
+      username: bot?.user.username,
+      displayName: bot?.user.displayName,
+      avatarUrl: bot?.user.avatarUrl,
+      webhookUrl: bot?.webhookUrl,
+      commands: bot?.commands || [],
+      isActive: bot?.isActive,
+      lastSeenAt: bot?.lastSeenAt?.toISOString() || null,
+    };
+  });
+
+  // POST /sendMessage — with optional inline buttons
+  app.post<{ Body: { chatId: string; text: string; replyToId?: string; buttons?: { text: string; callbackData: string }[][] } }>(
+    '/sendMessage',
+    async (request, reply) => {
+      const { userId } = request.user as any;
+      const { chatId, text, replyToId, buttons } = request.body;
+
+      if (!chatId || !text?.trim()) {
+        return reply.status(400).send({ error: 'INVALID_INPUT' });
+      }
+
+      const membership = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId, userId } },
+        select: { leftAt: true },
+      });
+      if (!membership || membership.leftAt) {
+        return reply.status(403).send({ error: 'BOT_NOT_IN_CHAT' });
+      }
+
+      const metadata = buttons?.length ? { buttons } : null;
+
+      const message = await prisma.message.create({
+        data: {
+          chatId,
+          senderId: userId,
+          content: text.trim(),
+          type: 'TEXT',
+          replyToId: replyToId || null,
+          metadata: metadata as any,
+        },
+        include: {
+          sender: {
+            select: { id: true, username: true, displayName: true, avatarUrl: true, isBot: true },
+          },
+        },
+      });
+
+      const payload = {
+        id: message.id,
+        chatId: message.chatId,
+        senderId: message.senderId,
+        content: message.content,
+        type: message.type,
+        replyToId: message.replyToId,
+        isEdited: false,
+        isDeleted: false,
+        metadata: message.metadata as any,
+        signature: null,
+        signerWallet: null,
+        encryptedContent: null,
+        encryptionType: null,
+        createdAt: message.createdAt.toISOString(),
+        updatedAt: message.updatedAt.toISOString(),
+        sender: message.sender,
+        status: 'sent',
+        attachments: [],
+      };
+
+      const io = getIO();
+      if (io) {
+        io.to(`chat:${chatId}`).emit('message:new', payload as any);
+      }
+
+      return { ok: true, message: payload };
+    }
+  );
+
+  // POST /deleteMessage — moderate: delete a message
+  app.post<{ Body: { chatId: string; messageId: string } }>('/deleteMessage', async (request, reply) => {
+    const { userId } = request.user as any;
+    const { chatId, messageId } = request.body;
+
+    const membership = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId, userId } },
+      select: { role: true, leftAt: true },
+    });
+    if (!membership || membership.leftAt) return reply.status(403).send({ error: 'BOT_NOT_IN_CHAT' });
+
+    const roleLevel: Record<string, number> = { MEMBER: 0, AUTHOR: 1, MODERATOR: 2, ADMIN: 3, OWNER: 4 };
+    if ((roleLevel[membership.role] ?? 0) < 2) return reply.status(403).send({ error: 'INSUFFICIENT_ROLE' });
+
+    await prisma.message.update({ where: { id: messageId }, data: { isDeleted: true, content: null } });
+    const io = getIO();
+    if (io) io.to(`chat:${chatId}`).emit('message:deleted', { messageId, chatId });
+
+    return { ok: true };
+  });
+
+  // POST /kickMember — moderate: kick a user from chat
+  app.post<{ Body: { chatId: string; userId: string } }>('/kickMember', async (request, reply) => {
+    const botUserId = (request.user as any).userId;
+    const { chatId, userId: targetId } = request.body;
+
+    const botMembership = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId, userId: botUserId } },
+      select: { role: true, leftAt: true },
+    });
+    if (!botMembership || botMembership.leftAt) return reply.status(403).send({ error: 'BOT_NOT_IN_CHAT' });
+
+    const roleLevel: Record<string, number> = { MEMBER: 0, AUTHOR: 1, MODERATOR: 2, ADMIN: 3, OWNER: 4 };
+    if ((roleLevel[botMembership.role] ?? 0) < 2) return reply.status(403).send({ error: 'INSUFFICIENT_ROLE' });
+
+    const targetMembership = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId, userId: targetId } },
+      select: { role: true },
+    });
+    if (!targetMembership) return reply.status(404).send({ error: 'USER_NOT_IN_CHAT' });
+
+    if ((roleLevel[targetMembership.role] ?? 0) >= (roleLevel[botMembership.role] ?? 0)) {
+      return reply.status(403).send({ error: 'CANNOT_KICK_HIGHER_ROLE' });
+    }
+
+    await prisma.chatMember.update({
+      where: { chatId_userId: { chatId, userId: targetId } },
+      data: { leftAt: new Date() },
+    });
+
+    return { ok: true };
+  });
+
+  // POST /answerCallback — respond to inline button press
+  app.post<{ Body: { chatId: string; messageId: string; userId: string; callbackData: string } }>(
+    '/answerCallback',
+    async (request) => {
+      // Just acknowledge — the bot processes callbackData via updates/webhook
+      return { ok: true };
+    }
+  );
+
+  // GET /updates — long polling
+  app.get<{ Querystring: { offset?: string; timeout?: string; limit?: string } }>(
+    '/updates',
+    async (request, reply) => {
+      const { botId } = request.user as any;
+      const offset = BigInt(request.query.offset || '0');
+      const timeout = Math.min(Number(request.query.timeout || 30), 60);
+      const limit = Math.min(Number(request.query.limit || 100), 100);
+
+      // Immediate fetch
+      let updates = await prisma.botUpdate.findMany({
+        where: { botId, id: { gt: offset } },
+        orderBy: { id: 'asc' },
+        take: limit,
+      });
+
+      if (updates.length > 0) {
+        return { ok: true, result: updates.map(u => ({ ...u, id: u.id.toString() })) };
+      }
+
+      // Long-poll via Redis pub/sub
+      const waitMs = timeout * 1000;
+      await new Promise<void>((resolve) => {
+        const subscriber = redis.duplicate();
+        let resolved = false;
+        const done = () => {
+          if (resolved) return;
+          resolved = true;
+          subscriber.unsubscribe().catch(() => {});
+          subscriber.quit().catch(() => {});
+          resolve();
+        };
+
+        const timer = setTimeout(done, waitMs);
+
+        subscriber.subscribe(`bot:updates:${botId}`, (err) => {
+          if (err) { clearTimeout(timer); done(); }
+        });
+
+        subscriber.on('message', () => {
+          clearTimeout(timer);
+          done();
+        });
+      });
+
+      updates = await prisma.botUpdate.findMany({
+        where: { botId, id: { gt: offset } },
+        orderBy: { id: 'asc' },
+        take: limit,
+      });
+
+      return { ok: true, result: updates.map(u => ({ ...u, id: u.id.toString() })) };
+    }
+  );
+
+  // POST /setWebhook
+  app.post<{ Body: { url?: string; secret?: string } }>('/setWebhook', async (request) => {
+    const { botId } = request.user as any;
+    const { url, secret } = request.body;
+
+    await prisma.bot.update({
+      where: { id: botId },
+      data: {
+        webhookUrl: url || null,
+        webhookSecret: secret || null,
+      },
+    });
+    await redis.del(`bot:auth:${botId}`);
+
+    return { ok: true };
+  });
+
+  // GET /getChats
+  app.get('/getChats', async (request) => {
+    const { userId } = request.user as any;
+    const memberships = await prisma.chatMember.findMany({
+      where: { userId, leftAt: null },
+      include: {
+        chat: {
+          select: { id: true, type: true, name: true, avatarUrl: true },
+        },
+      },
+    });
+    return { ok: true, chats: memberships.map(m => m.chat) };
+  });
+
+  // POST /setCommands
+  app.post<{ Body: { commands: { command: string; description: string }[] } }>(
+    '/setCommands',
+    async (request) => {
+      const { botId } = request.user as any;
+      await prisma.bot.update({ where: { id: botId }, data: { commands: request.body.commands } });
+      await redis.del(`bot:auth:${botId}`);
+      return { ok: true };
+    }
+  );
+
+  // POST /leaveChat
+  app.post<{ Body: { chatId: string } }>('/leaveChat', async (request, reply) => {
+    const { userId } = request.user as any;
+    const { chatId } = request.body;
+
+    const member = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId, userId } },
+      select: { id: true },
+    });
+    if (!member) return reply.status(404).send({ error: 'NOT_IN_CHAT' });
+
+    await prisma.chatMember.update({
+      where: { chatId_userId: { chatId, userId } },
+      data: { leftAt: new Date() },
+    });
+
+    return { ok: true };
+  });
+}
