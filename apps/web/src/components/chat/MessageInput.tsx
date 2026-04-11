@@ -112,8 +112,8 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
 
   return (
     <div className="px-4 py-3 border-t border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
-      <div className="flex items-center gap-3 mb-1 ml-1">
-        {chatType === 'DIRECT' && (
+      {chatType === 'DIRECT' && (
+        <div className="flex items-center gap-3 mb-1 ml-1">
           <button
             onClick={toggleE2E}
             className={`flex items-center gap-1 transition-colors ${
@@ -124,18 +124,18 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
             {e2eOn ? <Lock size={10} /> : <LockOpen size={10} />}
             <span className="text-[10px]">{e2eOn ? t('chat.e2eEncrypted') : t('chat.e2eDisabled')}</span>
           </button>
-        )}
-        <button
-          onClick={toggleSign}
-          className={`flex items-center gap-1 transition-colors ${
-            signOn ? 'text-green-500' : 'text-gray-500'
-          }`}
-          title={signOn ? t('chat.signEnabled') : t('chat.signDisabled')}
-        >
-          {signOn ? <ShieldCheck size={10} /> : <ShieldOff size={10} />}
-          <span className="text-[10px]">{signOn ? t('chat.signEnabled') : t('chat.signDisabled')}</span>
-        </button>
-      </div>
+          <button
+            onClick={toggleSign}
+            className={`flex items-center gap-1 transition-colors ${
+              signOn ? 'text-green-500' : 'text-gray-500'
+            }`}
+            title={signOn ? t('chat.signEnabled') : t('chat.signDisabled')}
+          >
+            {signOn ? <ShieldCheck size={10} /> : <ShieldOff size={10} />}
+            <span className="text-[10px]">{signOn ? t('chat.signEnabled') : t('chat.signDisabled')}</span>
+          </button>
+        </div>
+      )}
       {chatType === 'CHANNEL' && (
         <button
           onClick={() => setCommentsOn((v) => !v)}
