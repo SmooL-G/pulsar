@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle } from 'lucide-react';
+import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
@@ -20,11 +20,18 @@ function getE2EEnabled(): boolean {
 function setE2EEnabled(v: boolean) {
   localStorage.setItem('pulsar_e2e_enabled', v ? 'true' : 'false');
 }
+function getSignEnabled(): boolean {
+  return localStorage.getItem('pulsar_sign_enabled') !== 'false';
+}
+function setSignEnabled(v: boolean) {
+  localStorage.setItem('pulsar_sign_enabled', v ? 'true' : 'false');
+}
 
 export function MessageInput({ chatId, chatType, recipientUserId }: MessageInputProps) {
   const { t } = useI18n();
   const [text, setText] = useState('');
   const [e2eOn, setE2eOn] = useState(getE2EEnabled);
+  const [signOn, setSignOn] = useState(getSignEnabled);
   const [commentsOn, setCommentsOn] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -38,19 +45,27 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
     });
   }, []);
 
+  const toggleSign = useCallback(() => {
+    setSignOn((prev) => {
+      const next = !prev;
+      setSignEnabled(next);
+      return next;
+    });
+  }, []);
+
   const handleSend = async () => {
     const content = text.trim();
     if (!content) return;
 
     const socket = getSocket();
     if (socket?.connected) {
-      // Подпись сообщения кошельком Solana
-      const signed = await signMessage(
+      // Подпись сообщения кошельком Solana (только если включена)
+      const signed = signOn ? await signMessage(
         chatId,
         content,
         walletSignMessage ?? undefined,
         publicKey?.toBase58(),
-      );
+      ) : null;
 
       // E2E шифрование только для DM и если включено
       let encryptedContent: string | undefined;
@@ -97,18 +112,30 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
 
   return (
     <div className="px-4 py-3 border-t border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
-      {chatType === 'DIRECT' && (
+      <div className="flex items-center gap-3 mb-1 ml-1">
+        {chatType === 'DIRECT' && (
+          <button
+            onClick={toggleE2E}
+            className={`flex items-center gap-1 transition-colors ${
+              e2eOn ? 'text-green-500' : 'text-gray-500'
+            }`}
+            title={e2eOn ? t('chat.e2eEncrypted') : t('chat.e2eDisabled')}
+          >
+            {e2eOn ? <Lock size={10} /> : <LockOpen size={10} />}
+            <span className="text-[10px]">{e2eOn ? t('chat.e2eEncrypted') : t('chat.e2eDisabled')}</span>
+          </button>
+        )}
         <button
-          onClick={toggleE2E}
-          className={`flex items-center gap-1 mb-1 ml-1 transition-colors ${
-            e2eOn ? 'text-green-500' : 'text-gray-500'
+          onClick={toggleSign}
+          className={`flex items-center gap-1 transition-colors ${
+            signOn ? 'text-green-500' : 'text-gray-500'
           }`}
-          title={e2eOn ? t('chat.e2eEncrypted') : t('chat.e2eDisabled')}
+          title={signOn ? t('chat.signEnabled') : t('chat.signDisabled')}
         >
-          {e2eOn ? <Lock size={10} /> : <LockOpen size={10} />}
-          <span className="text-[10px]">{e2eOn ? t('chat.e2eEncrypted') : t('chat.e2eDisabled')}</span>
+          {signOn ? <ShieldCheck size={10} /> : <ShieldOff size={10} />}
+          <span className="text-[10px]">{signOn ? t('chat.signEnabled') : t('chat.signDisabled')}</span>
         </button>
-      )}
+      </div>
       {chatType === 'CHANNEL' && (
         <button
           onClick={() => setCommentsOn((v) => !v)}

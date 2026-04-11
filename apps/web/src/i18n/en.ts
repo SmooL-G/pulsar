@@ -385,6 +385,8 @@ export const en = {
   'nft.noNfts': 'No NFTs found in your wallet',
   'chat.e2eEncrypted': 'End-to-end encrypted',
   'chat.e2eDisabled': 'Encryption disabled',
+  'chat.signEnabled': 'Signed with wallet',
+  'chat.signDisabled': 'Signature disabled',
   'e2e.keysTitle': 'E2E Encryption Keys',
   'e2e.keysDescription': 'Export your keys to restore access to encrypted messages on another device.',
   'e2e.keysPresent': 'E2E keys installed',

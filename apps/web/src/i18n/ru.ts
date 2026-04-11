@@ -385,6 +385,8 @@ export const ru = {
   'nft.noNfts': 'В вашем кошельке нет NFT',
   'chat.e2eEncrypted': 'Сквозное шифрование',
   'chat.e2eDisabled': 'Шифрование отключено',
+  'chat.signEnabled': 'Подпись кошельком',
+  'chat.signDisabled': 'Подпись отключена',
   'e2e.keysTitle': 'Ключи шифрования E2E',
   'e2e.keysDescription': 'Экспортируйте ключи, чтобы восстановить доступ к зашифрованным сообщениям на другом устройстве.',
   'e2e.keysPresent': 'Ключи E2E установлены',
