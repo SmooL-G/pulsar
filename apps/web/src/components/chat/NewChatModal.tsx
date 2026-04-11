@@ -110,7 +110,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
       <div className="bg-white dark:bg-dark-700 rounded-2xl w-full max-w-md shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-dark-500">
-          <h3 className="font-semibold">{mode === 'dm' ? t('chat.newChat') : mode === 'group' ? t('chat.newGroup') : 'New Channel'}</h3>
+          <h3 className="font-semibold">{mode === 'dm' ? t('chat.newChat') : mode === 'group' ? t('chat.newGroup') : t('chat.newChannel')}</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500">
             <X size={18} />
           </button>
@@ -140,7 +140,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
               ${mode === 'channel' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'}`}
           >
             <Megaphone size={16} />
-            Channel
+            {t('chat.newChannel')}
           </button>
         </div>
 
@@ -149,14 +149,14 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
             <>
               <input
                 type="text"
-                placeholder="Channel name"
+                placeholder={t('chat.channelName')}
                 value={channelName}
                 onChange={(e) => setChannelName(e.target.value)}
                 className="w-full px-4 py-2.5 text-sm rounded-lg bg-gray-100 dark:bg-dark-600 border-none outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100 mb-3"
                 autoFocus
               />
               <textarea
-                placeholder="Description (optional)"
+                placeholder={t('chat.channelDesc')}
                 value={channelDesc}
                 onChange={(e) => setChannelDesc(e.target.value)}
                 rows={2}
@@ -165,7 +165,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
 
               <div className="space-y-2 mb-4">
                 <label className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-100 dark:bg-dark-600 cursor-pointer">
-                  <span className="text-sm text-gray-300">Public channel</span>
+                  <span className="text-sm text-gray-300">{t('chat.channelPublic')}</span>
                   <input
                     type="checkbox"
                     checked={channelPublic}
@@ -174,7 +174,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
                   />
                 </label>
                 <label className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-100 dark:bg-dark-600 cursor-pointer">
-                  <span className="text-sm text-gray-300">Allow comments</span>
+                  <span className="text-sm text-gray-300">{t('chat.channelComments')}</span>
                   <input
                     type="checkbox"
                     checked={channelComments}
@@ -189,7 +189,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
                 disabled={loading || !channelName.trim()}
                 className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
               >
-                {loading ? 'Creating...' : 'Create Channel'}
+                {loading ? t('chat.creating') : t('chat.createChannel')}
               </button>
             </>
           ) : mode === 'dm' ? (

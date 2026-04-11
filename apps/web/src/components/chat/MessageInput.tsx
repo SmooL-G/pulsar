@@ -117,7 +117,7 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
           }`}
         >
           <MessageCircle size={10} />
-          <span className="text-[10px]">{commentsOn ? 'Comments enabled' : 'Comments disabled'}</span>
+          <span className="text-[10px]">{commentsOn ? t('chat.commentsEnabled') : t('chat.commentsDisabled')}</span>
         </button>
       )}
       <div className="flex items-end gap-2">
