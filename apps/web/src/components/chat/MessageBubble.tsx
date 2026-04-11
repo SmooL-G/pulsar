@@ -34,6 +34,8 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
   const menuRef = useRef<HTMLDivElement>(null);
   const currentUser = useAuthStore((s) => s.user);
   const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+  const highlightMessageId = useMessageStore((s) => s.highlightMessageId);
+  const isHighlighted = highlightMessageId === message.id;
   const [decryptedContent, setDecryptedContent] = useState<string | null>(null);
 
   // Дешифровка E2E сообщений
@@ -139,7 +141,8 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
   return (
     <>
       <div
-        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${showAvatar ? 'mt-2' : 'mt-0.5'} ${selected ? 'bg-primary-500/10 rounded-lg' : ''}`}
+        id={`msg-${message.id}`}
+        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${showAvatar ? 'mt-2' : 'mt-0.5'} ${selected ? 'bg-primary-500/10 rounded-lg' : ''} ${isHighlighted ? 'bg-yellow-500/20 rounded-lg transition-colors duration-1000' : ''}`}
         onContextMenu={handleContextMenu}
       >
         {/* Avatar for other users */}

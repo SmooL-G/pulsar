@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, Settings, LogOut, Users, Globe, Wallet, Megaphone, Bot, User } from 'lucide-react';
+import { Search, Plus, Settings, LogOut, Users, Globe, Wallet, Megaphone, Bot, User, MessageSquare } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { ChatListItem } from '../chat/ChatListItem';
@@ -12,6 +12,7 @@ import { WalletPanel } from '../wallet/WalletPanel';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { api } from '../../services/api';
+import { useMessageStore } from '../../store/messageStore';
 import { useI18n } from '../../i18n';
 
 interface SidebarProps {
@@ -107,9 +108,24 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
         onChatSelect();
       }, 300);
     } catch {
-      // If subscribe fails, still try to open
       setSearchQuery('');
     }
+  };
+
+  const handleMessageClick = (msg: any) => {
+    const chat = chats.find((c) => c.id === msg.chatId);
+    if (chat) {
+      setActiveChat(chat);
+    }
+    setSearchQuery('');
+    onChatSelect();
+    // Highlight after a small delay to let the chat load
+    setTimeout(() => {
+      useMessageStore.getState().setHighlightMessage(msg.id);
+      // Scroll to message
+      const el = document.getElementById(`msg-${msg.id}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 500);
   };
 
   const { addChat } = useChatStore();
@@ -268,7 +284,28 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
               </>
             )}
 
-            {!searchLoading && !searchResults.users?.length && !searchResults.groups?.length && !searchResults.channels?.length && !searchResults.bots?.length && filteredChats.length === 0 && (
+            {/* Messages */}
+            {searchResults.messages?.length > 0 && (
+              <>
+                <p className="text-[10px] uppercase text-gray-500 px-2 py-1 mt-2 font-semibold flex items-center gap-1"><MessageSquare size={10} /> {t('search.messages')}</p>
+                {searchResults.messages.map((m: any) => (
+                  <button key={m.id} onClick={() => handleMessageClick(m)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors">
+                    <div className="w-9 h-9 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      <MessageSquare size={16} />
+                    </div>
+                    <div className="text-left min-w-0 flex-1">
+                      <p className="text-[11px] text-gray-400 truncate">
+                        {m.chat?.name || m.sender?.username} &middot; {new Date(m.createdAt).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm truncate text-gray-200">{m.content}</p>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
+
+            {!searchLoading && !searchResults.users?.length && !searchResults.groups?.length && !searchResults.channels?.length && !searchResults.bots?.length && !searchResults.messages?.length && filteredChats.length === 0 && (
               <p className="text-center text-sm text-gray-400 py-8">{t('search.noResults')}</p>
             )}
           </div>

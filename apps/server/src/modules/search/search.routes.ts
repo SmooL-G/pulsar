@@ -103,11 +103,47 @@ export async function searchRoutes(app: FastifyInstance) {
       }),
     ]);
 
+    // Messages search — only in chats where user is a member
+    const userId = request.user!.userId;
+    const userChats = await prisma.chatMember.findMany({
+      where: { userId, leftAt: null },
+      select: { chatId: true },
+    });
+    const chatIds = userChats.map((c) => c.chatId);
+
+    const messages = chatIds.length > 0
+      ? await prisma.message.findMany({
+          where: {
+            chatId: { in: chatIds },
+            content: search,
+            isDeleted: false,
+          },
+          select: {
+            id: true,
+            chatId: true,
+            content: true,
+            createdAt: true,
+            sender: {
+              select: { id: true, username: true, displayName: true, avatarUrl: true },
+            },
+            chat: {
+              select: { id: true, name: true, type: true },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take,
+        })
+      : [];
+
     return {
       users,
       groups: groups.map((g) => ({ ...g, memberCount: g._count.members })),
       channels: channels.map((c) => ({ ...c, memberCount: c._count.members })),
       bots,
+      messages: messages.map((m) => ({
+        ...m,
+        createdAt: m.createdAt.toISOString(),
+      })),
     };
   });
 }

@@ -7,6 +7,7 @@ interface MessageState {
   isLoading: boolean;
   hasMore: Record<string, boolean>;
   cursors: Record<string, string | null>;
+  highlightMessageId: string | null;
   fetchMessages: (chatId: string) => Promise<void>;
   fetchMoreMessages: (chatId: string) => Promise<void>;
   addMessage: (message: Message) => void;
@@ -15,6 +16,7 @@ interface MessageState {
   hideMessage: (chatId: string, messageId: string) => void;
   setMessageStatus: (chatId: string, messageId: string, status: MessageStatus) => void;
   markChatRead: (chatId: string, readerId: string, senderId: string) => void;
+  setHighlightMessage: (messageId: string | null) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -22,6 +24,14 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   isLoading: false,
   hasMore: {},
   cursors: {},
+  highlightMessageId: null,
+
+  setHighlightMessage: (messageId) => {
+    set({ highlightMessageId: messageId });
+    if (messageId) {
+      setTimeout(() => set({ highlightMessageId: null }), 3000);
+    }
+  },
 
   fetchMessages: async (chatId: string) => {
     set({ isLoading: true });

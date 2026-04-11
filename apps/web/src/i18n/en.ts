@@ -35,6 +35,7 @@ export const en = {
   'search.groups': 'Groups',
   'search.channels': 'Channels',
   'search.bots': 'Bots',
+  'search.messages': 'Messages',
   'search.noResults': 'Nothing found',
   'chat.writeMessage': 'Write a message...',
   'chat.online': 'online',

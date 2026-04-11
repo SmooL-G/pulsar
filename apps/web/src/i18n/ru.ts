@@ -35,6 +35,7 @@ export const ru = {
   'search.groups': 'Группы',
   'search.channels': 'Каналы',
   'search.bots': 'Боты',
+  'search.messages': 'Сообщения',
   'search.noResults': 'Ничего не найдено',
   'chat.writeMessage': 'Написать сообщение...',
   'chat.online': 'в сети',
