@@ -142,7 +142,7 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
             {user.displayName && user.displayName !== user.username && (
               <p className="text-lg font-semibold mt-1 flex items-center gap-1.5">
                 {user.displayName}
-                <PulsarBadge level={(user as any).verificationLevel || 0} size={16} />
+                <PulsarBadge level={(user as any).verificationLevel || 0} size={16} role={(user as any).role} />
               </p>
             )}
             <p className={`flex items-center gap-1.5 ${user.displayName && user.displayName !== user.username ? 'text-sm text-gray-400' : 'text-lg font-semibold mt-1'}`}>

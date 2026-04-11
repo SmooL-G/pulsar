@@ -349,7 +349,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium truncate flex items-center gap-1">
                 {user.displayName || user.username}
-                <PulsarBadge level={(user as any).verificationLevel || 0} size={13} />
+                <PulsarBadge level={(user as any).verificationLevel || 0} size={13} role={(user as any).role} />
               </p>
               <p className="text-xs text-gray-400 truncate font-mono">
                 {user.walletAddress.slice(0, 4)}...{user.walletAddress.slice(-4)}

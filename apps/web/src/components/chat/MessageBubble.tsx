@@ -175,7 +175,7 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
               }}
             >
               {message.sender?.displayName || message.sender?.username}
-              <PulsarBadge level={(message.sender as any)?.verificationLevel || 0} size={12} />
+              <PulsarBadge level={(message.sender as any)?.verificationLevel || 0} size={12} role={(message.sender as any)?.role} />
               <ProfileBadgeIcon badge={(message.sender as any)?.profileBadge} size={12} />
             </p>
           )}
