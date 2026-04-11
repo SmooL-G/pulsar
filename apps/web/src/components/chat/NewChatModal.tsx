@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Search, Users, MessageCircle, Check } from 'lucide-react';
+import { X, Search, Users, MessageCircle, Check, Megaphone } from 'lucide-react';
 import { api } from '../../services/api';
 import { useChatStore } from '../../store/chatStore';
 import { useI18n } from '../../i18n';
@@ -12,9 +12,13 @@ interface NewChatModalProps {
 export function NewChatModal({ onClose }: NewChatModalProps) {
   const { t } = useI18n();
   const { setActiveChat, addChat } = useChatStore();
-  const [mode, setMode] = useState<'dm' | 'group'>('dm');
+  const [mode, setMode] = useState<'dm' | 'group' | 'channel'>('dm');
   const [search, setSearch] = useState('');
   const [groupName, setGroupName] = useState('');
+  const [channelName, setChannelName] = useState('');
+  const [channelDesc, setChannelDesc] = useState('');
+  const [channelPublic, setChannelPublic] = useState(false);
+  const [channelComments, setChannelComments] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -80,12 +84,33 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
     }
   };
 
+  const createChannel = async () => {
+    if (!channelName.trim()) return;
+    setLoading(true);
+    try {
+      const { data } = await api.post('/channels', {
+        name: channelName,
+        description: channelDesc || undefined,
+        isPublic: channelPublic,
+        allowComments: channelComments,
+      });
+      const chat = data.channel || data;
+      addChat(chat);
+      setActiveChat(chat);
+      onClose();
+    } catch {
+      // Error handling
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-dark-700 rounded-2xl w-full max-w-md shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-dark-500">
-          <h3 className="font-semibold">{mode === 'dm' ? t('chat.newChat') : t('chat.newGroup')}</h3>
+          <h3 className="font-semibold">{mode === 'dm' ? t('chat.newChat') : mode === 'group' ? t('chat.newGroup') : 'New Channel'}</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500">
             <X size={18} />
           </button>
@@ -109,10 +134,65 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
             <Users size={16} />
             {t('chat.newGroup')}
           </button>
+          <button
+            onClick={() => setMode('channel')}
+            className={`flex-1 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors
+              ${mode === 'channel' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'}`}
+          >
+            <Megaphone size={16} />
+            Channel
+          </button>
         </div>
 
         <div className="p-4">
-          {mode === 'dm' ? (
+          {mode === 'channel' ? (
+            <>
+              <input
+                type="text"
+                placeholder="Channel name"
+                value={channelName}
+                onChange={(e) => setChannelName(e.target.value)}
+                className="w-full px-4 py-2.5 text-sm rounded-lg bg-gray-100 dark:bg-dark-600 border-none outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100 mb-3"
+                autoFocus
+              />
+              <textarea
+                placeholder="Description (optional)"
+                value={channelDesc}
+                onChange={(e) => setChannelDesc(e.target.value)}
+                rows={2}
+                className="w-full px-4 py-2.5 text-sm rounded-lg bg-gray-100 dark:bg-dark-600 border-none outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100 mb-3 resize-none"
+              />
+
+              <div className="space-y-2 mb-4">
+                <label className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-100 dark:bg-dark-600 cursor-pointer">
+                  <span className="text-sm text-gray-300">Public channel</span>
+                  <input
+                    type="checkbox"
+                    checked={channelPublic}
+                    onChange={(e) => setChannelPublic(e.target.checked)}
+                    className="w-4 h-4 rounded accent-primary-500"
+                  />
+                </label>
+                <label className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-100 dark:bg-dark-600 cursor-pointer">
+                  <span className="text-sm text-gray-300">Allow comments</span>
+                  <input
+                    type="checkbox"
+                    checked={channelComments}
+                    onChange={(e) => setChannelComments(e.target.checked)}
+                    className="w-4 h-4 rounded accent-primary-500"
+                  />
+                </label>
+              </div>
+
+              <button
+                onClick={createChannel}
+                disabled={loading || !channelName.trim()}
+                className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Creating...' : 'Create Channel'}
+              </button>
+            </>
+          ) : mode === 'dm' ? (
             <>
               {/* Search users */}
               <div className="relative mb-3">
