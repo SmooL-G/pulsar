@@ -6,11 +6,12 @@ import { getSocket } from '../../hooks/useSocket';
 
 interface MessageListProps {
   chatId: string;
-  chatType?: 'DIRECT' | 'GROUP';
+  chatType?: 'DIRECT' | 'GROUP' | 'CHANNEL';
   otherUserId?: string;
+  onOpenComments?: (commentChatId: string) => void;
 }
 
-export function MessageList({ chatId, chatType, otherUserId }: MessageListProps) {
+export function MessageList({ chatId, chatType, otherUserId, onOpenComments }: MessageListProps) {
   const { messages, fetchMessages, isLoading } = useMessageStore();
   const user = useAuthStore((s) => s.user);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -59,6 +60,7 @@ export function MessageList({ chatId, chatType, otherUserId }: MessageListProps)
             showAvatar={showAvatar}
             chatType={chatType}
             otherUserId={otherUserId}
+            onOpenComments={onOpenComments}
           />
         );
       })}

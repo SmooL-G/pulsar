@@ -23,6 +23,9 @@ export interface Message {
   signerWallet?: string | null;
   encryptedContent?: string | null;
   encryptionType?: string | null;
+  commentsEnabled?: boolean;
+  commentChatId?: string | null;
+  commentCount?: number;
   createdAt: string;
   updatedAt: string;
   status?: MessageStatus;

@@ -22,6 +22,7 @@ export interface Chat {
   ownerId: string | null;
   maxMembers: number;
   isPublic: boolean;
+  allowComments?: boolean;
   createdAt: string;
   updatedAt: string;
   lastMessage?: {

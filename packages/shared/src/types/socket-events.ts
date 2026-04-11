@@ -12,6 +12,7 @@ export interface ClientToServerEvents {
     signature?: string;
     signerWallet?: string;
     encryptedContent?: string;
+    commentsEnabled?: boolean;
   }) => void;
 
   'message:edit': (data: {

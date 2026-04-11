@@ -78,6 +78,7 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
           signerWallet: data.signerWallet || null,
           encryptedContent: data.encryptedContent || null,
           encryptionType: data.encryptedContent ? 'nacl-box' : null,
+          commentsEnabled: data.commentsEnabled || false,
         },
         include: {
           sender: {
@@ -113,6 +114,8 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
         signerWallet: message.signerWallet,
         encryptedContent: message.encryptedContent,
         encryptionType: message.encryptionType,
+        commentsEnabled: message.commentsEnabled,
+        commentChatId: message.commentChatId,
         createdAt: message.createdAt.toISOString(),
         updatedAt: message.updatedAt.toISOString(),
         sender: message.sender,

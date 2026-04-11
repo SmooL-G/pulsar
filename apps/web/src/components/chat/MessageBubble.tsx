@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
-import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck, Lock } from 'lucide-react';
+import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck, Lock, MessageCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -19,11 +19,12 @@ interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
   showAvatar: boolean;
-  chatType?: 'DIRECT' | 'GROUP';
+  chatType?: 'DIRECT' | 'GROUP' | 'CHANNEL';
   otherUserId?: string;
+  onOpenComments?: (commentChatId: string) => void;
 }
 
-export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserId }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserId, onOpenComments }: MessageBubbleProps) {
   const { t } = useI18n();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showForward, setShowForward] = useState(false);
@@ -228,6 +229,14 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
               {isOwn && <MessageStatusIcon status={message.status} />}
             </div>
           </div>
+
+          {/* Comments link for channel posts */}
+          {message.commentsEnabled && chatType === 'CHANNEL' && (
+            <CommentLink
+              message={message}
+              onOpenComments={onOpenComments}
+            />
+          )}
         </div>
       </div>
 
@@ -556,6 +565,49 @@ function ForwardModal({ message, onClose }: { message: Message; onClose: () => v
         </div>
       </div>
     </div>
+  );
+}
+
+// Comment link under channel posts
+function CommentLink({ message, onOpenComments }: { message: Message; onOpenComments?: (chatId: string) => void }) {
+  const [loading, setLoading] = useState(false);
+  const count = (message as any).commentCount || 0;
+
+  const handleClick = async () => {
+    if (message.commentChatId) {
+      onOpenComments?.(message.commentChatId);
+      return;
+    }
+
+    // Create comment chat
+    setLoading(true);
+    try {
+      const res = await api.post(`/messages/${message.id}/comments`);
+      if (res.data.commentChatId) {
+        onOpenComments?.(res.data.commentChatId);
+      }
+    } catch {
+      toast.error('Failed to open comments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="flex items-center gap-1.5 mt-1 ml-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+    >
+      {loading ? (
+        <Loader2 size={14} className="animate-spin" />
+      ) : (
+        <MessageCircle size={14} />
+      )}
+      <span>
+        {count > 0 ? `Comments (${count})` : 'Leave a comment'}
+      </span>
+    </button>
   );
 }
 

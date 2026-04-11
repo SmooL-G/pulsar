@@ -18,6 +18,7 @@ interface ChatAreaProps {
 
 export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
   const { t } = useI18n();
+  const setActiveChat = useChatStore((s) => s.setActiveChat);
   const activeChat = useChatStore((s) => s.activeChat);
   const [showTransfer, setShowTransfer] = useState(false);
 
@@ -97,8 +98,14 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
 
       <MessageList
         chatId={activeChat.id}
-        chatType={activeChat.type as 'DIRECT' | 'GROUP'}
+        chatType={activeChat.type as 'DIRECT' | 'GROUP' | 'CHANNEL'}
         otherUserId={(activeChat as any).otherUser?.id}
+        onOpenComments={async (commentChatId) => {
+          try {
+            const res = await import('../../services/api').then(m => m.api.get(`/chats/${commentChatId}`));
+            if (res.data) setActiveChat(res.data);
+          } catch { /* chat will be fetched on next load */ }
+        }}
       />
       <MessageInput
         chatId={activeChat.id}

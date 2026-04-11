@@ -21,6 +21,10 @@ import { adminRoutes } from './modules/admin/admin.routes.js';
 import { walletRoutes } from './modules/wallet/wallet.routes.js';
 import { nftRoutes } from './modules/nft/nft.routes.js';
 import { keysRoutes } from './modules/keys/keys.routes.js';
+import { channelRoutes } from './modules/channel/channel.routes.js';
+import { moderationRoutes } from './modules/moderation/moderation.routes.js';
+import { botManagementRoutes } from './modules/bot/bot.routes.js';
+import { botApiRoutes } from './modules/bot/botApi.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -88,6 +92,10 @@ export async function buildApp() {
   await app.register(walletRoutes, { prefix: '/api/v1/wallet' });
   await app.register(nftRoutes, { prefix: '/api/v1/nft' });
   await app.register(keysRoutes, { prefix: '/api/v1/keys' });
+  await app.register(channelRoutes, { prefix: '/api/v1/channels' });
+  await app.register(moderationRoutes, { prefix: '/api/v1/moderation' });
+  await app.register(botManagementRoutes, { prefix: '/api/v1/bots' });
+  await app.register(botApiRoutes, { prefix: '/api/v1/bot' });
 
   return app;
 }

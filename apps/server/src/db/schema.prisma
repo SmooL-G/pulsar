@@ -109,6 +109,7 @@ model Chat {
   pinnedMessages PinnedMessage[]
   isModChannel   Boolean  @default(false) @map("is_mod_channel")
   allowComments  Boolean  @default(true) @map("allow_comments")
+  sourceMessage  Message? @relation("commentChat")
 
   @@index([type])
   @@index([inviteCode])
@@ -162,6 +163,8 @@ model Message {
   signerWallet     String?  @map("signer_wallet") @db.VarChar(64)
   encryptedContent String?  @map("encrypted_content") @db.Text
   encryptionType   String?  @map("encryption_type") @db.VarChar(32)
+  commentsEnabled  Boolean  @default(false) @map("comments_enabled")
+  commentChatId    String?  @unique @map("comment_chat_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -174,6 +177,7 @@ model Message {
   reactions    Reaction[]
   pinned       PinnedMessage?
   reports      Report[]
+  commentChat  Chat?             @relation("commentChat", fields: [commentChatId], references: [id], onDelete: SetNull)
 
   @@index([chatId, createdAt(sort: Desc)])
   @@index([senderId])

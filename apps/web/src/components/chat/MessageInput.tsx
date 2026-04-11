@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Send, Paperclip, Smile, Lock, LockOpen } from 'lucide-react';
+import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
@@ -9,7 +9,7 @@ import { encryptMessage } from '../../crypto/e2eEncrypt';
 
 interface MessageInputProps {
   chatId: string;
-  chatType?: 'DIRECT' | 'GROUP';
+  chatType?: 'DIRECT' | 'GROUP' | 'CHANNEL';
   recipientUserId?: string;
 }
 
@@ -25,6 +25,7 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
   const { t } = useI18n();
   const [text, setText] = useState('');
   const [e2eOn, setE2eOn] = useState(getE2EEnabled);
+  const [commentsOn, setCommentsOn] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { signMessage: walletSignMessage, publicKey } = useWallet();
@@ -64,6 +65,7 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
         type: 'TEXT',
         ...(signed && { signature: signed.signature, signerWallet: signed.signerWallet }),
         ...(encryptedContent && { encryptedContent }),
+        ...(chatType === 'CHANNEL' && commentsOn && { commentsEnabled: true }),
       });
     }
 
@@ -105,6 +107,17 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
         >
           {e2eOn ? <Lock size={10} /> : <LockOpen size={10} />}
           <span className="text-[10px]">{e2eOn ? t('chat.e2eEncrypted') : t('chat.e2eDisabled')}</span>
+        </button>
+      )}
+      {chatType === 'CHANNEL' && (
+        <button
+          onClick={() => setCommentsOn((v) => !v)}
+          className={`flex items-center gap-1 mb-1 ml-1 transition-colors ${
+            commentsOn ? 'text-primary-500' : 'text-gray-500'
+          }`}
+        >
+          <MessageCircle size={10} />
+          <span className="text-[10px]">{commentsOn ? 'Comments enabled' : 'Comments disabled'}</span>
         </button>
       )}
       <div className="flex items-end gap-2">

@@ -85,6 +85,19 @@ export async function messageRoutes(app: FastifyInstance) {
       : [];
     const readMap = new Map(readReceipts.map((r) => [r.messageId, r._count]));
 
+    // Get comment counts for messages that have comment chats
+    const commentChatIds = messages
+      .filter((m) => m.commentChatId)
+      .map((m) => m.commentChatId!);
+    const commentCounts = commentChatIds.length > 0
+      ? await prisma.message.groupBy({
+          by: ['chatId'],
+          where: { chatId: { in: commentChatIds } },
+          _count: true,
+        })
+      : [];
+    const commentMap = new Map(commentCounts.map((c) => [c.chatId, c._count]));
+
     return {
       messages: messages.map((m) => ({
         ...m,
@@ -94,11 +107,103 @@ export async function messageRoutes(app: FastifyInstance) {
         })),
         createdAt: m.createdAt.toISOString(),
         updatedAt: m.updatedAt.toISOString(),
+        commentsEnabled: m.commentsEnabled,
+        commentChatId: m.commentChatId,
+        commentCount: m.commentChatId ? (commentMap.get(m.commentChatId) || 0) : undefined,
         status: m.senderId === userId
           ? (readMap.get(m.id) ? 'read' : 'delivered')
           : undefined,
       })),
       nextCursor,
     };
+  });
+
+  // POST /messages/:messageId/comments — get or create comment chat for a message
+  app.post<{ Params: { messageId: string } }>('/:messageId/comments', async (request, reply) => {
+    const userId = request.user!.userId;
+    const { messageId } = request.params;
+
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      include: { chat: true, sender: { select: { username: true } } },
+    });
+
+    if (!message) {
+      return reply.status(404).send({ error: 'MESSAGE_NOT_FOUND' });
+    }
+
+    // Check user is member of the channel
+    const member = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId: message.chatId, userId } },
+    });
+    if (!member || member.leftAt) {
+      return reply.status(403).send({ error: 'NOT_MEMBER' });
+    }
+
+    if (!message.commentsEnabled) {
+      return reply.status(400).send({ error: 'COMMENTS_DISABLED' });
+    }
+
+    // If comment chat already exists, return it
+    if (message.commentChatId) {
+      // Auto-join user to comment chat if not already
+      const commentMember = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId: message.commentChatId, userId } },
+      });
+      if (!commentMember) {
+        await prisma.chatMember.create({
+          data: { chatId: message.commentChatId, userId, role: 'MEMBER' },
+        });
+      } else if (commentMember.leftAt) {
+        await prisma.chatMember.update({
+          where: { id: commentMember.id },
+          data: { leftAt: null },
+        });
+      }
+
+      const count = await prisma.message.count({ where: { chatId: message.commentChatId } });
+      return { commentChatId: message.commentChatId, commentCount: count };
+    }
+
+    // Create new comment chat
+    const preview = (message.content || '').slice(0, 50);
+    const chatName = `💬 ${message.sender.username}: ${preview}${(message.content?.length || 0) > 50 ? '...' : ''}`;
+
+    const commentChat = await prisma.chat.create({
+      data: {
+        type: 'GROUP',
+        name: chatName,
+        ownerId: message.senderId,
+        isPublic: false,
+        members: {
+          create: [
+            { userId: message.senderId, role: 'OWNER' },
+            ...(userId !== message.senderId ? [{ userId, role: 'MEMBER' as const }] : []),
+          ],
+        },
+      },
+    });
+
+    // Link comment chat to message
+    await prisma.message.update({
+      where: { id: messageId },
+      data: { commentChatId: commentChat.id },
+    });
+
+    return { commentChatId: commentChat.id, commentCount: 0 };
+  });
+
+  // GET /messages/:messageId/comment-count
+  app.get<{ Params: { messageId: string } }>('/:messageId/comment-count', async (request) => {
+    const { messageId } = request.params;
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      select: { commentChatId: true, commentsEnabled: true },
+    });
+
+    if (!message?.commentChatId) return { count: 0 };
+
+    const count = await prisma.message.count({ where: { chatId: message.commentChatId } });
+    return { count };
   });
 }
