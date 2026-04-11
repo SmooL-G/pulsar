@@ -540,7 +540,7 @@ export async function walletRoutes(app: FastifyInstance) {
         createdAt: message.createdAt.toISOString(),
         updatedAt: message.updatedAt.toISOString(),
         status: 'sent',
-      });
+      } as any);
 
       // Notify sender of balance change
       io.to(`user:${userId}`).emit('wallet:balance-updated', {
