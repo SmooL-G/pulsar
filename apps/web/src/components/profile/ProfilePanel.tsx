@@ -13,7 +13,7 @@ interface ProfilePanelProps {
 }
 
 export function ProfilePanel({ onClose }: ProfilePanelProps) {
-  const { t, locale } = useI18n();
+  const { t, locale, setLocale } = useI18n();
   const { user, setUser } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -230,6 +230,31 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
           <p className="text-xs text-gray-400 text-center">
             {t('profile.memberSince')} {memberSince}
           </p>
+
+          {/* Language */}
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block flex items-center gap-1">
+              <Globe size={12} />
+              {t('settings.language')}
+            </label>
+            <select
+              value={locale}
+              onChange={(e) => setLocale(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-dark-600 border-none outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
+            >
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
+              <option value="uk">Українська</option>
+              <option value="de">Deutsch</option>
+              <option value="es">Español</option>
+              <option value="fr">Français</option>
+              <option value="pt">Português</option>
+              <option value="tr">Türkçe</option>
+              <option value="zh">中文</option>
+              <option value="ja">日本語</option>
+              <option value="ko">한국어</option>
+            </select>
+          </div>
 
           {/* Save button */}
           <button

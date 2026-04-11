@@ -120,14 +120,6 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-dark-500">
         <h1 className="text-xl font-bold text-primary-600">Pulsar</h1>
         <div className="flex items-center gap-1">
-          {/* Language toggle */}
-          <button
-            onClick={() => setShowLang(true)}
-            className="px-2 py-1 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors text-xs font-medium text-gray-500"
-            title={t('settings.language')}
-          >
-            {locale.toUpperCase()}
-          </button>
           <button
             onClick={() => setShowWallet(true)}
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
