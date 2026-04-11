@@ -1,543 +1,351 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Clock, Sparkles, Shield, Gem, Crown, Search, MessageCircle, Globe, Megaphone, Bot, Zap } from 'lucide-react';
 import { useI18n } from '../i18n';
 
-type FeatureStatus = 'complete' | 'in-progress' | 'planned';
+type Status = 'done' | 'active' | 'planned';
 
 interface Feature {
-  key: string;
-  status: FeatureStatus;
+  text: string;
+  status: Status;
+  icon?: React.ReactNode;
 }
 
 interface Phase {
-  id: number;
-  nameKey: string;
-  status: FeatureStatus;
+  title: string;
+  subtitle: string;
+  status: Status;
+  date: string;
   features: Feature[];
+  highlight?: boolean;
 }
 
 const PHASES: Phase[] = [
   {
-    id: 1, nameKey: 'roadmap.phase1', status: 'complete',
+    title: 'Foundation',
+    subtitle: 'Core messaging platform',
+    status: 'done',
+    date: 'Q1 2026',
     features: [
-      { key: 'monorepo', status: 'complete' },
-      { key: 'docker', status: 'complete' },
-      { key: 'auth3', status: 'complete' },
-      { key: 'fastify', status: 'complete' },
-      { key: 'react', status: 'complete' },
-      { key: 'layout', status: 'complete' },
-      { key: 'deploy', status: 'complete' },
+      { text: 'Real-time messaging (Socket.IO)', status: 'done' },
+      { text: 'Direct & group chats', status: 'done' },
+      { text: 'User authentication (email + wallet)', status: 'done' },
+      { text: 'File sharing & media', status: 'done' },
+      { text: 'Online presence & typing indicators', status: 'done' },
+      { text: 'Message editing, deletion, forwarding', status: 'done' },
+      { text: 'Link previews', status: 'done' },
+      { text: 'Friends system', status: 'done' },
     ],
   },
   {
-    id: 2, nameKey: 'roadmap.phase2', status: 'complete',
+    title: 'Social Features',
+    subtitle: 'Community & engagement',
+    status: 'done',
+    date: 'Q1 2026',
     features: [
-      { key: 'realtime', status: 'complete' },
-      { key: 'dm', status: 'complete' },
-      { key: 'typing', status: 'complete' },
-      { key: 'online', status: 'complete' },
-      { key: 'receipts', status: 'complete' },
-      { key: 'context', status: 'complete' },
-      { key: 'deleteMenu', status: 'complete' },
-      { key: 'linkPreview', status: 'complete' },
-      { key: 'msgEdit', status: 'complete' },
+      { text: 'Emoji reactions on messages', status: 'done' },
+      { text: 'Pinned messages', status: 'done' },
+      { text: 'Channels with comments system', status: 'done', icon: <Megaphone size={14} /> },
+      { text: 'Universal search (users, groups, channels, messages)', status: 'done', icon: <Search size={14} /> },
+      { text: 'Message search with highlight & scroll-to', status: 'done' },
+      { text: 'Internationalization (11 languages)', status: 'done', icon: <Globe size={14} /> },
+      { text: 'Dark/light themes', status: 'done' },
+      { text: 'Legal pages (Terms, Privacy, Cookies)', status: 'done' },
     ],
   },
   {
-    id: 3, nameKey: 'roadmap.phase3', status: 'complete',
+    title: 'Crypto Integration',
+    subtitle: 'Web3 & Solana ecosystem',
+    status: 'done',
+    date: 'Q1 2026',
     features: [
-      { key: 'groups', status: 'complete' },
-      { key: 'friends', status: 'complete' },
-      { key: 'avatars', status: 'complete' },
-      { key: 'i18n', status: 'complete' },
-      { key: 'themes', status: 'complete' },
-      { key: 'privacy', status: 'complete' },
-      { key: 'informer', status: 'complete' },
-      { key: 'settings', status: 'complete' },
+      { text: 'Solana wallet authentication', status: 'done' },
+      { text: 'PLS token economy (1 SOL = 100K PLS)', status: 'done' },
+      { text: 'SOL → PLS deposits (on-chain verified)', status: 'done' },
+      { text: 'P2P transfers with 2% burn fee', status: 'done' },
+      { text: 'E2E encryption (NaCl)', status: 'done', icon: <Shield size={14} /> },
+      { text: 'Message signing with Solana wallet', status: 'done' },
+      { text: 'NFT avatar verification', status: 'done' },
+      { text: 'Generative avatars', status: 'done' },
     ],
   },
   {
-    id: 4, nameKey: 'roadmap.phase4', status: 'in-progress',
+    title: 'Monetization & Status',
+    subtitle: 'Token-powered features',
+    status: 'active',
+    date: 'Q2 2026',
+    highlight: true,
     features: [
-      { key: 'fileShare', status: 'planned' },
-      { key: 'imgThumb', status: 'planned' },
-      { key: 'emoji', status: 'planned' },
-      { key: 'reply', status: 'planned' },
-      { key: 'reactions', status: 'planned' },
-      { key: 'pinned', status: 'planned' },
-      { key: 'search', status: 'planned' },
-      { key: 'forward', status: 'planned' },
+      { text: 'Verification levels (Starter/Pro/Elite)', status: 'done', icon: <Sparkles size={14} /> },
+      { text: 'Profile badges (Blogger/Author/Business)', status: 'done' },
+      { text: 'Founder badge for platform creator', status: 'done', icon: <Crown size={14} /> },
+      { text: 'SuperChat — donate PLS with highlighted messages', status: 'done', icon: <Gem size={14} /> },
+      { text: 'File size limits by verification level', status: 'done' },
+      { text: 'Channel creation limits by level', status: 'done' },
+      { text: 'Premium subscription (PLS/month)', status: 'planned' },
+      { text: 'Sticker marketplace (create & sell)', status: 'planned' },
+      { text: 'Channel boost system', status: 'planned' },
+      { text: 'Custom nick colors & profile frames', status: 'planned' },
     ],
   },
   {
-    id: 5, nameKey: 'roadmap.phase5', status: 'in-progress',
+    title: 'Moderation & Safety',
+    subtitle: 'Trust & community health',
+    status: 'active',
+    date: 'Q2 2026',
     features: [
-      { key: 'adminDash', status: 'complete' },
-      { key: 'userMgmt', status: 'complete' },
-      { key: 'plsCurrency', status: 'complete' },
-      { key: 'deposit', status: 'complete' },
-      { key: 'passwordReset', status: 'complete' },
-      { key: 'realtimeBalance', status: 'complete' },
-      { key: 'platformWallet', status: 'complete' },
-      { key: 'moderation', status: 'planned' },
-      { key: 'channels', status: 'planned' },
-      { key: 'mobile', status: 'planned' },
-      { key: 'push', status: 'planned' },
-      { key: 'cicd', status: 'planned' },
+      { text: 'Report system (spam, harassment, etc.)', status: 'done' },
+      { text: 'Moderator voting on reports', status: 'done' },
+      { text: 'Punishments (warn, mute, ban)', status: 'done' },
+      { text: 'Bot system (PulsarBot + webhook API)', status: 'done', icon: <Bot size={14} /> },
+      { text: 'Auto-moderator role (earn by contribution)', status: 'planned', icon: <Shield size={14} /> },
+      { text: 'Moderator progress tracker', status: 'planned' },
+      { text: 'AI-powered content moderation', status: 'planned' },
     ],
   },
   {
-    id: 6, nameKey: 'roadmap.phase6', status: 'in-progress',
+    title: 'Infrastructure',
+    subtitle: 'Reliability & scale',
+    status: 'active',
+    date: 'Q2 2026',
     features: [
-      { key: 'nftAvatars', status: 'complete' },
-      { key: 'balance', status: 'complete' },
-      { key: 'verification', status: 'complete' },
-      { key: 'rewards', status: 'complete' },
-      { key: 'msgSigning', status: 'complete' },
-      { key: 'avatarGallery', status: 'complete' },
-      { key: 'generativeAvatars', status: 'complete' },
-      { key: 'tips', status: 'planned' },
-      { key: 'psrToken', status: 'planned' },
-      { key: 'redPackets', status: 'planned' },
-      { key: 'nftBadges', status: 'planned' },
-      { key: 'nftStickers', status: 'planned' },
-      { key: 'tokenGated', status: 'planned' },
-      { key: 'swap', status: 'planned' },
-      { key: 'priceTrack', status: 'planned' },
-      { key: 'solanaPay', status: 'planned' },
-      { key: 'reputation', status: 'planned' },
-      { key: 'dao', status: 'planned' },
-      { key: 'sns', status: 'planned' },
-      { key: 'cNft', status: 'planned' },
-      { key: 'leaderboard', status: 'planned' },
-      { key: 'quests', status: 'planned' },
+      { text: 'Multi-server architecture (separate DB & app)', status: 'done' },
+      { text: 'Socket.IO Redis Adapter (multi-instance ready)', status: 'done' },
+      { text: 'Automated daily backups', status: 'done' },
+      { text: 'Firewall & security hardening', status: 'done' },
+      { text: 'SSL/TLS encryption', status: 'done' },
+      { text: 'Health monitoring endpoint', status: 'done', icon: <Zap size={14} /> },
+      { text: 'Second app server + Cloudflare CDN', status: 'planned' },
+      { text: 'CI/CD pipeline (GitHub Actions)', status: 'planned' },
     ],
   },
   {
-    id: 7, nameKey: 'roadmap.phase7', status: 'planned',
+    title: 'Mobile & Desktop',
+    subtitle: 'Cross-platform experience',
+    status: 'planned',
+    date: 'Q3 2026',
     features: [
-      { key: 'aiBot', status: 'planned' },
-      { key: 'smartReply', status: 'planned' },
-      { key: 'aiTranslate', status: 'planned' },
-      { key: 'aiSummary', status: 'planned' },
-      { key: 'aiModeration', status: 'planned' },
-      { key: 'aiImageGen', status: 'planned' },
-      { key: 'tts', status: 'planned' },
-      { key: 'semanticSearch', status: 'planned' },
-      { key: 'aiRecommend', status: 'planned' },
-      { key: 'aiSentiment', status: 'planned' },
-      { key: 'aiTrading', status: 'planned' },
-      { key: 'aiNftAdvisor', status: 'planned' },
-      { key: 'aiContractAudit', status: 'planned' },
+      { text: 'Progressive Web App (PWA)', status: 'planned' },
+      { text: 'React Native mobile app (iOS & Android)', status: 'planned' },
+      { text: 'Push notifications (Firebase FCM)', status: 'planned' },
+      { text: 'Desktop client (Electron/Tauri)', status: 'planned' },
+      { text: 'Voice & video calls (WebRTC)', status: 'planned' },
     ],
   },
   {
-    id: 8, nameKey: 'roadmap.phase8', status: 'in-progress',
+    title: 'Node Network',
+    subtitle: 'Decentralized key storage',
+    status: 'planned',
+    date: 'Q4 2026',
     features: [
-      { key: 'e2e', status: 'complete' },
-      { key: 'p2p', status: 'planned' },
-      { key: 'reactNative', status: 'planned' },
-      { key: 'calls', status: 'planned' },
-      { key: 'botApi', status: 'planned' },
+      { text: 'Desktop node software (key guardians)', status: 'planned' },
+      { text: "Shamir's Secret Sharing for encryption keys", status: 'planned' },
+      { text: 'PLS rewards for node operators', status: 'planned' },
+      { text: 'Proof of Storage verification', status: 'planned' },
+      { text: 'P2P network (libp2p/WebRTC)', status: 'planned' },
+      { text: 'Solana smart contract for rewards', status: 'planned' },
+      { text: 'Message cache & media relay on nodes', status: 'planned' },
     ],
   },
 ];
 
-// Deterministic star positions
-function generateStars(count: number) {
-  const stars: { x: number; y: number; size: number; delay: number; opacity: number }[] = [];
-  let seed = 42;
-  const rand = () => { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647; };
-  for (let i = 0; i < count; i++) {
-    stars.push({
-      x: rand() * 100,
-      y: rand() * 100,
-      size: rand() > 0.9 ? 2 : 1,
-      delay: rand() * 5,
-      opacity: 0.15 + rand() * 0.5,
-    });
-  }
-  return stars;
+function StatusIcon({ status }: { status: Status }) {
+  if (status === 'done') return <Check size={14} className="text-emerald-400" />;
+  if (status === 'active') return <Loader2 size={14} className="text-amber-400 animate-spin" />;
+  return <Clock size={14} className="text-gray-500" />;
 }
 
-const STATUS_COLORS: Record<FeatureStatus, { bg: string; glow: string; text: string }> = {
-  complete: {
-    bg: 'bg-emerald-400',
-    glow: '0 0 8px rgba(52,211,153,0.7), 0 0 20px rgba(52,211,153,0.3)',
-    text: 'text-emerald-400',
-  },
-  'in-progress': {
-    bg: 'bg-amber-400',
-    glow: '0 0 8px rgba(251,191,36,0.7), 0 0 20px rgba(251,191,36,0.3)',
-    text: 'text-amber-400',
-  },
-  planned: {
-    bg: 'bg-gray-500',
-    glow: 'none',
-    text: 'text-gray-500',
-  },
-};
+function useInView(ref: React.RefObject<HTMLElement | null>) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+  return visible;
+}
 
-const ORBIT_RADII = [80, 130, 185, 245, 310, 380, 440, 500];
+function PhaseCard({ phase, index }: { phase: Phase; index: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const visible = useInView(ref);
+  const isLeft = index % 2 === 0;
+  const doneCount = phase.features.filter(f => f.status === 'done').length;
+  const progress = Math.round((doneCount / phase.features.length) * 100);
+
+  const borderColor = phase.status === 'done' ? 'border-emerald-500/30' : phase.status === 'active' ? 'border-amber-500/30' : 'border-gray-700/30';
+  const glowColor = phase.status === 'done' ? 'shadow-emerald-500/10' : phase.status === 'active' ? 'shadow-amber-500/10' : '';
+
+  return (
+    <div
+      ref={ref}
+      className={`relative flex items-start gap-8 ${isLeft ? 'lg:flex-row' : 'lg:flex-row-reverse'} flex-col lg:flex-row`}
+    >
+      {/* Timeline dot */}
+      <div className="hidden lg:flex absolute left-1/2 -translate-x-1/2 z-10 flex-col items-center">
+        <div className={`w-5 h-5 rounded-full border-2 ${
+          phase.status === 'done' ? 'bg-emerald-500 border-emerald-400' :
+          phase.status === 'active' ? 'bg-amber-500 border-amber-400 animate-pulse' :
+          'bg-gray-700 border-gray-600'
+        }`} style={{ boxShadow: phase.status !== 'planned' ? `0 0 12px ${phase.status === 'done' ? 'rgba(52,211,153,0.5)' : 'rgba(251,191,36,0.5)'}` : 'none' }} />
+      </div>
+
+      {/* Content card */}
+      <div className={`lg:w-[45%] ${isLeft ? 'lg:text-right lg:ml-auto lg:mr-[55%]' : 'lg:text-left lg:mr-auto lg:ml-[55%]'} w-full`}>
+        <div
+          className={`rounded-2xl border ${borderColor} bg-dark-800/70 backdrop-blur-sm p-6 shadow-xl ${glowColor} transition-all duration-700 ${
+            visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          } ${phase.highlight ? 'ring-1 ring-amber-500/20' : ''}`}
+          style={{ transitionDelay: `${index * 100}ms` }}
+        >
+          {/* Header */}
+          <div className={`flex items-center gap-3 mb-4 ${isLeft ? 'lg:flex-row-reverse' : ''}`}>
+            <StatusIcon status={phase.status} />
+            <div className={isLeft ? 'lg:text-right' : ''}>
+              <h3 className="text-lg font-bold text-white">{phase.title}</h3>
+              <p className="text-xs text-gray-400">{phase.subtitle}</p>
+            </div>
+            <span className={`ml-auto text-[10px] font-mono px-2 py-0.5 rounded-full ${
+              phase.status === 'done' ? 'bg-emerald-500/10 text-emerald-400' :
+              phase.status === 'active' ? 'bg-amber-500/10 text-amber-400' :
+              'bg-gray-700/50 text-gray-500'
+            } ${isLeft ? 'lg:ml-0 lg:mr-auto' : ''}`}>
+              {phase.date}
+            </span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full h-1 bg-dark-600 rounded-full mb-4 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ${
+                phase.status === 'done' ? 'bg-emerald-500' : phase.status === 'active' ? 'bg-amber-500' : 'bg-gray-600'
+              }`}
+              style={{ width: visible ? `${progress}%` : '0%', transitionDelay: `${index * 100 + 300}ms` }}
+            />
+          </div>
+
+          {/* Features */}
+          <div className="space-y-2">
+            {phase.features.map((feature, fi) => (
+              <div
+                key={fi}
+                className={`flex items-center gap-2.5 transition-all duration-500 ${
+                  visible ? 'opacity-100 translate-x-0' : `opacity-0 ${isLeft ? 'translate-x-4' : '-translate-x-4'}`
+                } ${isLeft ? 'lg:flex-row-reverse' : ''}`}
+                style={{ transitionDelay: `${index * 100 + fi * 60 + 200}ms` }}
+              >
+                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  feature.status === 'done' ? 'bg-emerald-400' :
+                  feature.status === 'active' ? 'bg-amber-400 animate-pulse' :
+                  'bg-gray-600'
+                }`} />
+                {feature.icon && <span className={feature.status === 'done' ? 'text-emerald-400' : feature.status === 'active' ? 'text-amber-400' : 'text-gray-500'}>{feature.icon}</span>}
+                <span className={`text-sm ${
+                  feature.status === 'done' ? 'text-gray-300' :
+                  feature.status === 'active' ? 'text-amber-300/80' :
+                  'text-gray-500'
+                } ${isLeft ? 'lg:text-right' : ''}`}>
+                  {feature.text}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Stats */}
+          <div className={`mt-4 pt-3 border-t border-dark-600/50 flex items-center gap-2 text-[11px] text-gray-500 ${isLeft ? 'lg:flex-row-reverse' : ''}`}>
+            <span>{doneCount}/{phase.features.length} completed</span>
+            <span>•</span>
+            <span>{progress}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function RoadmapPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const stars = useMemo(() => generateStars(120), []);
-  const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
-  const [hoveredPos, setHoveredPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [scale, setScale] = useState(0.85);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const isDragging = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const panStart = useRef({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault();
-    setScale(s => Math.min(2.5, Math.max(0.4, s - e.deltaY * 0.001)));
-  }, []);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    el.addEventListener('wheel', handleWheel, { passive: false });
-    return () => el.removeEventListener('wheel', handleWheel);
-  }, [handleWheel]);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    isDragging.current = true;
-    dragStart.current = { x: e.clientX, y: e.clientY };
-    panStart.current = { ...pan };
-  }, [pan]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging.current) return;
-    setPan({
-      x: panStart.current.x + (e.clientX - dragStart.current.x),
-      y: panStart.current.y + (e.clientY - dragStart.current.y),
-    });
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    isDragging.current = false;
-  }, []);
-
-  const mapCenter = { x: 500, y: 500 };
+  const totalFeatures = PHASES.reduce((acc, p) => acc + p.features.length, 0);
+  const doneFeatures = PHASES.reduce((acc, p) => acc + p.features.filter(f => f.status === 'done').length, 0);
+  const totalProgress = Math.round((doneFeatures / totalFeatures) * 100);
 
   return (
-    <div className="min-h-screen bg-dark-900 relative overflow-hidden select-none">
-      {/* Cosmic background */}
-      <div className="fixed inset-0 z-0">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'radial-gradient(ellipse at center, rgba(76,110,245,0.06) 0%, rgba(16,17,19,1) 70%)',
-          }}
-        />
-        {stars.map((star, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-white animate-star-twinkle"
-            style={{
-              left: `${star.x}%`,
-              top: `${star.y}%`,
-              width: star.size,
-              height: star.size,
-              opacity: star.opacity,
-              animationDelay: `${star.delay}s`,
-              animationDuration: `${3 + star.delay}s`,
-            }}
-          />
-        ))}
-      </div>
+    <div className="min-h-screen bg-dark-900 relative">
+      {/* Gradient background */}
+      <div className="fixed inset-0 z-0" style={{
+        background: 'radial-gradient(ellipse at 30% 0%, rgba(76,110,245,0.08) 0%, transparent 50%), radial-gradient(ellipse at 70% 100%, rgba(52,211,153,0.05) 0%, transparent 50%)',
+      }} />
 
       {/* Header */}
-      <div className="relative z-20 flex items-center justify-between px-6 py-4">
+      <div className="relative z-10 max-w-5xl mx-auto px-6 pt-8 pb-12">
         <button
           onClick={() => navigate('/login')}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-400 hover:text-white transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-400 hover:text-white transition-colors mb-8"
         >
           <ArrowLeft size={16} />
           <span className="text-sm">{t('roadmap.back')}</span>
         </button>
 
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white tracking-wider">
-            {t('roadmap.title')}
+        {/* Hero */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-xs font-medium mb-4">
+            <Sparkles size={12} />
+            Building the future of crypto messaging
+          </div>
+          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3 tracking-tight">
+            Pulsar Roadmap
           </h1>
-          <p className="text-xs text-gray-500 mt-0.5">{t('roadmap.subtitle')}</p>
-        </div>
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            From encrypted messaging to decentralized node network — our journey to reshape communication.
+          </p>
 
-        <div className="w-24" />
-      </div>
-
-      {/* Legend */}
-      <div className="relative z-20 flex justify-center gap-6 pb-2">
-        {(['complete', 'in-progress', 'planned'] as FeatureStatus[]).map((status) => (
-          <div key={status} className="flex items-center gap-2">
-            <div
-              className={`w-2.5 h-2.5 rounded-full ${STATUS_COLORS[status].bg} ${
-                status === 'in-progress' ? 'animate-star-pulse' : ''
-              }`}
-              style={{ boxShadow: STATUS_COLORS[status].glow }}
-            />
-            <span className={`text-xs font-medium ${STATUS_COLORS[status].text}`}>
-              {t(`roadmap.${status === 'complete' ? 'complete' : status === 'in-progress' ? 'inProgress' : 'planned'}`)}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Desktop orbital map */}
-      <div
-        ref={containerRef}
-        className="hidden lg:block relative z-10 w-full overflow-hidden cursor-grab active:cursor-grabbing"
-        style={{ height: 'calc(100vh - 120px)' }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        <div
-          className="absolute"
-          style={{
-            width: 1000,
-            height: 1000,
-            left: '50%',
-            top: '50%',
-            transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-            transition: isDragging.current ? 'none' : 'transform 0.1s ease-out',
-          }}
-        >
-          {/* Orbital rings */}
-          {PHASES.map((phase, i) => {
-            const radius = ORBIT_RADII[i];
-            const diameter = radius * 2;
-            const borderColor = phase.status === 'complete'
-              ? 'border-emerald-500/15'
-              : phase.status === 'in-progress'
-                ? 'border-amber-500/20'
-                : 'border-gray-700/20';
-
-            return (
-              <div key={`ring-${phase.id}`}>
-                {/* Ring */}
-                <div
-                  className={`absolute rounded-full border ${borderColor}`}
-                  style={{
-                    width: diameter,
-                    height: diameter,
-                    left: mapCenter.x - radius,
-                    top: mapCenter.y - radius,
-                  }}
-                />
-
-                {/* Phase label */}
-                <div
-                  className="absolute text-center pointer-events-none"
-                  style={{
-                    left: mapCenter.x,
-                    top: mapCenter.y - radius - 32,
-                    transform: 'translateX(-50%)',
-                  }}
-                >
-                  <span
-                    className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
-                      phase.status === 'complete'
-                        ? 'text-emerald-400/70 bg-emerald-500/5'
-                        : phase.status === 'in-progress'
-                          ? 'text-amber-400/70 bg-amber-500/5'
-                          : 'text-gray-600 bg-gray-800/30'
-                    }`}
-                  >
-                    {t(phase.nameKey as any)}
-                  </span>
-                </div>
-
-                {/* Feature nodes */}
-                {phase.features.map((feature, fi) => {
-                  const angle = (2 * Math.PI * fi) / phase.features.length - Math.PI / 2;
-                  const x = mapCenter.x + radius * Math.cos(angle);
-                  const y = mapCenter.y + radius * Math.sin(angle);
-                  const isHovered = hoveredFeature === `${phase.id}-${feature.key}`;
-                  const nodeSize = isHovered ? 14 : (phase.id <= 3 ? 8 : phase.id <= 5 ? 7 : 6);
-                  const colors = STATUS_COLORS[feature.status];
-
-                  return (
-                    <div
-                      key={`${phase.id}-${feature.key}`}
-                      className={`absolute rounded-full ${colors.bg} transition-all duration-200 cursor-pointer ${
-                        feature.status === 'in-progress' ? 'animate-star-pulse' : ''
-                      } ${feature.status === 'planned' ? 'opacity-40' : ''}`}
-                      style={{
-                        width: nodeSize,
-                        height: nodeSize,
-                        left: x - nodeSize / 2,
-                        top: y - nodeSize / 2,
-                        boxShadow: feature.status !== 'planned' ? colors.glow : 'none',
-                        zIndex: isHovered ? 50 : 5,
-                      }}
-                      onMouseEnter={(e) => {
-                        setHoveredFeature(`${phase.id}-${feature.key}`);
-                        const rect = containerRef.current?.getBoundingClientRect();
-                        if (rect) {
-                          setHoveredPos({
-                            x: e.clientX - rect.left,
-                            y: e.clientY - rect.top,
-                          });
-                        }
-                      }}
-                      onMouseLeave={() => setHoveredFeature(null)}
-                    />
-                  );
-                })}
-              </div>
-            );
-          })}
-
-          {/* Pulsar core */}
-          <div
-            className="absolute rounded-full bg-primary-500 animate-pulsar-glow"
-            style={{
-              width: 28,
-              height: 28,
-              left: mapCenter.x - 14,
-              top: mapCenter.y - 14,
-              background: 'radial-gradient(circle, rgba(92,124,250,1) 0%, rgba(66,99,235,0.8) 50%, rgba(54,79,199,0.4) 100%)',
-            }}
-          />
-          <div
-            className="absolute rounded-full"
-            style={{
-              width: 50,
-              height: 50,
-              left: mapCenter.x - 25,
-              top: mapCenter.y - 25,
-              background: 'radial-gradient(circle, rgba(92,124,250,0.15) 0%, transparent 70%)',
-            }}
-          />
-          <div
-            className="absolute pointer-events-none text-center"
-            style={{
-              left: mapCenter.x,
-              top: mapCenter.y + 22,
-              transform: 'translateX(-50%)',
-            }}
-          >
-            <span className="text-[9px] font-bold text-primary-400/60 uppercase tracking-[0.2em]">Pulsar</span>
-          </div>
-        </div>
-
-        {/* Tooltip */}
-        {hoveredFeature && (
-          <div
-            className="absolute z-50 pointer-events-none"
-            style={{
-              left: hoveredPos.x + 12,
-              top: hoveredPos.y - 10,
-            }}
-          >
-            <div className="bg-dark-700/95 border border-dark-400/50 backdrop-blur-md rounded-lg px-3 py-2 shadow-xl">
-              <p className="text-xs text-white font-medium whitespace-nowrap">
-                {t(`roadmap.f.${hoveredFeature.split('-').slice(1).join('-')}` as any)}
-              </p>
-              <div className="flex items-center gap-1.5 mt-1">
-                <div
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    STATUS_COLORS[
-                      PHASES.find(p => hoveredFeature.startsWith(`${p.id}-`))
-                        ?.features.find(f => hoveredFeature === `${PHASES.find(p => hoveredFeature.startsWith(`${p.id}-`))?.id}-${f.key}`)
-                        ?.status || 'planned'
-                    ].bg
-                  }`}
-                />
-                <span className="text-[10px] text-gray-400">
-                  {(() => {
-                    const phase = PHASES.find(p => hoveredFeature.startsWith(`${p.id}-`));
-                    const feature = phase?.features.find(f => hoveredFeature === `${phase.id}-${f.key}`);
-                    const s = feature?.status || 'planned';
-                    return t(s === 'complete' ? 'roadmap.complete' : s === 'in-progress' ? 'roadmap.inProgress' : 'roadmap.planned' as any);
-                  })()}
-                </span>
-              </div>
+          {/* Overall progress */}
+          <div className="mt-8 max-w-md mx-auto">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-400">Overall progress</span>
+              <span className="text-emerald-400 font-mono font-bold">{totalProgress}%</span>
             </div>
-          </div>
-        )}
-
-        {/* Zoom hint */}
-        <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-gray-600">
-          {t('roadmap.zoom')}
-        </p>
-      </div>
-
-      {/* Mobile timeline */}
-      <div className="lg:hidden relative z-10 px-4 pb-8 space-y-4">
-        {PHASES.map((phase) => {
-          const colors = STATUS_COLORS[phase.status];
-          return (
-            <div
-              key={phase.id}
-              className={`relative rounded-xl bg-dark-800/60 backdrop-blur-sm border overflow-hidden ${
-                phase.status === 'complete'
-                  ? 'border-emerald-500/20'
-                  : phase.status === 'in-progress'
-                    ? 'border-amber-500/20'
-                    : 'border-dark-500/30'
-              }`}
-            >
-              {/* Left accent bar */}
+            <div className="w-full h-2.5 bg-dark-700 rounded-full overflow-hidden">
               <div
-                className={`absolute left-0 top-0 bottom-0 w-1 ${colors.bg} ${
-                  phase.status === 'planned' ? 'opacity-30' : ''
-                }`}
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-primary-500 transition-all duration-2000"
+                style={{ width: `${totalProgress}%` }}
               />
-
-              <div className="pl-5 pr-4 py-4">
-                {/* Phase header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className={`w-3 h-3 rounded-full ${colors.bg} ${
-                        phase.status === 'in-progress' ? 'animate-star-pulse' : ''
-                      } ${phase.status === 'planned' ? 'opacity-40' : ''}`}
-                      style={{ boxShadow: colors.glow }}
-                    />
-                    <h3 className="text-sm font-bold text-white">
-                      {t('roadmap.phase')} {phase.id} — {t(phase.nameKey as any)}
-                    </h3>
-                  </div>
-                  <span className={`text-[10px] font-medium ${colors.text}`}>
-                    {t(phase.status === 'complete' ? 'roadmap.complete' : phase.status === 'in-progress' ? 'roadmap.inProgress' : 'roadmap.planned' as any)}
-                  </span>
-                </div>
-
-                {/* Features grid */}
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                  {phase.features.map((feature) => (
-                    <div key={feature.key} className="flex items-center gap-2">
-                      <div
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_COLORS[feature.status].bg} ${
-                          feature.status === 'planned' ? 'opacity-40' : ''
-                        }`}
-                      />
-                      <span className={`text-xs truncate ${
-                        feature.status === 'complete'
-                          ? 'text-gray-300'
-                          : feature.status === 'in-progress'
-                            ? 'text-amber-300/80'
-                            : 'text-gray-500'
-                      }`}>
-                        {t(`roadmap.f.${feature.key}` as any)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
-          );
-        })}
+            <p className="text-xs text-gray-500 mt-2">{doneFeatures} of {totalFeatures} features shipped</p>
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <div className="relative">
+          {/* Vertical line */}
+          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-emerald-500/30 via-amber-500/20 to-gray-700/20" />
+
+          <div className="space-y-12 lg:space-y-16">
+            {PHASES.map((phase, i) => (
+              <PhaseCard key={i} phase={phase} index={i} />
+            ))}
+          </div>
+        </div>
+
+        {/* Footer CTA */}
+        <div className="text-center mt-20 pb-12">
+          <div className="inline-block p-8 rounded-2xl bg-dark-800/50 border border-dark-500/30 backdrop-blur-sm">
+            <h3 className="text-xl font-bold text-white mb-2">Want to shape the future?</h3>
+            <p className="text-gray-400 text-sm mb-4">Join Pulsar today and be part of the revolution.</p>
+            <button
+              onClick={() => navigate('/login')}
+              className="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
+            >
+              Get Started
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
