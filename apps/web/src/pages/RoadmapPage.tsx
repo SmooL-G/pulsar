@@ -276,7 +276,7 @@ export function RoadmapPage() {
   const totalProgress = Math.round((doneFeatures / totalFeatures) * 100);
 
   return (
-    <div className="min-h-screen bg-dark-900 relative">
+    <div className="bg-dark-900 relative" style={{ height: '100dvh', overflowY: 'auto' }}>
       {/* Gradient background */}
       <div className="fixed inset-0 z-0" style={{
         background: 'radial-gradient(ellipse at 30% 0%, rgba(76,110,245,0.08) 0%, transparent 50%), radial-gradient(ellipse at 70% 100%, rgba(52,211,153,0.05) 0%, transparent 50%)',
