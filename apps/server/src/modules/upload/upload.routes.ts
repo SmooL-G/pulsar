@@ -2,8 +2,17 @@ import type { FastifyInstance } from 'fastify';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client } from '../../config/s3.js';
 import { authMiddleware } from '../../middleware/auth.js';
+import { prisma } from '../../config/database.js';
 import { env } from '../../config/env.js';
 import { nanoid } from 'nanoid';
+
+// File size limits by verification level (bytes)
+function getFileSizeLimit(verificationLevel: number, role: string): number {
+  if (role === 'SUPER_ADMIN' || role === 'ADMIN') return 100 * 1024 * 1024; // 100MB
+  if (verificationLevel >= 3) return 50 * 1024 * 1024; // 50MB Elite
+  if (verificationLevel >= 1) return 50 * 1024 * 1024; // 50MB Starter+
+  return 20 * 1024 * 1024; // 20MB free
+}
 
 export async function uploadRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authMiddleware);
@@ -33,9 +42,56 @@ export async function uploadRoutes(app: FastifyInstance) {
       })
     );
 
-    // URL accessible through nginx proxy
     const avatarUrl = `/s3/${env.S3_BUCKET}/${key}`;
-
     return { avatarUrl };
+  });
+
+  // Upload file (with per-user size limits)
+  app.post('/file', async (request, reply) => {
+    const userId = request.user!.userId;
+
+    // Get user verification level
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { verificationLevel: true, role: true },
+    });
+
+    const maxSize = getFileSizeLimit(user?.verificationLevel || 0, user?.role || 'USER');
+    const maxSizeMB = Math.round(maxSize / 1024 / 1024);
+
+    const data = await request.file();
+    if (!data) {
+      return reply.status(400).send({ error: 'NO_FILE', message: 'No file uploaded' });
+    }
+
+    const buffer = await data.toBuffer();
+    if (buffer.length > maxSize) {
+      return reply.status(413).send({
+        error: 'FILE_TOO_LARGE',
+        message: `File size exceeds ${maxSizeMB}MB limit. Upgrade verification to increase.`,
+        maxSizeMB,
+        verificationLevel: user?.verificationLevel || 0,
+      });
+    }
+
+    const ext = data.filename.split('.').pop()?.toLowerCase() || 'bin';
+    const key = `files/${userId}/${nanoid()}.${ext}`;
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: env.S3_BUCKET,
+        Key: key,
+        Body: buffer,
+        ContentType: data.mimetype,
+      })
+    );
+
+    const url = `/s3/${env.S3_BUCKET}/${key}`;
+    return {
+      url,
+      fileName: data.filename,
+      fileSize: buffer.length,
+      mimeType: data.mimetype,
+    };
   });
 }

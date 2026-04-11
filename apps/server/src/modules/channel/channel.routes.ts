@@ -15,7 +15,7 @@ const ROLE_HIERARCHY: Record<string, number> = {
 export async function channelRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authMiddleware);
 
-  // Create channel
+  // Create channel (with verification-based limits)
   app.post('/', async (request, reply) => {
     const userId = request.user!.userId;
     const { name, description, isPublic, allowComments } = request.body as {
@@ -27,6 +27,31 @@ export async function channelRoutes(app: FastifyInstance) {
 
     if (!name || name.length > LIMITS.GROUP_NAME_MAX) {
       return reply.status(400).send({ error: 'VALIDATION_ERROR', message: 'Invalid channel name' });
+    }
+
+    // Check channel creation limit by verification level
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { verificationLevel: true, role: true },
+    });
+
+    const maxChannels = (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN')
+      ? 999
+      : user?.verificationLevel === 3 ? 10
+      : user?.verificationLevel === 2 ? 5
+      : 3;
+
+    const ownedChannels = await prisma.chat.count({
+      where: { ownerId: userId, type: 'CHANNEL' },
+    });
+
+    if (ownedChannels >= maxChannels) {
+      return reply.status(400).send({
+        error: 'CHANNEL_LIMIT',
+        message: `You can create up to ${maxChannels} channels. Upgrade verification to create more.`,
+        maxChannels,
+        current: ownedChannels,
+      });
     }
 
     const channel = await prisma.chat.create({

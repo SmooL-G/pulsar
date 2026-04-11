@@ -51,7 +51,7 @@ export async function buildApp() {
   await app.register(cookie);
 
   await app.register(multipart, {
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 50 * 1024 * 1024 }, // Max 50MB, per-user limits in routes
   });
 
   await app.register(rateLimit, {
