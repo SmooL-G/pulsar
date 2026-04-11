@@ -5,9 +5,9 @@ import { useSocket } from '../hooks/useSocket';
 export function ChatPage() {
   useSocket();
   return (
-    <>
+    <div className="chat-layout">
       <AppLayout />
       <NotificationManager />
-    </>
+    </div>
   );
 }
