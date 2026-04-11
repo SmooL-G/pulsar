@@ -52,6 +52,13 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
 
   const displayContent = message.content || decryptedContent;
   const isEncrypted = !!message.encryptedContent;
+  const superchat = (message.metadata as any)?.superchat;
+  const superChatColors: Record<string, string> = {
+    blue: 'border-blue-500 bg-blue-500/10',
+    green: 'border-green-500 bg-green-500/10',
+    yellow: 'border-yellow-400 bg-yellow-400/10',
+    red: 'border-red-500 bg-red-500/10',
+  };
 
   // Close context menu on click outside — must be before early returns
   useEffect(() => {
@@ -180,10 +187,23 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
             </p>
           )}
 
+          {/* SuperChat amount badge */}
+          {superchat && (
+            <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold mb-1 ${
+              superchat.tier === 'red' ? 'bg-red-500/20 text-red-400' :
+              superchat.tier === 'yellow' ? 'bg-yellow-400/20 text-yellow-400' :
+              superchat.tier === 'green' ? 'bg-green-500/20 text-green-400' :
+              'bg-blue-500/20 text-blue-400'
+            }`}>
+              💎 {superchat.amount.toLocaleString()} PLS
+            </div>
+          )}
+
           {/* Bubble */}
           <div
             className={`
               px-3 py-2 rounded-2xl text-sm leading-relaxed inline-block
+              ${superchat ? `border-2 ${superChatColors[superchat.tier] || ''} ` : ''}
               ${isOwn
                 ? 'bg-primary-500 text-white rounded-br-md'
                 : 'bg-gray-100 dark:bg-dark-600 text-gray-900 dark:text-gray-100 rounded-bl-md'}

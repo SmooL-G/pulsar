@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
-import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
+import { api } from '../../services/api';
 import { useI18n } from '../../i18n';
+import toast from 'react-hot-toast';
 import { signMessage } from '../../crypto/messageSigner';
 import { encryptMessage } from '../../crypto/e2eEncrypt';
 
@@ -34,6 +36,9 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
   const [signOn, setSignOn] = useState(getSignEnabled);
   const [commentsOn, setCommentsOn] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showSuperChat, setShowSuperChat] = useState(false);
+  const [superChatAmount, setSuperChatAmount] = useState(0);
+  const [superChatSending, setSuperChatSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { signMessage: walletSignMessage, publicKey } = useWallet();
 
@@ -185,6 +190,17 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
           )}
         </div>
 
+        {/* SuperChat button (groups & channels only) */}
+        {(chatType === 'GROUP' || chatType === 'CHANNEL') && (
+          <button
+            onClick={() => setShowSuperChat((v) => !v)}
+            className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 transition-colors shrink-0 ${showSuperChat ? 'text-amber-400' : 'text-gray-400'}`}
+            title="SuperChat"
+          >
+            <Gem size={20} />
+          </button>
+        )}
+
         <button
           onClick={handleSend}
           disabled={!text.trim()}
@@ -194,6 +210,56 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
           <Send size={18} />
         </button>
       </div>
+
+      {/* SuperChat panel */}
+      {showSuperChat && (
+        <div className="mt-2 p-3 bg-dark-600 rounded-xl animate-fade-in">
+          <p className="text-xs text-gray-400 mb-2 flex items-center gap-1"><Gem size={12} className="text-amber-400" /> SuperChat — donate PLS</p>
+          <div className="flex gap-2 mb-2">
+            {[100, 500, 1000, 5000, 25000].map((amt) => (
+              <button
+                key={amt}
+                onClick={() => setSuperChatAmount(amt)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  superChatAmount === amt
+                    ? amt >= 25000 ? 'bg-red-500 text-white'
+                    : amt >= 5000 ? 'bg-yellow-500 text-black'
+                    : amt >= 1000 ? 'bg-green-500 text-white'
+                    : 'bg-blue-500 text-white'
+                    : 'bg-dark-500 text-gray-300 hover:bg-dark-400'
+                }`}
+              >
+                {amt >= 1000 ? `${amt / 1000}K` : amt} PLS
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={async () => {
+              if (!superChatAmount || !text.trim()) return;
+              setSuperChatSending(true);
+              try {
+                await api.post('/wallet/superchat', {
+                  chatId,
+                  content: text.trim(),
+                  amount: superChatAmount,
+                });
+                setText('');
+                setSuperChatAmount(0);
+                setShowSuperChat(false);
+                toast.success(`SuperChat sent! -${superChatAmount} PLS`);
+              } catch (err: any) {
+                toast.error(err.response?.data?.message || 'SuperChat failed');
+              } finally {
+                setSuperChatSending(false);
+              }
+            }}
+            disabled={!superChatAmount || !text.trim() || superChatSending}
+            className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-sm font-bold disabled:opacity-50 transition-colors"
+          >
+            {superChatSending ? '...' : `Send SuperChat (${superChatAmount} PLS)`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

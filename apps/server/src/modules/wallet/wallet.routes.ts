@@ -430,4 +430,131 @@ export async function walletRoutes(app: FastifyInstance) {
       profileBadge: updatedUser.profileBadge,
     };
   });
+
+  // SuperChat — donate message in group/channel
+  app.post('/superchat', async (request: FastifyRequest<{
+    Body: { chatId: string; content: string; amount: number };
+  }>, reply) => {
+    const userId = request.user!.userId;
+    const { chatId, content, amount } = request.body;
+
+    if (!chatId || !content?.trim() || !amount || amount < 100) {
+      return reply.status(400).send({ error: 'VALIDATION_ERROR', message: 'Min amount is 100 PLS' });
+    }
+
+    // Check membership
+    const member = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId, userId } },
+    });
+    if (!member || member.leftAt) {
+      return reply.status(403).send({ error: 'NOT_MEMBER' });
+    }
+
+    // Check balance
+    const wallet = await getOrCreateWallet(userId);
+    if (wallet.balance < BigInt(amount)) {
+      return reply.status(400).send({ error: 'INSUFFICIENT_BALANCE' });
+    }
+
+    // Get chat owner for revenue split
+    const chat = await prisma.chat.findUnique({
+      where: { id: chatId },
+      select: { ownerId: true, type: true },
+    });
+
+    // Determine tier
+    const tier = amount >= 25000 ? 'red' : amount >= 5000 ? 'yellow' : amount >= 1000 ? 'green' : 'blue';
+    const pinDuration = amount >= 25000 ? 30 : amount >= 5000 ? 5 : amount >= 1000 ? 1 : 0; // minutes
+
+    // Deduct from sender
+    const burnAmount = Math.floor(amount * 0.3); // 30% burn
+    const ownerAmount = amount - burnAmount; // 70% to chat owner
+
+    const updatedWallet = await prisma.plsWallet.update({
+      where: { id: wallet.id },
+      data: { balance: { decrement: BigInt(amount) } },
+    });
+
+    // Record transaction for sender
+    await prisma.plsTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: 'PURCHASE',
+        amount: BigInt(-amount),
+        description: `SuperChat in ${chat?.type || 'chat'}: ${amount} PLS`,
+      },
+    });
+
+    // Give 70% to chat owner (if exists and not self)
+    if (chat?.ownerId && chat.ownerId !== userId) {
+      const ownerWallet = await getOrCreateWallet(chat.ownerId);
+      await prisma.plsWallet.update({
+        where: { id: ownerWallet.id },
+        data: { balance: { increment: BigInt(ownerAmount) } },
+      });
+      await prisma.plsTransaction.create({
+        data: {
+          walletId: ownerWallet.id,
+          type: 'REWARD',
+          amount: BigInt(ownerAmount),
+          description: `SuperChat received: ${ownerAmount} PLS`,
+        },
+      });
+
+      try {
+        const io = getIO();
+        io.to(`user:${chat.ownerId}`).emit('wallet:balance-updated', {
+          balance: (ownerWallet.balance + BigInt(ownerAmount)).toString(),
+          change: `+${ownerAmount}`,
+          type: 'REWARD' as const,
+        });
+      } catch {}
+    }
+
+    // Create superchat message
+    const message = await prisma.message.create({
+      data: {
+        chatId,
+        senderId: userId,
+        content: content.trim(),
+        type: 'TEXT',
+        metadata: {
+          superchat: { amount, tier, pinDuration },
+        },
+      },
+      include: {
+        sender: {
+          select: {
+            id: true, username: true, displayName: true, avatarUrl: true,
+            verificationLevel: true, profileBadge: true, nftAvatarMint: true, role: true,
+          },
+        },
+      },
+    });
+
+    // Broadcast via Socket.IO
+    try {
+      const io = getIO();
+      io.to(`chat:${chatId}`).emit('message:new', {
+        ...message,
+        createdAt: message.createdAt.toISOString(),
+        updatedAt: message.updatedAt.toISOString(),
+        status: 'sent',
+      });
+
+      // Notify sender of balance change
+      io.to(`user:${userId}`).emit('wallet:balance-updated', {
+        balance: updatedWallet.balance.toString(),
+        change: `-${amount}`,
+        type: 'PURCHASE' as const,
+      });
+    } catch {}
+
+    return {
+      success: true,
+      messageId: message.id,
+      tier,
+      balance: updatedWallet.balance.toString(),
+    };
+  });
 }
