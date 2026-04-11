@@ -77,25 +77,39 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
     } catch { /* ignore */ }
   };
 
-  const handleSearchChatClick = async (chatId: string) => {
-    // Try to join if not member, then open
+  const handleSearchChatClick = async (chatId: string, type: string) => {
     try {
       const existing = chats.find((c) => c.id === chatId);
       if (existing) {
         setActiveChat(existing);
-      } else {
-        // Subscribe/join
-        try { await api.post(`/channels/${chatId}/subscribe`); } catch { /* ignore */ }
-        try { await api.post(`/groups/${chatId}/join`); } catch { /* ignore */ }
-        const { data } = await api.get(`/chats/${chatId}`);
-        if (data) {
-          addChat(data);
-          setActiveChat(data);
-        }
+        setSearchQuery('');
+        onChatSelect();
+        return;
       }
+
+      // Subscribe/join depending on type
+      if (type === 'CHANNEL') {
+        await api.post(`/channels/${chatId}/subscribe`);
+      } else {
+        await api.post(`/groups/${chatId}/join`);
+      }
+
+      // Refresh chat list and find the new chat
+      await fetchChats();
+      // Small delay for store to update
+      setTimeout(() => {
+        const updated = useChatStore.getState().chats;
+        const newChat = updated.find((c) => c.id === chatId);
+        if (newChat) {
+          setActiveChat(newChat);
+        }
+        setSearchQuery('');
+        onChatSelect();
+      }, 300);
+    } catch {
+      // If subscribe fails, still try to open
       setSearchQuery('');
-      onChatSelect();
-    } catch { /* ignore */ }
+    }
   };
 
   const { addChat } = useChatStore();
@@ -210,7 +224,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
               <>
                 <p className="text-[10px] uppercase text-gray-500 px-2 py-1 mt-2 font-semibold flex items-center gap-1"><Users size={10} /> {t('search.groups')}</p>
                 {searchResults.groups.map((g: any) => (
-                  <button key={g.id} onClick={() => handleSearchChatClick(g.id)}
+                  <button key={g.id} onClick={() => handleSearchChatClick(g.id, 'GROUP')}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors">
                     <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
                       {g.avatarUrl ? <img src={g.avatarUrl} alt="" className="w-full h-full object-cover rounded-full" /> : <Users size={18} />}
@@ -229,7 +243,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
               <>
                 <p className="text-[10px] uppercase text-gray-500 px-2 py-1 mt-2 font-semibold flex items-center gap-1"><Megaphone size={10} /> {t('search.channels')}</p>
                 {searchResults.channels.map((c: any) => (
-                  <button key={c.id} onClick={() => handleSearchChatClick(c.id)}
+                  <button key={c.id} onClick={() => handleSearchChatClick(c.id, 'CHANNEL')}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors">
                     <div className="w-9 h-9 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
                       {c.avatarUrl ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover rounded-full" /> : <Megaphone size={18} />}
