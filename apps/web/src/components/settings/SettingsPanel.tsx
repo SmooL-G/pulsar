@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2 } from 'lucide-react';
-import { LanguageSelector } from './LanguageSelector';
+
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { useNotificationStore } from '../../store/notificationStore';
@@ -30,7 +30,6 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [bio, setBio] = useState(user?.bio || '');
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [showLangSelector, setShowLangSelector] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showDeposit, setShowDeposit] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
@@ -233,13 +232,23 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 {/* Language */}
                 <div>
                   <label className="block text-sm font-medium mb-3">{t('settings.language')}</label>
-                  <button
-                    onClick={() => setShowLangSelector(true)}
-                    className="w-full py-3 px-4 rounded-xl border-2 border-gray-200 dark:border-dark-500 hover:border-primary-500 text-sm font-medium transition-colors flex items-center justify-between"
+                  <select
+                    value={locale}
+                    onChange={(e) => setLocale(e.target.value)}
+                    className="w-full py-3 px-4 rounded-xl border-2 border-gray-200 dark:border-dark-500 hover:border-primary-500 text-sm font-medium transition-colors bg-white dark:bg-dark-600 text-gray-900 dark:text-gray-100 outline-none"
                   >
-                    <span>{locale.toUpperCase()}</span>
-                    <Globe size={18} className="text-gray-400" />
-                  </button>
+                    <option value="en">English</option>
+                    <option value="ru">Русский</option>
+                    <option value="uk">Українська</option>
+                    <option value="de">Deutsch</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="pt">Português</option>
+                    <option value="tr">Türkçe</option>
+                    <option value="zh">中文</option>
+                    <option value="ja">日本語</option>
+                    <option value="ko">한국어</option>
+                  </select>
                 </div>
               </div>
             )}
@@ -340,7 +349,6 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
           </div>
         </div>
       </div>
-      {showLangSelector && <LanguageSelector onClose={() => setShowLangSelector(false)} />}
       {showAdmin && <AdminModal onClose={() => setShowAdmin(false)} />}
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
       {showTransfer && <TransferModal onClose={() => setShowTransfer(false)} />}

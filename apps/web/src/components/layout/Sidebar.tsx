@@ -7,7 +7,7 @@ import { NewChatModal } from '../chat/NewChatModal';
 import { ProfilePanel } from '../profile/ProfilePanel';
 import { SettingsPanel } from '../settings/SettingsPanel';
 import { FriendsPanel } from '../friends/FriendsPanel';
-import { LanguageSelector } from '../settings/LanguageSelector';
+
 import { WalletPanel } from '../wallet/WalletPanel';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
@@ -27,7 +27,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
-  const [showLang, setShowLang] = useState(false);
+
   const [showWallet, setShowWallet] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -335,7 +335,6 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       {showFriends && <FriendsPanel onClose={() => setShowFriends(false)} />}
       {showWallet && <WalletPanel onClose={() => setShowWallet(false)} />}
-      {showLang && <LanguageSelector onClose={() => setShowLang(false)} />}
     </div>
   );
 }
