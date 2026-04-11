@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Search, Plus, Settings, LogOut, Users, Globe, Wallet } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Search, Plus, Settings, LogOut, Users, Globe, Wallet, Megaphone, Bot, User } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { ChatListItem } from '../chat/ChatListItem';
@@ -10,6 +10,8 @@ import { FriendsPanel } from '../friends/FriendsPanel';
 import { LanguageSelector } from '../settings/LanguageSelector';
 import { WalletPanel } from '../wallet/WalletPanel';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { GenerativeAvatar } from '../ui/GenerativeAvatar';
+import { api } from '../../services/api';
 import { useI18n } from '../../i18n';
 
 interface SidebarProps {
@@ -27,10 +29,32 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
   const [showFriends, setShowFriends] = useState(false);
   const [showLang, setShowLang] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
+  const [searchResults, setSearchResults] = useState<any>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   useEffect(() => {
     fetchChats();
   }, [fetchChats]);
+
+  // Universal search with debounce
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const { data } = await api.get(`/search?q=${encodeURIComponent(searchQuery)}`);
+        setSearchResults(data);
+      } catch {
+        setSearchResults(null);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const filteredChats = searchQuery
     ? chats.filter(
@@ -41,6 +65,40 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
             .includes(searchQuery.toLowerCase())
       )
     : chats;
+
+  const handleSearchUserClick = async (userId: string) => {
+    try {
+      const { data } = await api.post('/chats/direct', { targetUserId: userId });
+      const chat = data.chat || data;
+      addChat(chat);
+      setActiveChat(chat);
+      setSearchQuery('');
+      onChatSelect();
+    } catch { /* ignore */ }
+  };
+
+  const handleSearchChatClick = async (chatId: string) => {
+    // Try to join if not member, then open
+    try {
+      const existing = chats.find((c) => c.id === chatId);
+      if (existing) {
+        setActiveChat(existing);
+      } else {
+        // Subscribe/join
+        try { await api.post(`/channels/${chatId}/subscribe`); } catch { /* ignore */ }
+        try { await api.post(`/groups/${chatId}/join`); } catch { /* ignore */ }
+        const { data } = await api.get(`/chats/${chatId}`);
+        if (data) {
+          addChat(data);
+          setActiveChat(data);
+        }
+      }
+      setSearchQuery('');
+      onChatSelect();
+    } catch { /* ignore */ }
+  };
+
+  const { addChat } = useChatStore();
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-dark-700">
@@ -106,24 +164,128 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
         </div>
       </div>
 
-      {/* Chat List */}
+      {/* Chat List / Search Results */}
       <div className="flex-1 overflow-y-auto scrollbar-hidden">
-        {filteredChats.map((chat) => (
-          <ChatListItem
-            key={chat.id}
-            chat={chat}
-            isActive={activeChat?.id === chat.id}
-            onClick={() => {
-              setActiveChat(chat);
-              onChatSelect();
-            }}
-          />
-        ))}
-        {filteredChats.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-            <p className="text-sm">{t('chat.noChats')}</p>
-            <p className="text-xs mt-1">{t('chat.startConversation')}</p>
+        {searchResults && searchQuery.length >= 2 ? (
+          <div className="px-2 py-1">
+            {searchLoading && (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-500" />
+              </div>
+            )}
+
+            {/* My chats matching */}
+            {filteredChats.length > 0 && (
+              <>
+                <p className="text-[10px] uppercase text-gray-500 px-2 py-1 font-semibold">{t('chat.myChats')}</p>
+                {filteredChats.map((chat) => (
+                  <ChatListItem key={chat.id} chat={chat} isActive={activeChat?.id === chat.id}
+                    onClick={() => { setActiveChat(chat); setSearchQuery(''); onChatSelect(); }} />
+                ))}
+              </>
+            )}
+
+            {/* Users */}
+            {searchResults.users?.length > 0 && (
+              <>
+                <p className="text-[10px] uppercase text-gray-500 px-2 py-1 mt-2 font-semibold flex items-center gap-1"><User size={10} /> {t('search.users')}</p>
+                {searchResults.users.map((u: any) => (
+                  <button key={u.id} onClick={() => handleSearchUserClick(u.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors">
+                    <div className="w-9 h-9 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-medium overflow-hidden shrink-0">
+                      {u.avatarUrl ? <img src={u.avatarUrl} alt="" className="w-full h-full object-cover" /> : <GenerativeAvatar seed={u.id} size={36} />}
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="text-sm font-medium truncate flex items-center gap-1">{u.displayName || u.username} <PulsarBadge level={u.verificationLevel || 0} size={10} /></p>
+                      <p className="text-[11px] text-gray-400">@{u.username}</p>
+                    </div>
+                    {u.isOnline && <div className="w-2 h-2 rounded-full bg-green-500 ml-auto shrink-0" />}
+                  </button>
+                ))}
+              </>
+            )}
+
+            {/* Public Groups */}
+            {searchResults.groups?.length > 0 && (
+              <>
+                <p className="text-[10px] uppercase text-gray-500 px-2 py-1 mt-2 font-semibold flex items-center gap-1"><Users size={10} /> {t('search.groups')}</p>
+                {searchResults.groups.map((g: any) => (
+                  <button key={g.id} onClick={() => handleSearchChatClick(g.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors">
+                    <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {g.avatarUrl ? <img src={g.avatarUrl} alt="" className="w-full h-full object-cover rounded-full" /> : <Users size={18} />}
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="text-sm font-medium truncate">{g.name}</p>
+                      <p className="text-[11px] text-gray-400">{g.memberCount} {t('chat.members')}</p>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
+
+            {/* Public Channels */}
+            {searchResults.channels?.length > 0 && (
+              <>
+                <p className="text-[10px] uppercase text-gray-500 px-2 py-1 mt-2 font-semibold flex items-center gap-1"><Megaphone size={10} /> {t('search.channels')}</p>
+                {searchResults.channels.map((c: any) => (
+                  <button key={c.id} onClick={() => handleSearchChatClick(c.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors">
+                    <div className="w-9 h-9 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {c.avatarUrl ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover rounded-full" /> : <Megaphone size={18} />}
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="text-sm font-medium truncate">{c.name}</p>
+                      <p className="text-[11px] text-gray-400">{c.memberCount} {t('chat.subscribers')}</p>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
+
+            {/* Bots */}
+            {searchResults.bots?.length > 0 && (
+              <>
+                <p className="text-[10px] uppercase text-gray-500 px-2 py-1 mt-2 font-semibold flex items-center gap-1"><Bot size={10} /> {t('search.bots')}</p>
+                {searchResults.bots.map((b: any) => (
+                  <button key={b.id} onClick={() => handleSearchUserClick(b.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors">
+                    <div className="w-9 h-9 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      <Bot size={18} />
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="text-sm font-medium truncate">{b.displayName || b.username}</p>
+                      <p className="text-[11px] text-gray-400">@{b.username}</p>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
+
+            {!searchLoading && !searchResults.users?.length && !searchResults.groups?.length && !searchResults.channels?.length && !searchResults.bots?.length && filteredChats.length === 0 && (
+              <p className="text-center text-sm text-gray-400 py-8">{t('search.noResults')}</p>
+            )}
           </div>
+        ) : (
+          <>
+            {filteredChats.map((chat) => (
+              <ChatListItem
+                key={chat.id}
+                chat={chat}
+                isActive={activeChat?.id === chat.id}
+                onClick={() => {
+                  setActiveChat(chat);
+                  onChatSelect();
+                }}
+              />
+            ))}
+            {filteredChats.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                <p className="text-sm">{t('chat.noChats')}</p>
+                <p className="text-xs mt-1">{t('chat.startConversation')}</p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
