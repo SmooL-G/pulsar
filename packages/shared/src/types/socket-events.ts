@@ -101,7 +101,9 @@ export interface ServerToClientEvents {
 
   'report:votes-updated': (data: {
     reportId: string;
-    votes: unknown[];
+    counts: Record<string, number>;
+    resolved: boolean;
+    verdict?: string | null;
   }) => void;
 
   'error': (data: {
