@@ -102,9 +102,16 @@ export async function messageRoutes(app: FastifyInstance) {
     return {
       messages: messages.map((m) => ({
         ...m,
-        fileSize: m.attachments.map((a) => ({
-          ...a,
+        attachments: m.attachments.map((a) => ({
+          id: a.id,
+          fileName: a.fileName,
           fileSize: Number(a.fileSize),
+          mimeType: a.mimeType,
+          url: a.s3Key,
+          thumbnailUrl: a.thumbnailKey || undefined,
+          width: a.width,
+          height: a.height,
+          duration: a.duration,
         })),
         createdAt: m.createdAt.toISOString(),
         updatedAt: m.updatedAt.toISOString(),
