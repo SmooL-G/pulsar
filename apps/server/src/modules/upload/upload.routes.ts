@@ -19,33 +19,38 @@ export async function uploadRoutes(app: FastifyInstance) {
 
   // Upload avatar
   app.post('/avatar', async (request, reply) => {
-    const data = await request.file();
-    if (!data) {
-      return reply.status(400).send({ error: 'NO_FILE', message: 'No file uploaded' });
+    try {
+      const data = await request.file();
+      if (!data) {
+        return reply.status(400).send({ error: 'NO_FILE', message: 'No file uploaded' });
+      }
+
+      const ext = data.filename.split('.').pop()?.toLowerCase() || 'jpg';
+      const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      if (!allowedExts.includes(ext)) {
+        return reply.status(400).send({ error: 'INVALID_FILE', message: 'Only images are allowed' });
+      }
+
+      const key = `avatars/${request.user!.userId}/${nanoid()}.${ext}`;
+      const buffer = await data.toBuffer();
+
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: env.S3_BUCKET,
+          Key: key,
+          Body: buffer,
+          ContentType: data.mimetype,
+        })
+      );
+
+      const avatarUrl = env.S3_PUBLIC_URL
+        ? `${env.S3_PUBLIC_URL}/${key}`
+        : `/s3/${env.S3_BUCKET}/${key}`;
+      return { avatarUrl };
+    } catch (err: any) {
+      console.error('Avatar upload error:', err.message || err);
+      return reply.status(500).send({ error: 'UPLOAD_FAILED', message: err.message || 'Upload failed' });
     }
-
-    const ext = data.filename.split('.').pop()?.toLowerCase() || 'jpg';
-    const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-    if (!allowedExts.includes(ext)) {
-      return reply.status(400).send({ error: 'INVALID_FILE', message: 'Only images are allowed' });
-    }
-
-    const key = `avatars/${request.user!.userId}/${nanoid()}.${ext}`;
-    const buffer = await data.toBuffer();
-
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: env.S3_BUCKET,
-        Key: key,
-        Body: buffer,
-        ContentType: data.mimetype,
-      })
-    );
-
-    const avatarUrl = env.S3_PUBLIC_URL
-      ? `${env.S3_PUBLIC_URL}/${key}`
-      : `/s3/${env.S3_BUCKET}/${key}`;
-    return { avatarUrl };
   });
 
   // Upload file (with per-user size limits)
