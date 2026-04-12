@@ -13,6 +13,7 @@ export interface ClientToServerEvents {
     signerWallet?: string;
     encryptedContent?: string;
     commentsEnabled?: boolean;
+    attachments?: { fileName: string; fileSize: number; mimeType: string; url: string }[];
   }) => void;
 
   'message:edit': (data: {

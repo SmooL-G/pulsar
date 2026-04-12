@@ -211,15 +211,46 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
           >
             {/* File attachments */}
             {message.attachments && message.attachments.length > 0 && (
-              <div className="mb-1">
-                {message.attachments.map((file) => (
-                  <div
-                    key={file.id}
-                    className={`text-xs ${isOwn ? 'text-blue-100' : 'text-blue-500'} underline cursor-pointer`}
-                  >
-                    📎 {file.fileName}
-                  </div>
-                ))}
+              <div className="mb-1 space-y-1">
+                {message.attachments.map((file) => {
+                  const url = (file as any).url || (file as any).s3Key || '';
+                  const isImage = file.mimeType?.startsWith('image/');
+
+                  if (isImage) {
+                    return (
+                      <a key={file.id} href={url} target="_blank" rel="noopener noreferrer" className="block">
+                        <img
+                          src={url}
+                          alt={file.fileName}
+                          className="max-w-[280px] max-h-[300px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          loading="lazy"
+                        />
+                      </a>
+                    );
+                  }
+
+                  const sizeStr = file.fileSize < 1024 * 1024
+                    ? `${(file.fileSize / 1024).toFixed(0)} KB`
+                    : `${(file.fileSize / 1024 / 1024).toFixed(1)} MB`;
+
+                  return (
+                    <a
+                      key={file.id}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                        isOwn ? 'bg-white/10 hover:bg-white/20' : 'bg-dark-500/50 hover:bg-dark-500/80'
+                      } transition-colors no-underline`}
+                    >
+                      <ExternalLink size={16} className={isOwn ? 'text-blue-200' : 'text-blue-400'} />
+                      <div className="min-w-0">
+                        <p className={`text-xs font-medium truncate ${isOwn ? 'text-white' : 'text-gray-200'}`}>{file.fileName}</p>
+                        <p className={`text-[10px] ${isOwn ? 'text-blue-200' : 'text-gray-400'}`}>{sizeStr}</p>
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
             )}
 

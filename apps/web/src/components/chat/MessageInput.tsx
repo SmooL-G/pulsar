@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem } from 'lucide-react';
+import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
@@ -37,6 +37,9 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
   const [commentsOn, setCommentsOn] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showSuperChat, setShowSuperChat] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; preview?: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [superChatAmount, setSuperChatAmount] = useState(0);
   const [superChatSending, setSuperChatSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -60,36 +63,62 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
 
   const handleSend = async () => {
     const content = text.trim();
-    if (!content) return;
+    if (!content && pendingFiles.length === 0) return;
 
     const socket = getSocket();
     if (socket?.connected) {
+      // Upload pending files first
+      let attachments: { fileName: string; fileSize: number; mimeType: string; url: string }[] = [];
+      if (pendingFiles.length > 0) {
+        setUploading(true);
+        try {
+          for (const pf of pendingFiles) {
+            const formData = new FormData();
+            formData.append('file', pf.file);
+            const { data } = await api.post('/upload/file', formData);
+            attachments.push({
+              fileName: data.fileName,
+              fileSize: data.fileSize,
+              mimeType: data.mimeType,
+              url: data.url,
+            });
+          }
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || 'Upload failed');
+          setUploading(false);
+          return;
+        }
+        setUploading(false);
+      }
+
       // Подпись сообщения кошельком Solana (только если включена)
       const signed = signOn ? await signMessage(
         chatId,
-        content,
+        content || 'file',
         walletSignMessage ?? undefined,
         publicKey?.toBase58(),
       ) : null;
 
       // E2E шифрование только для DM и если включено
       let encryptedContent: string | undefined;
-      if (e2eOn && chatType === 'DIRECT' && recipientUserId) {
+      if (e2eOn && chatType === 'DIRECT' && recipientUserId && content) {
         const encrypted = await encryptMessage(content, recipientUserId);
         if (encrypted) encryptedContent = encrypted;
       }
 
       socket.emit('message:send', {
         chatId,
-        content: encryptedContent ? undefined : content,
-        type: 'TEXT',
+        content: encryptedContent ? undefined : (content || undefined),
+        type: attachments.length > 0 ? (attachments[0].mimeType.startsWith('image/') ? 'IMAGE' : 'FILE') : 'TEXT',
         ...(signed && { signature: signed.signature, signerWallet: signed.signerWallet }),
         ...(encryptedContent && { encryptedContent }),
         ...(chatType === 'CHANNEL' && commentsOn && { commentsEnabled: true }),
+        ...(attachments.length > 0 && { attachments }),
       });
     }
 
     setText('');
+    setPendingFiles([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -152,10 +181,53 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
           <span className="text-[10px]">{commentsOn ? t('chat.commentsEnabled') : t('chat.commentsDisabled')}</span>
         </button>
       )}
+      {/* File previews */}
+      {pendingFiles.length > 0 && (
+        <div className="flex gap-2 mb-2 flex-wrap">
+          {pendingFiles.map((pf, i) => (
+            <div key={i} className="relative group">
+              {pf.preview ? (
+                <img src={pf.preview} alt="" className="w-16 h-16 rounded-lg object-cover border border-dark-500" />
+              ) : (
+                <div className="w-16 h-16 rounded-lg bg-dark-600 border border-dark-500 flex flex-col items-center justify-center">
+                  <FileIcon size={18} className="text-gray-400" />
+                  <span className="text-[8px] text-gray-500 mt-0.5 truncate max-w-14 px-1">{pf.file.name.split('.').pop()}</span>
+                </div>
+              )}
+              <button
+                onClick={() => setPendingFiles((prev) => prev.filter((_, j) => j !== i))}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X size={10} className="text-white" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-end gap-2">
-        <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-400 shrink-0">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-400 shrink-0"
+        >
           <Paperclip size={20} />
         </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.txt"
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+            const newFiles = files.map((file) => ({
+              file,
+              preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+            }));
+            setPendingFiles((prev) => [...prev, ...newFiles]);
+            e.target.value = '';
+          }}
+          className="hidden"
+        />
 
         <div className="flex-1 relative">
           <textarea
@@ -203,7 +275,7 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
 
         <button
           onClick={handleSend}
-          disabled={!text.trim()}
+          disabled={(!text.trim() && pendingFiles.length === 0) || uploading}
           className="p-2.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white
             disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
         >

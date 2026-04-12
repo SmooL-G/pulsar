@@ -67,18 +67,39 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
 
   socket.on('message:send', async (data) => {
     try {
+      // Determine message type based on attachments
+      const hasAttachments = data.attachments && data.attachments.length > 0;
+      let msgType = (data.type as 'TEXT' | 'FILE' | 'IMAGE' | 'SYSTEM') || 'TEXT';
+      if (hasAttachments && msgType === 'TEXT') {
+        const firstMime = data.attachments[0]?.mimeType || '';
+        msgType = firstMime.startsWith('image/') ? 'IMAGE' : 'FILE';
+      }
+
       const message = await prisma.message.create({
         data: {
           chatId: data.chatId,
           senderId: userId,
           content: data.content,
-          type: (data.type as 'TEXT' | 'FILE' | 'IMAGE' | 'SYSTEM') || 'TEXT',
+          type: msgType,
           replyToId: data.replyToId,
           signature: data.signature || null,
           signerWallet: data.signerWallet || null,
           encryptedContent: data.encryptedContent || null,
           encryptionType: data.encryptedContent ? 'nacl-box' : null,
           commentsEnabled: data.commentsEnabled || false,
+          // Create file attachments if provided
+          ...(hasAttachments && {
+            attachments: {
+              create: data.attachments.map((a: any) => ({
+                uploaderId: userId,
+                fileName: a.fileName,
+                fileSize: BigInt(a.fileSize),
+                mimeType: a.mimeType,
+                s3Key: a.url,
+                s3Bucket: 'pulsar-files',
+              })),
+            },
+          }),
         },
         include: {
           sender: {
@@ -91,6 +112,17 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
               profileBadge: true,
               nftAvatarMint: true,
               role: true,
+            },
+          },
+          attachments: {
+            select: {
+              id: true,
+              fileName: true,
+              fileSize: true,
+              mimeType: true,
+              s3Key: true,
+              width: true,
+              height: true,
             },
           },
         },
@@ -120,6 +152,15 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
         createdAt: message.createdAt.toISOString(),
         updatedAt: message.updatedAt.toISOString(),
         sender: message.sender,
+        attachments: message.attachments?.map((a: any) => ({
+          id: a.id,
+          fileName: a.fileName,
+          fileSize: Number(a.fileSize),
+          mimeType: a.mimeType,
+          url: a.s3Key,
+          width: a.width,
+          height: a.height,
+        })),
         status,
       };
 
