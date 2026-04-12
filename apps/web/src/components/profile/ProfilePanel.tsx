@@ -32,6 +32,7 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showAvatarGallery, setShowAvatarGallery] = useState(false);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
 
   if (!user) return null;
 
@@ -105,32 +106,35 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
         <div className="p-6 space-y-6">
           {/* Avatar */}
           <div className="flex flex-col items-center">
-            <div className="relative group">
-              <div className="w-24 h-24 rounded-full bg-primary-500 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
+            <div className="relative">
+              {/* Avatar — click to preview */}
+              <button
+                onClick={() => user.avatarUrl && setShowAvatarPreview(true)}
+                className="w-24 h-24 rounded-full bg-primary-500 flex items-center justify-center text-white text-3xl font-bold overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all"
+              >
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
                   user.username[0].toUpperCase()
                 )}
-              </div>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-              >
-                <Camera size={24} className="text-white" />
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-              />
             </div>
-            <p className="text-sm text-gray-400 mt-2">
+            {/* Change avatar link */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="text-sm text-primary-400 hover:text-primary-300 mt-2 transition-colors flex items-center gap-1"
+            >
+              <Camera size={14} />
               {uploading ? t('common.loading') : t('profile.changeAvatar')}
-            </p>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
             <button
               onClick={() => setShowAvatarGallery(true)}
               className="mt-1 flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors"
@@ -269,6 +273,29 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
 
       {/* Avatar Gallery Modal */}
       {showAvatarGallery && <AvatarGallery onClose={() => setShowAvatarGallery(false)} />}
+
+      {/* Avatar Preview Modal */}
+      {showAvatarPreview && user.avatarUrl && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] cursor-pointer"
+          onClick={() => setShowAvatarPreview(false)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh] animate-fade-in">
+            <img
+              src={user.avatarUrl}
+              alt={user.username}
+              className="max-w-full max-h-[80vh] rounded-2xl shadow-2xl object-contain"
+            />
+            <p className="text-center text-white/70 text-sm mt-3">@{user.username}</p>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowAvatarPreview(false); }}
+              className="absolute -top-3 -right-3 w-8 h-8 bg-dark-700 rounded-full flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
