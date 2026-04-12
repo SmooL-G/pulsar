@@ -23,6 +23,7 @@ import { nftRoutes } from './modules/nft/nft.routes.js';
 import { keysRoutes } from './modules/keys/keys.routes.js';
 import { channelRoutes } from './modules/channel/channel.routes.js';
 import { moderationRoutes } from './modules/moderation/moderation.routes.js';
+import { moderatorRoutes } from './modules/moderation/moderator.routes.js';
 import { botManagementRoutes } from './modules/bot/bot.routes.js';
 import { botApiRoutes } from './modules/bot/botApi.routes.js';
 import { searchRoutes } from './modules/search/search.routes.js';
@@ -95,6 +96,7 @@ export async function buildApp() {
   await app.register(keysRoutes, { prefix: '/api/v1/keys' });
   await app.register(channelRoutes, { prefix: '/api/v1/channels' });
   await app.register(moderationRoutes, { prefix: '/api/v1/moderation' });
+  await app.register(moderatorRoutes, { prefix: '/api/v1/moderator' });
   await app.register(botManagementRoutes, { prefix: '/api/v1/bots' });
   await app.register(botApiRoutes, { prefix: '/api/v1/bot' });
   await app.register(searchRoutes, { prefix: '/api/v1/search' });

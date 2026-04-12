@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { X, Camera, Copy, Check, Wallet, Send, Globe, Image } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, Camera, Copy, Check, Wallet, Send, Globe, Image, Shield, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { api } from '../../services/api';
@@ -260,6 +260,9 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
             </select>
           </div>
 
+          {/* Moderator Progress */}
+          {(user as any).role === 'USER' && <ModeratorProgress />}
+
           {/* Save button */}
           <button
             onClick={handleSave}
@@ -295,6 +298,93 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
             </button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// Moderator progress tracker
+function ModeratorProgress() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+  const [applied, setApplied] = useState(false);
+
+  useEffect(() => {
+    api.get('/moderator/requirements').then((res) => {
+      setData(res.data);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return null;
+  if (!data || data.isAlreadyModerator) return null;
+
+  const reqs = [
+    { key: 'accountAge', label: 'Account age', value: `${data.requirements.accountAge.value} days`, target: `${data.requirements.accountAge.required} days` },
+    { key: 'messages', label: 'Messages sent', value: data.requirements.messages.value.toLocaleString(), target: data.requirements.messages.required.toLocaleString() },
+    { key: 'verification', label: 'Verification level', value: `Level ${data.requirements.verification.value}`, target: `Level ${data.requirements.verification.required}` },
+    { key: 'noPunishments', label: 'No bans (90 days)', value: data.requirements.noPunishments.value === 0 ? 'Clean' : `${data.requirements.noPunishments.value} violations`, target: 'Clean' },
+    { key: 'invited', label: 'Members invited', value: data.requirements.invited.value.toString(), target: data.requirements.invited.required.toString() },
+  ];
+
+  const handleApply = async () => {
+    setApplying(true);
+    try {
+      await api.post('/moderator/apply');
+      setApplied(true);
+    } catch {
+      // requirements not met
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-dark-500/50 bg-dark-600/30 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Shield size={16} className="text-cyan-400" />
+        <span className="text-sm font-semibold text-white">Become a Moderator</span>
+        <span className="text-[10px] text-gray-500 ml-auto">{data.metCount}/{data.total}</span>
+      </div>
+
+      <div className="w-full h-1.5 bg-dark-500 rounded-full mb-3 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-cyan-500 transition-all"
+          style={{ width: `${(data.metCount / data.total) * 100}%` }}
+        />
+      </div>
+
+      <div className="space-y-2">
+        {reqs.map((r) => {
+          const met = data.requirements[r.key].met;
+          return (
+            <div key={r.key} className="flex items-center justify-between text-xs">
+              <span className={met ? 'text-gray-300' : 'text-gray-500'}>
+                {met ? <Check size={12} className="inline text-cyan-400 mr-1" /> : <span className="inline-block w-3 h-3 mr-1" />}
+                {r.label}
+              </span>
+              <span className={met ? 'text-cyan-400 font-medium' : 'text-gray-500'}>
+                {r.value} / {r.target}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {applied ? (
+        <div className="mt-3 text-center text-sm text-cyan-400 font-medium">
+          <Check size={14} className="inline mr-1" />
+          You are now a Moderator!
+        </div>
+      ) : (
+        <button
+          onClick={handleApply}
+          disabled={!data.allMet || applying}
+          className="w-full mt-3 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-dark-500 disabled:text-gray-500 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          {applying ? <Loader2 size={14} className="inline animate-spin mr-1" /> : <Shield size={14} className="inline mr-1" />}
+          {data.allMet ? 'Apply for Moderator' : `${data.metCount}/${data.total} requirements met`}
+        </button>
       )}
     </div>
   );
