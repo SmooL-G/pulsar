@@ -42,7 +42,9 @@ export async function uploadRoutes(app: FastifyInstance) {
       })
     );
 
-    const avatarUrl = `/s3/${env.S3_BUCKET}/${key}`;
+    const avatarUrl = env.S3_PUBLIC_URL
+      ? `${env.S3_PUBLIC_URL}/${key}`
+      : `/s3/${env.S3_BUCKET}/${key}`;
     return { avatarUrl };
   });
 
@@ -86,7 +88,9 @@ export async function uploadRoutes(app: FastifyInstance) {
       })
     );
 
-    const url = `/s3/${env.S3_BUCKET}/${key}`;
+    const url = env.S3_PUBLIC_URL
+      ? `${env.S3_PUBLIC_URL}/${key}`
+      : `/s3/${env.S3_BUCKET}/${key}`;
     return {
       url,
       fileName: data.filename,

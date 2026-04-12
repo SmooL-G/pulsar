@@ -16,6 +16,7 @@ export const env = cleanEnv(process.env, {
   S3_SECRET_KEY: str(),
   S3_BUCKET: str({ default: 'pulsar-files' }),
   S3_REGION: str({ default: 'us-east-1' }),
+  S3_PUBLIC_URL: str({ default: '' }),
 
   SOLANA_RPC_URL: str({ default: 'https://api.devnet.solana.com' }),
   SOLANA_NETWORK: str({ choices: ['devnet', 'mainnet-beta', 'testnet'], default: 'devnet' }),
