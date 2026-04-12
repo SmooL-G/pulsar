@@ -7,8 +7,12 @@ const api = axios.create({
   },
 });
 
-// Request interceptor — attach access token
+// Request interceptor — attach access token + fix multipart
 api.interceptors.request.use((config) => {
+  // Don't override Content-Type for FormData (let browser set multipart boundary)
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
   const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
