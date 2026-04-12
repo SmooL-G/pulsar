@@ -305,6 +305,7 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
 
 // Moderator progress tracker
 function ModeratorProgress() {
+  const { t } = useI18n();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -320,11 +321,11 @@ function ModeratorProgress() {
   if (!data || data.isAlreadyModerator) return null;
 
   const reqs = [
-    { key: 'accountAge', label: 'Account age', value: `${data.requirements.accountAge.value} days`, target: `${data.requirements.accountAge.required} days` },
-    { key: 'messages', label: 'Messages sent', value: data.requirements.messages.value.toLocaleString(), target: data.requirements.messages.required.toLocaleString() },
-    { key: 'verification', label: 'Verification level', value: `Level ${data.requirements.verification.value}`, target: `Level ${data.requirements.verification.required}` },
-    { key: 'noPunishments', label: 'No bans (90 days)', value: data.requirements.noPunishments.value === 0 ? 'Clean' : `${data.requirements.noPunishments.value} violations`, target: 'Clean' },
-    { key: 'invited', label: 'Members invited', value: data.requirements.invited.value.toString(), target: data.requirements.invited.required.toString() },
+    { key: 'accountAge', label: t('mod.accountAge'), value: `${data.requirements.accountAge.value}`, target: `${data.requirements.accountAge.required}`, unit: t('mod.days') },
+    { key: 'messages', label: t('mod.messagesSent'), value: data.requirements.messages.value.toLocaleString(), target: data.requirements.messages.required.toLocaleString(), unit: '' },
+    { key: 'verification', label: t('mod.verificationLevel'), value: `${data.requirements.verification.value}`, target: `${data.requirements.verification.required}`, unit: 'lvl' },
+    { key: 'noPunishments', label: t('mod.noBans'), value: data.requirements.noPunishments.value === 0 ? t('mod.clean') : `${data.requirements.noPunishments.value}`, target: t('mod.clean'), unit: '' },
+    { key: 'invited', label: t('mod.membersInvited'), value: data.requirements.invited.value.toString(), target: data.requirements.invited.required.toString(), unit: '' },
   ];
 
   const handleApply = async () => {
@@ -332,8 +333,9 @@ function ModeratorProgress() {
     try {
       await api.post('/moderator/apply');
       setApplied(true);
+      toast.success(t('mod.approved'));
     } catch {
-      // requirements not met
+      toast.error(t('mod.requirementsNotMet'));
     } finally {
       setApplying(false);
     }
@@ -343,7 +345,7 @@ function ModeratorProgress() {
     <div className="rounded-xl border border-dark-500/50 bg-dark-600/30 p-4">
       <div className="flex items-center gap-2 mb-3">
         <Shield size={16} className="text-cyan-400" />
-        <span className="text-sm font-semibold text-white">Become a Moderator</span>
+        <span className="text-sm font-semibold text-white">{t('mod.title')}</span>
         <span className="text-[10px] text-gray-500 ml-auto">{data.metCount}/{data.total}</span>
       </div>
 
@@ -364,7 +366,7 @@ function ModeratorProgress() {
                 {r.label}
               </span>
               <span className={met ? 'text-cyan-400 font-medium' : 'text-gray-500'}>
-                {r.value} / {r.target}
+                {r.value}{r.unit ? ` ${r.unit}` : ''} / {r.target}{r.unit ? ` ${r.unit}` : ''}
               </span>
             </div>
           );
@@ -374,7 +376,7 @@ function ModeratorProgress() {
       {applied ? (
         <div className="mt-3 text-center text-sm text-cyan-400 font-medium">
           <Check size={14} className="inline mr-1" />
-          You are now a Moderator!
+          {t('mod.approved')}
         </div>
       ) : (
         <button
@@ -383,7 +385,7 @@ function ModeratorProgress() {
           className="w-full mt-3 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-dark-500 disabled:text-gray-500 text-white rounded-lg text-sm font-medium transition-colors"
         >
           {applying ? <Loader2 size={14} className="inline animate-spin mr-1" /> : <Shield size={14} className="inline mr-1" />}
-          {data.allMet ? 'Apply for Moderator' : `${data.metCount}/${data.total} requirements met`}
+          {data.allMet ? t('mod.apply') : `${data.metCount}/${data.total} ${t('mod.requirementsMet')}`}
         </button>
       )}
     </div>
