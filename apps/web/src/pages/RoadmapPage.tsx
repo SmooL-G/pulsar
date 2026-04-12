@@ -6,145 +6,138 @@ import { useI18n } from '../i18n';
 type Status = 'done' | 'active' | 'planned';
 
 interface Feature {
-  text: string;
+  text: Record<string, string>;
   status: Status;
   icon?: React.ReactNode;
 }
 
 interface Phase {
-  title: string;
-  subtitle: string;
+  title: Record<string, string>;
+  subtitle: Record<string, string>;
   status: Status;
   date: string;
   features: Feature[];
   highlight?: boolean;
 }
 
+const T = (texts: Record<string, string>, lang: string) => texts[lang] || texts.en;
+
 const PHASES: Phase[] = [
   {
-    title: 'Foundation',
-    subtitle: 'Core messaging platform',
-    status: 'done',
-    date: 'Q1 2026',
+    title: { en: 'Foundation', ru: 'Основа' },
+    subtitle: { en: 'Core messaging platform', ru: 'Ядро мессенджера' },
+    status: 'done', date: 'Q1 2026',
     features: [
-      { text: 'Real-time messaging (Socket.IO)', status: 'done' },
-      { text: 'Direct & group chats', status: 'done' },
-      { text: 'User authentication (email + wallet)', status: 'done' },
-      { text: 'File sharing & media', status: 'done' },
-      { text: 'Online presence & typing indicators', status: 'done' },
-      { text: 'Message editing, deletion, forwarding', status: 'done' },
-      { text: 'Link previews', status: 'done' },
-      { text: 'Friends system', status: 'done' },
+      { text: { en: 'Real-time messaging (Socket.IO)', ru: 'Сообщения в реальном времени (Socket.IO)' }, status: 'done' },
+      { text: { en: 'Direct & group chats', ru: 'Личные и групповые чаты' }, status: 'done' },
+      { text: { en: 'User authentication (email + wallet)', ru: 'Авторизация (email + кошелёк)' }, status: 'done' },
+      { text: { en: 'File sharing & media', ru: 'Обмен файлами и медиа' }, status: 'done' },
+      { text: { en: 'Online presence & typing indicators', ru: 'Онлайн-статус и индикатор набора' }, status: 'done' },
+      { text: { en: 'Message editing, deletion, forwarding', ru: 'Редактирование, удаление, пересылка' }, status: 'done' },
+      { text: { en: 'Link previews', ru: 'Превью ссылок' }, status: 'done' },
+      { text: { en: 'Friends system', ru: 'Система друзей' }, status: 'done' },
     ],
   },
   {
-    title: 'Social Features',
-    subtitle: 'Community & engagement',
-    status: 'done',
-    date: 'Q1 2026',
+    title: { en: 'Social Features', ru: 'Социальные функции' },
+    subtitle: { en: 'Community & engagement', ru: 'Сообщество и вовлечение' },
+    status: 'done', date: 'Q1 2026',
     features: [
-      { text: 'Emoji reactions on messages', status: 'done' },
-      { text: 'Pinned messages', status: 'done' },
-      { text: 'Channels with comments system', status: 'done', icon: <Megaphone size={14} /> },
-      { text: 'Universal search (users, groups, channels, messages)', status: 'done', icon: <Search size={14} /> },
-      { text: 'Message search with highlight & scroll-to', status: 'done' },
-      { text: 'Internationalization (11 languages)', status: 'done', icon: <Globe size={14} /> },
-      { text: 'Dark/light themes', status: 'done' },
-      { text: 'Legal pages (Terms, Privacy, Cookies)', status: 'done' },
+      { text: { en: 'Emoji reactions on messages', ru: 'Реакции эмодзи на сообщения' }, status: 'done' },
+      { text: { en: 'Pinned messages', ru: 'Закреплённые сообщения' }, status: 'done' },
+      { text: { en: 'Channels with comments system', ru: 'Каналы с системой комментариев' }, status: 'done', icon: <Megaphone size={14} /> },
+      { text: { en: 'Universal search (users, groups, channels, messages)', ru: 'Универсальный поиск (пользователи, группы, каналы, сообщения)' }, status: 'done', icon: <Search size={14} /> },
+      { text: { en: 'Message search with highlight & scroll-to', ru: 'Поиск по сообщениям с подсветкой' }, status: 'done' },
+      { text: { en: 'Internationalization (11 languages)', ru: 'Мультиязычность (11 языков)' }, status: 'done', icon: <Globe size={14} /> },
+      { text: { en: 'Dark/light themes', ru: 'Тёмная/светлая темы' }, status: 'done' },
+      { text: { en: 'Legal pages (Terms, Privacy, Cookies)', ru: 'Юридические страницы' }, status: 'done' },
     ],
   },
   {
-    title: 'Crypto Integration',
-    subtitle: 'Web3 & Solana ecosystem',
-    status: 'done',
-    date: 'Q1 2026',
+    title: { en: 'Crypto Integration', ru: 'Крипто-интеграция' },
+    subtitle: { en: 'Web3 & Solana ecosystem', ru: 'Web3 и экосистема Solana' },
+    status: 'done', date: 'Q1 2026',
     features: [
-      { text: 'Solana wallet authentication', status: 'done' },
-      { text: 'PLS token economy (1 SOL = 100K PLS)', status: 'done' },
-      { text: 'SOL → PLS deposits (on-chain verified)', status: 'done' },
-      { text: 'P2P transfers with 2% burn fee', status: 'done' },
-      { text: 'E2E encryption (NaCl)', status: 'done', icon: <Shield size={14} /> },
-      { text: 'Message signing with Solana wallet', status: 'done' },
-      { text: 'NFT avatar verification', status: 'done' },
-      { text: 'Generative avatars', status: 'done' },
+      { text: { en: 'Solana wallet authentication', ru: 'Авторизация через Solana кошелёк' }, status: 'done' },
+      { text: { en: 'PLS token economy (1 SOL = 100K PLS)', ru: 'Экономика PLS (1 SOL = 100K PLS)' }, status: 'done' },
+      { text: { en: 'SOL → PLS deposits (on-chain verified)', ru: 'Депозиты SOL → PLS (проверка на блокчейне)' }, status: 'done' },
+      { text: { en: 'P2P transfers with 2% burn fee', ru: 'P2P переводы с 2% сжиганием' }, status: 'done' },
+      { text: { en: 'E2E encryption (NaCl)', ru: 'Сквозное шифрование (NaCl)' }, status: 'done', icon: <Shield size={14} /> },
+      { text: { en: 'Message signing with Solana wallet', ru: 'Подпись сообщений кошельком Solana' }, status: 'done' },
+      { text: { en: 'NFT avatar verification', ru: 'Верификация NFT-аватаров' }, status: 'done' },
+      { text: { en: 'Generative avatars', ru: 'Генеративные аватары' }, status: 'done' },
     ],
   },
   {
-    title: 'Monetization & Status',
-    subtitle: 'Token-powered features',
-    status: 'active',
-    date: 'Q2 2026',
-    highlight: true,
+    title: { en: 'Monetization & Status', ru: 'Монетизация и статус' },
+    subtitle: { en: 'Token-powered features', ru: 'Функции на основе токенов' },
+    status: 'active', date: 'Q2 2026', highlight: true,
     features: [
-      { text: 'Verification levels (Starter/Pro/Elite)', status: 'done', icon: <Sparkles size={14} /> },
-      { text: 'Profile badges (Blogger/Author/Business)', status: 'done' },
-      { text: 'Founder badge for platform creator', status: 'done', icon: <Crown size={14} /> },
-      { text: 'SuperChat — donate PLS with highlighted messages', status: 'done', icon: <Gem size={14} /> },
-      { text: 'File size limits by verification level', status: 'done' },
-      { text: 'Channel creation limits by level', status: 'done' },
-      { text: 'Premium subscription (PLS/month)', status: 'planned' },
-      { text: 'Sticker marketplace (create & sell)', status: 'planned' },
-      { text: 'Channel boost system', status: 'planned' },
-      { text: 'Custom nick colors & profile frames', status: 'planned' },
+      { text: { en: 'Verification levels (Starter/Pro/Elite)', ru: 'Уровни верификации (Starter/Pro/Elite)' }, status: 'done', icon: <Sparkles size={14} /> },
+      { text: { en: 'Profile badges (Blogger/Author/Business)', ru: 'Бейджи профиля (Блогер/Автор/Бизнес)' }, status: 'done' },
+      { text: { en: 'Founder badge for platform creator', ru: 'Значок основателя платформы' }, status: 'done', icon: <Crown size={14} /> },
+      { text: { en: 'SuperChat — donate PLS with highlighted messages', ru: 'SuperChat — донат PLS с выделением сообщений' }, status: 'done', icon: <Gem size={14} /> },
+      { text: { en: 'File size limits by verification level', ru: 'Лимиты файлов по уровню верификации' }, status: 'done' },
+      { text: { en: 'Channel creation limits by level', ru: 'Лимиты каналов по уровню' }, status: 'done' },
+      { text: { en: 'Premium subscription (PLS/month)', ru: 'Премиум подписка (PLS/мес)' }, status: 'planned' },
+      { text: { en: 'Sticker marketplace (create & sell)', ru: 'Маркетплейс стикеров' }, status: 'planned' },
+      { text: { en: 'Channel boost system', ru: 'Система бустов каналов' }, status: 'planned' },
+      { text: { en: 'Custom nick colors & profile frames', ru: 'Кастомные цвета ников и рамки' }, status: 'planned' },
     ],
   },
   {
-    title: 'Moderation & Safety',
-    subtitle: 'Trust & community health',
-    status: 'active',
-    date: 'Q2 2026',
+    title: { en: 'Moderation & Safety', ru: 'Модерация и безопасность' },
+    subtitle: { en: 'Trust & community health', ru: 'Доверие и здоровье сообщества' },
+    status: 'active', date: 'Q2 2026',
     features: [
-      { text: 'Report system (spam, harassment, etc.)', status: 'done' },
-      { text: 'Moderator voting on reports', status: 'done' },
-      { text: 'Punishments (warn, mute, ban)', status: 'done' },
-      { text: 'Bot system (PulsarBot + webhook API)', status: 'done', icon: <Bot size={14} /> },
-      { text: 'Auto-moderator role (earn by contribution)', status: 'planned', icon: <Shield size={14} /> },
-      { text: 'Moderator progress tracker', status: 'planned' },
-      { text: 'AI-powered content moderation', status: 'planned' },
+      { text: { en: 'Report system (spam, harassment, etc.)', ru: 'Система жалоб (спам, оскорбления и т.д.)' }, status: 'done' },
+      { text: { en: 'Moderator voting on reports', ru: 'Голосование модераторов по жалобам' }, status: 'done' },
+      { text: { en: 'Punishments (warn, mute, ban)', ru: 'Наказания (предупреждение, мут, бан)' }, status: 'done' },
+      { text: { en: 'Bot system (PulsarBot + webhook API)', ru: 'Система ботов (PulsarBot + webhook API)' }, status: 'done', icon: <Bot size={14} /> },
+      { text: { en: 'Auto-moderator role (earn by contribution)', ru: 'Авто-модератор (заслуги за активность)' }, status: 'planned', icon: <Shield size={14} /> },
+      { text: { en: 'Moderator progress tracker', ru: 'Трекер прогресса модератора' }, status: 'planned' },
+      { text: { en: 'AI-powered content moderation', ru: 'ИИ-модерация контента' }, status: 'planned' },
     ],
   },
   {
-    title: 'Infrastructure',
-    subtitle: 'Reliability & scale',
-    status: 'active',
-    date: 'Q2 2026',
+    title: { en: 'Infrastructure', ru: 'Инфраструктура' },
+    subtitle: { en: 'Reliability & scale', ru: 'Надёжность и масштаб' },
+    status: 'active', date: 'Q2 2026',
     features: [
-      { text: 'Multi-server architecture (separate DB & app)', status: 'done' },
-      { text: 'Socket.IO Redis Adapter (multi-instance ready)', status: 'done' },
-      { text: 'Automated daily backups', status: 'done' },
-      { text: 'Firewall & security hardening', status: 'done' },
-      { text: 'SSL/TLS encryption', status: 'done' },
-      { text: 'Health monitoring endpoint', status: 'done', icon: <Zap size={14} /> },
-      { text: 'Second app server + Cloudflare CDN', status: 'planned' },
-      { text: 'CI/CD pipeline (GitHub Actions)', status: 'planned' },
+      { text: { en: 'Multi-server architecture (separate DB & app)', ru: 'Мульти-серверная архитектура (БД отдельно)' }, status: 'done' },
+      { text: { en: 'Socket.IO Redis Adapter (multi-instance ready)', ru: 'Socket.IO Redis Adapter (готово к масштабированию)' }, status: 'done' },
+      { text: { en: 'Automated daily backups', ru: 'Автоматические ежедневные бэкапы' }, status: 'done' },
+      { text: { en: 'Firewall & security hardening', ru: 'Файрвол и усиление безопасности' }, status: 'done' },
+      { text: { en: 'SSL/TLS encryption', ru: 'SSL/TLS шифрование' }, status: 'done' },
+      { text: { en: 'Health monitoring endpoint', ru: 'Мониторинг здоровья сервера' }, status: 'done', icon: <Zap size={14} /> },
+      { text: { en: 'Second app server + Cloudflare CDN', ru: 'Второй сервер + Cloudflare CDN' }, status: 'planned' },
+      { text: { en: 'CI/CD pipeline (GitHub Actions)', ru: 'CI/CD (GitHub Actions)' }, status: 'planned' },
     ],
   },
   {
-    title: 'Mobile & Desktop',
-    subtitle: 'Cross-platform experience',
-    status: 'planned',
-    date: 'Q3 2026',
+    title: { en: 'Mobile & Desktop', ru: 'Мобильное и десктоп' },
+    subtitle: { en: 'Cross-platform experience', ru: 'Кроссплатформенность' },
+    status: 'planned', date: 'Q3 2026',
     features: [
-      { text: 'Progressive Web App (PWA)', status: 'planned' },
-      { text: 'React Native mobile app (iOS & Android)', status: 'planned' },
-      { text: 'Push notifications (Firebase FCM)', status: 'planned' },
-      { text: 'Desktop client (Electron/Tauri)', status: 'planned' },
-      { text: 'Voice & video calls (WebRTC)', status: 'planned' },
+      { text: { en: 'Progressive Web App (PWA)', ru: 'Прогрессивное веб-приложение (PWA)' }, status: 'planned' },
+      { text: { en: 'React Native mobile app (iOS & Android)', ru: 'Мобильное приложение (iOS и Android)' }, status: 'planned' },
+      { text: { en: 'Push notifications (Firebase FCM)', ru: 'Push-уведомления (Firebase FCM)' }, status: 'planned' },
+      { text: { en: 'Desktop client (Electron/Tauri)', ru: 'Десктоп-клиент (Electron/Tauri)' }, status: 'planned' },
+      { text: { en: 'Voice & video calls (WebRTC)', ru: 'Голосовые и видеозвонки (WebRTC)' }, status: 'planned' },
     ],
   },
   {
-    title: 'Node Network',
-    subtitle: 'Decentralized key storage',
-    status: 'planned',
-    date: 'Q4 2026',
+    title: { en: 'Node Network', ru: 'Сеть нод' },
+    subtitle: { en: 'Decentralized key storage', ru: 'Децентрализованное хранение ключей' },
+    status: 'planned', date: 'Q4 2026',
     features: [
-      { text: 'Desktop node software (key guardians)', status: 'planned' },
-      { text: "Shamir's Secret Sharing for encryption keys", status: 'planned' },
-      { text: 'PLS rewards for node operators', status: 'planned' },
-      { text: 'Proof of Storage verification', status: 'planned' },
-      { text: 'P2P network (libp2p/WebRTC)', status: 'planned' },
-      { text: 'Solana smart contract for rewards', status: 'planned' },
-      { text: 'Message cache & media relay on nodes', status: 'planned' },
+      { text: { en: 'Desktop node software (key guardians)', ru: 'Софт ноды-хранителя ключей' }, status: 'planned' },
+      { text: { en: "Shamir's Secret Sharing for encryption keys", ru: 'Shamir Secret Sharing для ключей шифрования' }, status: 'planned' },
+      { text: { en: 'PLS rewards for node operators', ru: 'PLS награды за работу ноды' }, status: 'planned' },
+      { text: { en: 'Proof of Storage verification', ru: 'Proof of Storage верификация' }, status: 'planned' },
+      { text: { en: 'P2P network (libp2p/WebRTC)', ru: 'P2P сеть (libp2p/WebRTC)' }, status: 'planned' },
+      { text: { en: 'Solana smart contract for rewards', ru: 'Смарт-контракт Solana для наград' }, status: 'planned' },
+      { text: { en: 'Message cache & media relay on nodes', ru: 'Кэш сообщений и медиа-relay на нодах' }, status: 'planned' },
     ],
   },
 ];
@@ -170,7 +163,7 @@ function useInView(ref: React.RefObject<HTMLElement | null>) {
   return visible;
 }
 
-function PhaseCard({ phase, index }: { phase: Phase; index: number }) {
+function PhaseCard({ phase, index, lang }: { phase: Phase; index: number; lang: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const visible = useInView(ref);
   const isLeft = index % 2 === 0;
@@ -206,8 +199,8 @@ function PhaseCard({ phase, index }: { phase: Phase; index: number }) {
           <div className={`flex items-center gap-3 mb-4 ${isLeft ? 'lg:flex-row-reverse' : ''}`}>
             <StatusIcon status={phase.status} />
             <div className={isLeft ? 'lg:text-right' : ''}>
-              <h3 className="text-lg font-bold text-white">{phase.title}</h3>
-              <p className="text-xs text-gray-400">{phase.subtitle}</p>
+              <h3 className="text-lg font-bold text-white">{T(phase.title, lang)}</h3>
+              <p className="text-xs text-gray-400">{T(phase.subtitle, lang)}</p>
             </div>
             <span className={`ml-auto text-[10px] font-mono px-2 py-0.5 rounded-full ${
               phase.status === 'done' ? 'bg-emerald-500/10 text-emerald-400' :
@@ -249,7 +242,7 @@ function PhaseCard({ phase, index }: { phase: Phase; index: number }) {
                   feature.status === 'active' ? 'text-amber-300/80' :
                   'text-gray-500'
                 } ${isLeft ? 'lg:text-right' : ''}`}>
-                  {feature.text}
+                  {T(feature.text, lang)}
                 </span>
               </div>
             ))}
@@ -257,7 +250,7 @@ function PhaseCard({ phase, index }: { phase: Phase; index: number }) {
 
           {/* Stats */}
           <div className={`mt-4 pt-3 border-t border-dark-600/50 flex items-center gap-2 text-[11px] text-gray-500 ${isLeft ? 'lg:flex-row-reverse' : ''}`}>
-            <span>{doneCount}/{phase.features.length} completed</span>
+            <span>{doneCount}/{phase.features.length} {T(HERO.completed, lang)}</span>
             <span>•</span>
             <span>{progress}%</span>
           </div>
@@ -267,9 +260,22 @@ function PhaseCard({ phase, index }: { phase: Phase; index: number }) {
   );
 }
 
+const HERO = {
+  tagline: { en: 'Building the future of crypto messaging', ru: 'Строим будущее крипто-мессенджеров' },
+  title: { en: 'Pulsar Roadmap', ru: 'Дорожная карта Pulsar' },
+  desc: { en: 'From encrypted messaging to decentralized node network — our journey to reshape communication.', ru: 'От зашифрованных сообщений до децентрализованной сети нод — наш путь к новой коммуникации.' },
+  progress: { en: 'Overall progress', ru: 'Общий прогресс' },
+  shipped: { en: 'features shipped', ru: 'функций реализовано' },
+  completed: { en: 'completed', ru: 'выполнено' },
+  cta: { en: 'Want to shape the future?', ru: 'Хотите формировать будущее?' },
+  ctaDesc: { en: 'Join Pulsar today and be part of the revolution.', ru: 'Присоединяйтесь к Pulsar и станьте частью революции.' },
+  ctaBtn: { en: 'Get Started', ru: 'Начать' },
+};
+
 export function RoadmapPage() {
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, locale, setLocale } = useI18n();
+  const lang = locale;
 
   const totalFeatures = PHASES.reduce((acc, p) => acc + p.features.length, 0);
   const doneFeatures = PHASES.reduce((acc, p) => acc + p.features.filter(f => f.status === 'done').length, 0);
@@ -284,31 +290,52 @@ export function RoadmapPage() {
 
       {/* Header */}
       <div className="relative z-10 max-w-5xl mx-auto px-6 pt-8 pb-12">
-        <button
-          onClick={() => navigate('/login')}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-400 hover:text-white transition-colors mb-8"
-        >
-          <ArrowLeft size={16} />
-          <span className="text-sm">{t('roadmap.back')}</span>
-        </button>
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={() => navigate('/login')}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft size={16} />
+            <span className="text-sm">{t('roadmap.back')}</span>
+          </button>
+
+          {/* Language switcher */}
+          <select
+            value={locale}
+            onChange={(e) => setLocale(e.target.value)}
+            className="px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-300 text-sm outline-none"
+          >
+            <option value="en">EN</option>
+            <option value="ru">RU</option>
+            <option value="uk">UA</option>
+            <option value="de">DE</option>
+            <option value="es">ES</option>
+            <option value="fr">FR</option>
+            <option value="pt">PT</option>
+            <option value="tr">TR</option>
+            <option value="zh">CN</option>
+            <option value="ja">JP</option>
+            <option value="ko">KR</option>
+          </select>
+        </div>
 
         {/* Hero */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-xs font-medium mb-4">
             <Sparkles size={12} />
-            Building the future of crypto messaging
+            {T(HERO.tagline, lang)}
           </div>
           <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3 tracking-tight">
-            Pulsar Roadmap
+            {T(HERO.title, lang)}
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            From encrypted messaging to decentralized node network — our journey to reshape communication.
+            {T(HERO.desc, lang)}
           </p>
 
           {/* Overall progress */}
           <div className="mt-8 max-w-md mx-auto">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-400">Overall progress</span>
+              <span className="text-gray-400">{T(HERO.progress, lang)}</span>
               <span className="text-emerald-400 font-mono font-bold">{totalProgress}%</span>
             </div>
             <div className="w-full h-2.5 bg-dark-700 rounded-full overflow-hidden">
@@ -317,7 +344,7 @@ export function RoadmapPage() {
                 style={{ width: `${totalProgress}%` }}
               />
             </div>
-            <p className="text-xs text-gray-500 mt-2">{doneFeatures} of {totalFeatures} features shipped</p>
+            <p className="text-xs text-gray-500 mt-2">{doneFeatures} / {totalFeatures} {T(HERO.shipped, lang)}</p>
           </div>
         </div>
 
@@ -328,7 +355,7 @@ export function RoadmapPage() {
 
           <div className="space-y-12 lg:space-y-16">
             {PHASES.map((phase, i) => (
-              <PhaseCard key={i} phase={phase} index={i} />
+              <PhaseCard key={i} phase={phase} index={i} lang={lang} />
             ))}
           </div>
         </div>
@@ -336,13 +363,13 @@ export function RoadmapPage() {
         {/* Footer CTA */}
         <div className="text-center mt-20 pb-12">
           <div className="inline-block p-8 rounded-2xl bg-dark-800/50 border border-dark-500/30 backdrop-blur-sm">
-            <h3 className="text-xl font-bold text-white mb-2">Want to shape the future?</h3>
-            <p className="text-gray-400 text-sm mb-4">Join Pulsar today and be part of the revolution.</p>
+            <h3 className="text-xl font-bold text-white mb-2">{T(HERO.cta, lang)}</h3>
+            <p className="text-gray-400 text-sm mb-4">{T(HERO.ctaDesc, lang)}</p>
             <button
               onClick={() => navigate('/login')}
               className="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
             >
-              Get Started
+              {T(HERO.ctaBtn, lang)}
             </button>
           </div>
         </div>
