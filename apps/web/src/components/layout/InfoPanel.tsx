@@ -28,6 +28,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
   const [friendRequestId, setFriendRequestId] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
 
   const isGroup = activeChat?.type === 'GROUP';
 
@@ -246,13 +247,16 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
               <div className="flex flex-col items-center text-center">
                 <div className="relative mb-3">
                   <NftAvatarBorder isNft={!!other.nftAvatarMint} size={80}>
-                  <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+                  <button
+                    onClick={() => other.avatarUrl && setPreviewAvatar(other.avatarUrl)}
+                    className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all"
+                  >
                     {other.avatarUrl ? (
                       <img src={other.avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <GenerativeAvatar seed={other.id} size={80} />
                     )}
-                  </div>
+                  </button>
                   </NftAvatarBorder>
                   {other.isOnline && (
                     <div className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-white dark:border-dark-700" />
@@ -352,13 +356,16 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
           );
         })() : (
           <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold mb-3 overflow-hidden">
+            <button
+              onClick={() => (activeChat as any).avatarUrl && setPreviewAvatar((activeChat as any).avatarUrl)}
+              className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold mb-3 overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all"
+            >
               {(activeChat as any).avatarUrl ? (
                 <img src={(activeChat as any).avatarUrl} alt="" className="w-full h-full object-cover" />
               ) : (
                 <GenerativeAvatar seed={activeChat.id} size={80} />
               )}
-            </div>
+            </button>
             <h4 className="font-semibold text-lg">{activeChat.name || t('chat.directMessage')}</h4>
             {activeChat.description && (
               <p className="text-sm text-gray-400 mt-1">{activeChat.description}</p>
@@ -580,6 +587,28 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
 
         <SharedMediaPanel chatId={activeChat.id} />
       </div>
+
+      {/* Avatar preview modal */}
+      {previewAvatar && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] cursor-pointer"
+          onClick={() => setPreviewAvatar(null)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh] animate-fade-in">
+            <img
+              src={previewAvatar}
+              alt=""
+              className="max-w-full max-h-[80vh] rounded-2xl shadow-2xl object-contain"
+            />
+            <button
+              onClick={(e) => { e.stopPropagation(); setPreviewAvatar(null); }}
+              className="absolute -top-3 -right-3 w-8 h-8 bg-dark-700 rounded-full flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
