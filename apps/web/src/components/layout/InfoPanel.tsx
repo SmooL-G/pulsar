@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Users, Bell, BellOff, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2, ExternalLink, ChevronDown, UserMinus } from 'lucide-react';
+import { X, Users, Bell, BellOff, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2, ExternalLink, ChevronDown, UserMinus, Image, FileText } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -578,16 +578,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
           </button>
         )}
 
-        <div>
-          <h5 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-            {t('info.sharedMedia')}
-          </h5>
-          <div className="grid grid-cols-3 gap-1">
-            <div className="aspect-square bg-gray-100 dark:bg-dark-600 rounded" />
-            <div className="aspect-square bg-gray-100 dark:bg-dark-600 rounded" />
-            <div className="aspect-square bg-gray-100 dark:bg-dark-600 rounded" />
-          </div>
-        </div>
+        <SharedMediaPanel chatId={activeChat.id} />
       </div>
     </div>
   );
@@ -599,6 +590,100 @@ function InfoAction({ icon, label, value }: { icon: React.ReactNode; label: stri
       <span className="text-gray-400">{icon}</span>
       <span className="flex-1 text-sm">{label}</span>
       <span className="text-sm text-gray-400">{value}</span>
+    </div>
+  );
+}
+
+// Shared Media & Documents panel
+function SharedMediaPanel({ chatId }: { chatId: string }) {
+  const { t } = useI18n();
+  const [tab, setTab] = useState<'media' | 'documents'>('media');
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    api.get(`/messages/shared/${chatId}?type=${tab === 'media' ? 'media' : 'documents'}`)
+      .then((res) => setItems(res.data.items || []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, [chatId, tab]);
+
+  return (
+    <div>
+      {/* Tabs */}
+      <div className="flex gap-1 mb-3 bg-gray-100 dark:bg-dark-600 rounded-lg p-1">
+        <button
+          onClick={() => setTab('media')}
+          className={`flex-1 py-1.5 rounded-md text-xs font-medium flex items-center justify-center gap-1 transition-colors ${
+            tab === 'media' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <Image size={12} />
+          {t('info.media')}
+        </button>
+        <button
+          onClick={() => setTab('documents')}
+          className={`flex-1 py-1.5 rounded-md text-xs font-medium flex items-center justify-center gap-1 transition-colors ${
+            tab === 'documents' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <FileText size={12} />
+          {t('info.documents')}
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-4">
+          <Loader2 size={18} className="animate-spin text-gray-400" />
+        </div>
+      ) : items.length === 0 ? (
+        <p className="text-xs text-gray-500 text-center py-4">{t('info.noMedia')}</p>
+      ) : tab === 'media' ? (
+        <div className="grid grid-cols-3 gap-1">
+          {items.map((item) => (
+            <a
+              key={item.id}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="aspect-square bg-gray-100 dark:bg-dark-600 rounded overflow-hidden hover:opacity-80 transition-opacity"
+            >
+              {item.mimeType?.startsWith('image/') ? (
+                <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  <Image size={20} />
+                </div>
+              )}
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {items.map((item) => {
+            const sizeStr = item.fileSize < 1024 * 1024
+              ? `${(item.fileSize / 1024).toFixed(0)} KB`
+              : `${(item.fileSize / 1024 / 1024).toFixed(1)} MB`;
+            return (
+              <a
+                key={item.id}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-600 transition-colors no-underline"
+              >
+                <FileText size={16} className="text-blue-400 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-gray-200 truncate">{item.fileName}</p>
+                  <p className="text-[10px] text-gray-500">{sizeStr} · {item.sender}</p>
+                </div>
+                <ExternalLink size={12} className="text-gray-500 shrink-0" />
+              </a>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

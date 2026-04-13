@@ -214,4 +214,67 @@ export async function messageRoutes(app: FastifyInstance) {
     const count = await prisma.message.count({ where: { chatId: message.commentChatId } });
     return { count };
   });
+
+  // GET /messages/shared/:chatId — get shared media & documents for a chat
+  app.get<{ Params: { chatId: string } }>('/shared/:chatId', async (request, reply) => {
+    const userId = request.user!.userId;
+    const { chatId } = request.params;
+    const { type = 'all' } = request.query as { type?: 'all' | 'media' | 'documents' };
+
+    // Check membership
+    const member = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId, userId } },
+    });
+    if (!member || member.leftAt) {
+      return reply.status(403).send({ error: 'NOT_MEMBER' });
+    }
+
+    // Build mimeType filter
+    const mimeFilter = type === 'media'
+      ? { OR: [{ mimeType: { startsWith: 'image/' } }, { mimeType: { startsWith: 'video/' } }] }
+      : type === 'documents'
+        ? { NOT: [{ mimeType: { startsWith: 'image/' } }, { mimeType: { startsWith: 'video/' } }] }
+        : {};
+
+    const attachments = await prisma.fileAttachment.findMany({
+      where: {
+        message: { chatId, isDeleted: false },
+        ...mimeFilter,
+      },
+      select: {
+        id: true,
+        fileName: true,
+        fileSize: true,
+        mimeType: true,
+        s3Key: true,
+        thumbnailKey: true,
+        width: true,
+        height: true,
+        createdAt: true,
+        message: {
+          select: {
+            senderId: true,
+            sender: { select: { username: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    return {
+      items: attachments.map((a) => ({
+        id: a.id,
+        fileName: a.fileName,
+        fileSize: Number(a.fileSize),
+        mimeType: a.mimeType,
+        url: a.s3Key,
+        thumbnailUrl: a.thumbnailKey || undefined,
+        width: a.width,
+        height: a.height,
+        createdAt: a.createdAt.toISOString(),
+        sender: a.message.sender.username,
+      })),
+    };
+  });
 }
