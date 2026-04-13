@@ -52,6 +52,13 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
 
   const displayContent = message.content || decryptedContent;
   const isEncrypted = !!message.encryptedContent;
+
+  // Check if message is emoji-only (1-3 emojis, no other text)
+  const emojiRegex = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic}){1,3}$/u;
+  const isEmojiOnly = !!(displayContent && emojiRegex.test(displayContent.trim()) && !message.attachments?.length);
+  const emojiCount = isEmojiOnly ? [...displayContent!.trim()].filter(c => /\p{Emoji_Presentation}|\p{Extended_Pictographic}/u.test(c)).length : 0;
+  const emojiSize = emojiCount === 1 ? 'text-5xl' : emojiCount === 2 ? 'text-4xl' : 'text-3xl';
+
   const superchat = (message.metadata as any)?.superchat;
   const superChatColors: Record<string, string> = {
     blue: 'border-blue-500 bg-blue-500/10',
@@ -202,11 +209,11 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
           {/* Bubble */}
           <div
             className={`
-              px-3 py-2 rounded-2xl text-sm leading-relaxed inline-block
+              ${isEmojiOnly ? 'px-1 py-0.5 inline-block' : 'px-3 py-2 rounded-2xl text-sm leading-relaxed inline-block'}
               ${superchat ? `border-2 ${superChatColors[superchat.tier] || ''} ` : ''}
-              ${isOwn
+              ${!isEmojiOnly && (isOwn
                 ? 'bg-primary-500 text-white rounded-br-md'
-                : 'bg-gray-100 dark:bg-dark-600 text-gray-900 dark:text-gray-100 rounded-bl-md'}
+                : 'bg-gray-100 dark:bg-dark-600 text-gray-900 dark:text-gray-100 rounded-bl-md')}
             `}
           >
             {/* File attachments */}
@@ -254,7 +261,11 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
               </div>
             )}
 
-            {displayContent && <MessageContent content={displayContent} isOwn={isOwn} metadata={message.metadata} />}
+            {displayContent && (
+              isEmojiOnly
+                ? <span className={`${emojiSize} leading-tight`}>{displayContent}</span>
+                : <MessageContent content={displayContent} isOwn={isOwn} metadata={message.metadata} />
+            )}
             {isEncrypted && !displayContent && (
               <p className="text-xs italic text-gray-400 flex items-center gap-1">
                 <Lock size={11} />
