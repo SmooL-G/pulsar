@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { X, Wallet, Copy, Check } from 'lucide-react';
+import { X, Wallet, Copy, Check, Send, ArrowDownToLine } from 'lucide-react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { DepositModal } from './DepositModal';
+import { TransferModal } from './TransferModal';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import toast from 'react-hot-toast';
 
@@ -16,6 +17,7 @@ export function WalletPanel({ onClose }: WalletPanelProps) {
   const { t } = useI18n();
   const { user } = useAuthStore();
   const [showDeposit, setShowDeposit] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
   const [copied, setCopied] = useState(false);
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const { connection } = useConnection();
@@ -78,12 +80,22 @@ export function WalletPanel({ onClose }: WalletPanelProps) {
                 ◎ {solBalance.toFixed(4)} SOL
               </p>
             )}
-            <button
-              onClick={() => setShowDeposit(true)}
-              className="mt-4 w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-sm font-bold transition-colors"
-            >
-              {t('wallet.topUp')}
-            </button>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => setShowDeposit(true)}
+                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1.5"
+              >
+                <ArrowDownToLine size={14} />
+                {t('wallet.topUp')}
+              </button>
+              <button
+                onClick={() => setShowTransfer(true)}
+                className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Send size={14} />
+                {t('wallet.send')}
+              </button>
+            </div>
           </div>
 
           {/* Solana Wallet */}
@@ -113,6 +125,7 @@ export function WalletPanel({ onClose }: WalletPanelProps) {
       </div>
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
+      {showTransfer && <TransferModal onClose={() => setShowTransfer(false)} />}
     </div>
   );
 }

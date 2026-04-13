@@ -353,7 +353,8 @@ export const ru = {
 
   // Wallet / PLS
   'wallet.plsBalance': 'Баланс PLS',
-  'wallet.topUp': 'Пополнить PLS',
+  'wallet.topUp': 'Пополнить',
+  'wallet.send': 'Отправить',
   'wallet.deposit': 'Пополнение SOL → PLS',
   'wallet.depositSuccess': 'Пополнение успешно!',
   'wallet.depositError': 'Ошибка пополнения',

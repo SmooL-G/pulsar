@@ -353,7 +353,8 @@ export const en = {
 
   // Wallet / PLS
   'wallet.plsBalance': 'PLS Balance',
-  'wallet.topUp': 'Top Up PLS',
+  'wallet.topUp': 'Top Up',
+  'wallet.send': 'Send',
   'wallet.deposit': 'Deposit SOL → PLS',
   'wallet.depositSuccess': 'Deposit successful!',
   'wallet.depositError': 'Deposit failed',
