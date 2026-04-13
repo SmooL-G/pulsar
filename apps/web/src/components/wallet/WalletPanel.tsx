@@ -47,6 +47,10 @@ export function WalletPanel({ onClose }: WalletPanelProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  if (showTransfer) {
+    return <TransferModal onClose={() => setShowTransfer(false)} />;
+  }
+
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -125,7 +129,6 @@ export function WalletPanel({ onClose }: WalletPanelProps) {
       </div>
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
-      {showTransfer && <TransferModal onClose={() => setShowTransfer(false)} />}
     </div>
   );
 }
