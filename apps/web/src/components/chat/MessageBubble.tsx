@@ -54,10 +54,14 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
   const isEncrypted = !!message.encryptedContent;
 
   // Check if message is emoji-only (1-3 emojis, no other text)
-  const emojiRegex = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic}){1,3}$/u;
-  const isEmojiOnly = !!(displayContent && emojiRegex.test(displayContent.trim()) && !message.attachments?.length);
-  const emojiCount = isEmojiOnly ? [...displayContent!.trim()].filter(c => /\p{Emoji_Presentation}|\p{Extended_Pictographic}/u.test(c)).length : 0;
-  const emojiSize = emojiCount === 1 ? 'text-5xl' : emojiCount === 2 ? 'text-4xl' : 'text-3xl';
+  const isEmojiOnly = (() => {
+    if (!displayContent || message.attachments?.length) return false;
+    const trimmed = displayContent.trim();
+    // Match common emoji patterns (surrogate pairs, variation selectors, ZWJ sequences)
+    const stripped = trimmed.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2702}-\u{27B0}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu, '');
+    return stripped.length === 0 && trimmed.length <= 12;
+  })();
+  const emojiSize = !isEmojiOnly ? '' : (displayContent!.trim().length <= 2 ? 'text-5xl' : displayContent!.trim().length <= 4 ? 'text-4xl' : 'text-3xl');
 
   const superchat = (message.metadata as any)?.superchat;
   const superChatColors: Record<string, string> = {
