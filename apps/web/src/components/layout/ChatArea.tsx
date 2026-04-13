@@ -65,9 +65,11 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
             )}
           </h2>
           <p className="text-xs text-gray-400">
-            {activeChat.type === 'GROUP'
-              ? `${(activeChat as any).memberCount || 0} ${t('chat.members')}`
-              : t('chat.online')}
+            {activeChat.type === 'DIRECT'
+              ? ((activeChat as any).otherUser?.isOnline ? t('chat.online') : t('chat.offline'))
+              : activeChat.type === 'CHANNEL'
+                ? `${(activeChat as any).memberCount || 0} ${t('chat.subscribers')}`
+                : `${(activeChat as any).memberCount || 0} ${t('chat.members')}`}
           </p>
         </div>
 

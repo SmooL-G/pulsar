@@ -39,6 +39,7 @@ export const en = {
   'search.noResults': 'Nothing found',
   'chat.writeMessage': 'Write a message...',
   'chat.online': 'online',
+  'chat.offline': 'offline',
   'chat.status': 'Status',
   'chat.lastSeen': 'Last seen',
   'chat.members': 'members',

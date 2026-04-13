@@ -11,6 +11,7 @@ interface ChatState {
   addChat: (chat: Chat) => void;
   updateChat: (chatId: string, updates: Partial<Chat>) => void;
   removeChat: (chatId: string) => void;
+  updateUserPresence: (userId: string, isOnline: boolean) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -61,6 +62,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       chats: state.chats.filter((c) => c.id !== chatId),
       activeChat: state.activeChat?.id === chatId ? null : state.activeChat,
+    }));
+  },
+
+  updateUserPresence: (userId, isOnline) => {
+    set((state) => ({
+      chats: state.chats.map((c) => {
+        const other = (c as any).otherUser;
+        if (other?.id === userId) {
+          return { ...c, otherUser: { ...other, isOnline } } as any;
+        }
+        return c;
+      }),
+      activeChat: (() => {
+        const ac = state.activeChat;
+        if (!ac) return null;
+        const other = (ac as any).otherUser;
+        if (other?.id === userId) {
+          return { ...ac, otherUser: { ...other, isOnline } } as any;
+        }
+        return ac;
+      })(),
     }));
   },
 }));

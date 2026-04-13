@@ -39,6 +39,7 @@ export const ru = {
   'search.noResults': 'Ничего не найдено',
   'chat.writeMessage': 'Написать сообщение...',
   'chat.online': 'в сети',
+  'chat.offline': 'не в сети',
   'chat.status': 'Статус',
   'chat.lastSeen': 'Был(а) в сети',
   'chat.members': 'участников',

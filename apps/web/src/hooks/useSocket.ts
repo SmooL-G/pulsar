@@ -103,8 +103,9 @@ export function useSocket() {
     });
 
     // Presence events
-    socket.on('presence:update', (_data: { userId: string; isOnline: boolean }) => {
-      // TODO: update online status in UI
+    socket.on('presence:update', (data: { userId: string; isOnline: boolean }) => {
+      const { useChatStore } = require('../store/chatStore');
+      useChatStore.getState().updateUserPresence(data.userId, data.isOnline);
     });
 
     // Heartbeat
