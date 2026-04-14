@@ -25,6 +25,7 @@ export function BotPanel({ onClose }: BotPanelProps) {
   // Edit form
   const [editName, setEditName] = useState('');
   const [editBio, setEditBio] = useState('');
+  const [editStart, setEditStart] = useState('');
   const [editAvatar, setEditAvatar] = useState<string | null>(null);
   const [editWebhook, setEditWebhook] = useState('');
   const [editCommands, setEditCommands] = useState<BotCommand[]>([]);
@@ -43,6 +44,7 @@ export function BotPanel({ onClose }: BotPanelProps) {
       setSelectedBot(bot);
       setEditName(bot.displayName || '');
       setEditBio(bot.bio || '');
+      setEditStart(bot.startMessage || '');
       setEditAvatar(bot.avatarUrl || null);
       setEditWebhook(bot.webhookUrl || '');
       setEditCommands(bot.commands || []);
@@ -93,6 +95,7 @@ export function BotPanel({ onClose }: BotPanelProps) {
       await updateBot(selectedBot.id, {
         name: editName,
         bio: editBio,
+        startMessage: editStart,
         webhookUrl: editWebhook,
         commands: editCommands,
       });
@@ -290,13 +293,30 @@ export function BotPanel({ onClose }: BotPanelProps) {
 
               {/* Bio */}
               <div>
-                <label className="text-xs text-gray-400 mb-1 block">О боте</label>
+                <label className="text-xs text-gray-400 mb-1 flex justify-between">
+                  <span>О боте</span>
+                  <span className="text-gray-500">{editBio.length}/256</span>
+                </label>
                 <textarea
                   value={editBio}
-                  onChange={(e) => setEditBio(e.target.value)}
-                  placeholder="Что делает этот бот..."
-                  rows={3}
-                  maxLength={256}
+                  onChange={(e) => setEditBio(e.target.value.slice(0, 256))}
+                  placeholder="Краткое описание..."
+                  rows={2}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary-500/60 resize-none"
+                />
+              </div>
+
+              {/* Start message */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1 flex justify-between">
+                  <span>Сообщение приветствия (на экране /start)</span>
+                  <span className="text-gray-500">{editStart.length}/512</span>
+                </label>
+                <textarea
+                  value={editStart}
+                  onChange={(e) => setEditStart(e.target.value.slice(0, 512))}
+                  placeholder="Привет! Я бот, который...&#10;&#10;Чтобы начать, отправьте /help"
+                  rows={4}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary-500/60 resize-none"
                 />
               </div>

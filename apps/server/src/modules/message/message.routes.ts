@@ -236,7 +236,15 @@ export async function messageRoutes(app: FastifyInstance) {
       const botProfile = (message.sender as any)?.botProfile;
       if (!botProfile) return reply.status(400).send({ error: 'NOT_A_BOT_MESSAGE' });
 
-      // Dispatch to bot
+      // For PulsarBot (system bot) — treat callbackData as a command message
+      const senderUsername = (message.sender as any)?.username;
+      if (senderUsername === 'pulsarbot') {
+        const { handlePulsarBotMessage } = await import('../bot/pulsarBot.handler.js');
+        await handlePulsarBotMessage(userId, message.chatId, callbackData);
+        return { ok: true };
+      }
+
+      // For user bots — dispatch to webhook
       const { dispatchBotCallback } = await import('../bot/webhook.service.js');
       await dispatchBotCallback(
         { id: botProfile.id, webhookUrl: botProfile.webhookUrl, webhookSecret: botProfile.webhookSecret },

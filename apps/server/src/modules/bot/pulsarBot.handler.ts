@@ -40,7 +40,7 @@ async function clearSession(userId: string) {
   await redis.del(`bot:pulsarbot:session:${userId}`);
 }
 
-async function sendReply(chatId: string, text: string) {
+async function sendReply(chatId: string, text: string, buttons?: { text: string; callbackData: string }[][]) {
   if (!PULSAR_BOT_USER_ID) return;
   const msg = await prisma.message.create({
     data: {
@@ -48,6 +48,7 @@ async function sendReply(chatId: string, text: string) {
       senderId: PULSAR_BOT_USER_ID,
       content: text,
       type: 'TEXT',
+      ...(buttons && { metadata: { buttons } }),
     },
     include: {
       sender: {
@@ -67,7 +68,7 @@ async function sendReply(chatId: string, text: string) {
       replyToId: null,
       isEdited: false,
       isDeleted: false,
-      metadata: null,
+      metadata: msg.metadata as any,
       signature: null,
       signerWallet: null,
       encryptedContent: null,
@@ -131,8 +132,31 @@ async function handleCommand(userId: string, chatId: string, cmd: string, args: 
     case 'start':
       await clearSession(userId);
       await sendReply(chatId,
-        '👋 Привет! Я PulsarBot — здесь вы можете создавать ботов для интеграции с Pulsar.\n\n' +
-        'Доступные команды:\n' +
+        '👋 Привет! Я PulsarBot — здесь вы можете создавать и управлять ботами для Pulsar.\n\n' +
+        'Выберите действие:',
+        [
+          [
+            { text: '🤖 Создать бота', callbackData: '/newbot' },
+            { text: '📋 Мои боты', callbackData: '/mybots' },
+          ],
+          [
+            { text: '🔑 Получить токен', callbackData: '/token' },
+            { text: '🔗 Webhook', callbackData: '/setwebhook' },
+          ],
+          [
+            { text: '⚙️ Команды бота', callbackData: '/setcommands' },
+            { text: '❌ Удалить', callbackData: '/deletebot' },
+          ],
+          [
+            { text: 'ℹ️ Помощь', callbackData: '/help' },
+          ],
+        ]
+      );
+      break;
+
+    case 'help':
+      await sendReply(chatId,
+        '📚 Все команды:\n\n' +
         '/newbot — Создать нового бота\n' +
         '/mybots — Список ваших ботов\n' +
         '/token @username — Получить/перевыпустить токен\n' +

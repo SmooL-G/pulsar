@@ -35,6 +35,7 @@ function serializeBot(bot: any) {
     commands: bot.commands || [],
     isActive: bot.isActive,
     token: bot.tokenPlain,
+    startMessage: bot.startMessage,
     lastSeenAt: bot.lastSeenAt?.toISOString() || null,
     createdAt: bot.createdAt.toISOString(),
     updatedAt: bot.updatedAt.toISOString(),
@@ -116,11 +117,11 @@ export async function botManagementRoutes(app: FastifyInstance) {
   });
 
   // PATCH /:botId — обновить имя / вебхук / команды
-  app.patch<{ Params: { botId: string }; Body: { name?: string; bio?: string; avatarUrl?: string; webhookUrl?: string; commands?: any[] } }>(
+  app.patch<{ Params: { botId: string }; Body: { name?: string; bio?: string; avatarUrl?: string; webhookUrl?: string; commands?: any[]; startMessage?: string } }>(
     '/:botId',
     async (request, reply) => {
       const ownerId = request.user!.userId;
-      const { name, bio, avatarUrl, webhookUrl, commands } = request.body;
+      const { name, bio, avatarUrl, webhookUrl, commands, startMessage } = request.body;
 
       const bot = await prisma.bot.findFirst({
         where: { id: request.params.botId, ownerId, isSystemBot: false },
@@ -131,6 +132,7 @@ export async function botManagementRoutes(app: FastifyInstance) {
       const updates: any = {};
       if (webhookUrl !== undefined) updates.webhookUrl = webhookUrl || null;
       if (commands !== undefined) updates.commands = commands;
+      if (startMessage !== undefined) updates.startMessage = (startMessage || '').slice(0, 512) || null;
 
       const userUpdates: any = {};
       if (name) userUpdates.displayName = name.trim();
@@ -180,6 +182,46 @@ export async function botManagementRoutes(app: FastifyInstance) {
     await redis.del(`bot:auth:${bot.id}`);
 
     return { success: true };
+  });
+
+  // GET /chat/:chatId/info — info about bot in this chat (for start screen)
+  app.get<{ Params: { chatId: string } }>('/chat/:chatId/info', async (request, reply) => {
+    const userId = request.user!.userId;
+
+    const member = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId: request.params.chatId, userId } },
+    });
+    if (!member || member.leftAt) {
+      return reply.status(403).send({ error: 'NOT_MEMBER' });
+    }
+
+    // Find bot in chat (DM with bot)
+    const botMembers = await prisma.chatMember.findMany({
+      where: { chatId: request.params.chatId, leftAt: null, user: { isBot: true } },
+      include: {
+        user: {
+          select: {
+            id: true, username: true, displayName: true, avatarUrl: true, bio: true,
+            botProfile: { select: { startMessage: true, commands: true } },
+          },
+        },
+      },
+    });
+
+    if (botMembers.length === 0) return { bot: null };
+    const bot = botMembers[0].user as any;
+
+    return {
+      bot: {
+        id: bot.id,
+        username: bot.username,
+        displayName: bot.displayName,
+        avatarUrl: bot.avatarUrl,
+        bio: bot.bio,
+        startMessage: bot.botProfile?.startMessage || null,
+        commands: bot.botProfile?.commands || [],
+      },
+    };
   });
 
   // GET /chat/:chatId/commands — команды всех ботов в чате (для автодополнения)
