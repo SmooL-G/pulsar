@@ -13,6 +13,7 @@ import { PrivacyPage } from './pages/PrivacyPage';
 import { RoadmapPage } from './pages/RoadmapPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { DevelopersPage } from './pages/DevelopersPage';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -61,6 +62,8 @@ export function App() {
               <Route path="/invite/:code" element={<InvitePage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/roadmap" element={<RoadmapPage />} />
+              <Route path="/developers" element={<DevelopersPage />} />
+              <Route path="/docs" element={<DevelopersPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

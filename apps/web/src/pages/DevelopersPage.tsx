@@ -1,25 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bot, Send, Webhook, Shield, Keyboard, MessageSquare, Users, Trash2, Copy, Check } from 'lucide-react';
-import { useState, useRef, useEffect, useMemo } from 'react';
-
-function generateStars(count: number) {
-  const stars: { x: number; y: number; size: number; delay: number; opacity: number }[] = [];
-  let seed = 77;
-  for (let i = 0; i < count; i++) {
-    seed = (seed * 16807 + 5) % 2147483647;
-    const x = (seed % 1000) / 10;
-    seed = (seed * 16807 + 5) % 2147483647;
-    const y = (seed % 1000) / 10;
-    seed = (seed * 16807 + 5) % 2147483647;
-    const size = 1 + (seed % 3);
-    seed = (seed * 16807 + 5) % 2147483647;
-    const delay = (seed % 5000) / 1000;
-    seed = (seed * 16807 + 5) % 2147483647;
-    const opacity = 0.2 + (seed % 60) / 100;
-    stars.push({ x, y, size, delay, opacity });
-  }
-  return stars;
-}
+import { ArrowLeft, Bot, Send, Webhook, Shield, Keyboard, MessageSquare, Users, Trash2, Copy, Check, Code, BookOpen, Zap, Globe, Terminal, Lock } from 'lucide-react';
+import { useState } from 'react';
 
 function CodeBlock({ code, language = 'bash' }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
@@ -28,406 +9,480 @@ function CodeBlock({ code, language = 'bash' }: { code: string; language?: strin
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
   return (
     <div className="relative group">
-      <pre className="bg-black/40 border border-white/10 rounded-xl p-4 text-xs leading-relaxed overflow-x-auto font-mono text-gray-300">
-        <code>{code}</code>
+      <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
+        <span className="text-[10px] text-gray-500 uppercase font-mono bg-dark-800/80 px-2 py-0.5 rounded">{language}</span>
+        <button
+          onClick={handleCopy}
+          className="p-1.5 rounded-md bg-dark-800/80 hover:bg-dark-700 text-gray-400 hover:text-white transition-colors"
+        >
+          {copied ? <Check size={12} /> : <Copy size={12} />}
+        </button>
+      </div>
+      <pre className="bg-dark-900 border border-dark-600 rounded-xl p-4 pt-8 text-xs overflow-x-auto text-gray-300 font-mono leading-relaxed">
+        {code}
       </pre>
-      <button
-        onClick={handleCopy}
-        className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/5 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
-      >
-        {copied ? <Check size={12} /> : <Copy size={12} />}
-      </button>
     </div>
   );
 }
 
-function Section({ icon, title, id, children }: { icon: React.ReactNode; title: string; id: string; children: React.ReactNode }) {
+function Section({ id, icon: Icon, title, children }: { id: string; icon: any; title: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="scroll-mt-20">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-9 h-9 rounded-xl bg-primary-500/15 flex items-center justify-center text-primary-400 shrink-0">{icon}</div>
-        <h2 className="text-xl font-bold">{title}</h2>
-      </div>
-      <div className="space-y-4 text-sm text-gray-300 leading-relaxed">{children}</div>
+    <section id={id} className="scroll-mt-24">
+      <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+        <Icon size={22} className="text-primary-400" />
+        {title}
+      </h2>
+      <div className="space-y-4 text-gray-300 text-sm leading-relaxed">{children}</div>
     </section>
   );
 }
 
 function Endpoint({ method, path, desc }: { method: string; path: string; desc: string }) {
-  const color = method === 'GET' ? 'text-green-400 bg-green-500/15' : 'text-blue-400 bg-blue-500/15';
+  const colors: Record<string, string> = {
+    GET: 'bg-emerald-500/20 text-emerald-400',
+    POST: 'bg-blue-500/20 text-blue-400',
+    PATCH: 'bg-amber-500/20 text-amber-400',
+    DELETE: 'bg-red-500/20 text-red-400',
+  };
   return (
-    <div className="flex items-start gap-3 py-2">
-      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${color} shrink-0 mt-0.5`}>{method}</span>
-      <div>
-        <code className="text-xs font-mono text-white">{path}</code>
-        <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
-      </div>
+    <div className="flex items-start gap-3 py-2 border-b border-dark-600/50 last:border-0">
+      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${colors[method] || 'bg-gray-700'} shrink-0 mt-0.5`}>{method}</span>
+      <code className="text-xs text-primary-400 font-mono shrink-0">{path}</code>
+      <span className="text-xs text-gray-400">{desc}</span>
     </div>
   );
 }
 
-const NAV = [
-  { id: 'start', label: 'Начало работы' },
-  { id: 'auth', label: 'Авторизация' },
-  { id: 'messages', label: 'Сообщения' },
-  { id: 'buttons', label: 'Inline-кнопки' },
-  { id: 'updates', label: 'Получение обновлений' },
-  { id: 'webhook', label: 'Вебхуки' },
-  { id: 'moderation', label: 'Модерация' },
-  { id: 'commands', label: 'Команды' },
-  { id: 'endpoints', label: 'Все эндпоинты' },
-  { id: 'examples', label: 'Примеры' },
-];
-
 export function DevelopersPage() {
   const navigate = useNavigate();
-  const stars = useMemo(() => generateStars(80), []);
-  const [activeSection, setActiveSection] = useState('start');
+  const [lang, setLang] = useState<'js' | 'py' | 'curl'>('js');
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) setActiveSection(e.target.id);
-        }
-      },
-      { rootMargin: '-20% 0px -60% 0px' }
-    );
-    for (const { id } of NAV) {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
-  }, []);
-
-  const BASE_URL = window.location.origin + '/api/v1';
+  const baseUrl = 'https://pulsar-chat.fun/api/v1';
 
   return (
-    <div className="min-h-screen bg-dark-800 text-white relative overflow-x-hidden">
-      {/* Stars */}
-      <div className="fixed inset-0 pointer-events-none">
-        {stars.map((s, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-white animate-pulse"
-            style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.size, height: s.size, opacity: s.opacity, animationDelay: `${s.delay}s`, animationDuration: '3s' }}
-          />
-        ))}
-      </div>
+    <div className="bg-dark-900 text-white" style={{ height: '100dvh', overflowY: 'auto' }}>
+      <div className="fixed inset-0 z-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse at 20% 0%, rgba(76,110,245,0.08) 0%, transparent 50%)',
+      }} />
 
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-dark-800/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-white/5 transition-colors">
-            <ArrowLeft size={18} />
-          </button>
-          <div className="flex items-center gap-2">
-            <Bot size={22} className="text-primary-400" />
-            <h1 className="text-lg font-bold">Pulsar Bot API</h1>
+      <div className="relative z-10 max-w-4xl mx-auto px-6 pt-8 pb-16">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-400 hover:text-white transition-colors mb-8"
+        >
+          <ArrowLeft size={16} />
+          <span className="text-sm">Back</span>
+        </button>
+
+        {/* Hero */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-xs font-medium mb-4">
+            <Code size={12} />
+            Developer Documentation
           </div>
-          <span className="text-xs bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full font-medium">v1</span>
+          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3">Pulsar Bot API</h1>
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            Build powerful bots for Pulsar messenger. REST API + Webhooks + Long Polling.
+          </p>
         </div>
-      </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-8 flex gap-8 relative">
-        {/* Sidebar nav */}
-        <nav className="hidden lg:block w-48 shrink-0 sticky top-24 self-start">
-          <div className="space-y-1">
-            {NAV.map(({ id, label }) => (
-              <a
-                key={id}
-                href={`#${id}`}
-                className={`block text-xs px-3 py-1.5 rounded-lg transition-colors ${
-                  activeSection === id ? 'bg-primary-500/15 text-primary-400 font-medium' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-                }`}
-              >
+        {/* TOC */}
+        <div className="bg-dark-800/50 border border-dark-500/30 rounded-2xl p-5 mb-8">
+          <p className="text-xs uppercase text-gray-500 font-semibold mb-3">Table of Contents</p>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {[
+              ['quick-start', '🚀 Quick Start'],
+              ['create-bot', '🤖 Create a Bot'],
+              ['authentication', '🔑 Authentication'],
+              ['receive', '📥 Receiving Updates'],
+              ['send', '📤 Sending Messages'],
+              ['buttons', '🎛️ Inline Buttons'],
+              ['callbacks', '🔔 Callback Queries'],
+              ['moderation', '🛡️ Moderation'],
+              ['endpoints', '📚 API Reference'],
+              ['examples', '💡 Full Examples'],
+              ['hosting', '🌐 Where to Host'],
+              ['support', '💬 Get Help'],
+            ].map(([id, label]) => (
+              <a key={id} href={`#${id}`} className="text-gray-300 hover:text-primary-400 transition-colors py-1">
                 {label}
               </a>
             ))}
           </div>
-        </nav>
+        </div>
 
-        {/* Content */}
-        <main className="flex-1 min-w-0 space-y-12">
+        <div className="space-y-12">
+          {/* QUICK START */}
+          <Section id="quick-start" icon={Zap} title="Quick Start">
+            <p>Get your first bot running in 5 minutes:</p>
+            <ol className="list-decimal list-inside space-y-2 ml-2">
+              <li>Create a bot via <a href="/" className="text-primary-400 hover:underline">PulsarBot</a> or click the Bots button in sidebar</li>
+              <li>Copy your API token from bot settings</li>
+              <li>Choose: <strong>Long Polling</strong> (easy) or <strong>Webhook</strong> (production)</li>
+              <li>Write code that calls Pulsar API to send/receive messages</li>
+              <li>Deploy to any Node.js/Python hosting</li>
+            </ol>
 
-          <Section icon={<Bot size={18} />} title="Начало работы" id="start">
-            <p>Pulsar Bot API позволяет создавать ботов, которые могут отправлять сообщения, модерировать группы и взаимодействовать с пользователями через inline-кнопки.</p>
-
-            <div className="bg-primary-500/10 border border-primary-500/20 rounded-xl p-4">
-              <p className="text-xs font-semibold text-primary-400 mb-2">Быстрый старт</p>
-              <ol className="text-xs text-gray-300 space-y-1.5 list-decimal list-inside">
-                <li>Найдите <code className="text-primary-400">@pulsarbot</code> в поиске и откройте DM</li>
-                <li>Напишите <code className="text-primary-400">/newbot</code> и следуйте инструкциям</li>
-                <li>Сохраните полученный токен — он понадобится для всех запросов</li>
-                <li>Добавьте бота в группу через панель участников</li>
-              </ol>
-            </div>
-
-            <p>Base URL для всех запросов:</p>
-            <CodeBlock code={`${BASE_URL}/bot/`} />
-          </Section>
-
-          <Section icon={<Shield size={18} />} title="Авторизация" id="auth">
-            <p>Все запросы к Bot API требуют токен в заголовке <code className="text-primary-400">Authorization</code>:</p>
-            <CodeBlock code={`Authorization: Bot <ваш_токен>`} />
-
-            <p>Токен выглядит так: <code className="text-gray-400">a1b2c3d4:AbCdEfGhIjKlMnOpQrStUvWx</code></p>
-
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
-              <p className="text-xs text-yellow-400">Никогда не передавайте токен третьим лицам и не публикуйте в коде. Если токен скомпрометирован — перевыпустите его через <code>/token @username</code> в чате с @pulsarbot.</p>
+            <div className="bg-primary-500/10 border border-primary-500/20 rounded-xl p-4 text-sm">
+              <p className="text-primary-300">
+                <strong>Base URL:</strong> <code className="bg-dark-800 px-2 py-0.5 rounded">{baseUrl}</code>
+              </p>
             </div>
           </Section>
 
-          <Section icon={<Send size={18} />} title="Отправка сообщений" id="messages">
-            <p>Отправить текстовое сообщение:</p>
-            <CodeBlock language="bash" code={`curl -X POST ${BASE_URL}/bot/sendMessage \\
-  -H "Authorization: Bot <token>" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "chatId": "uuid-чата",
-    "text": "Привет от бота!",
-    "replyToId": null
-  }'`} />
+          {/* CREATE BOT */}
+          <Section id="create-bot" icon={Bot} title="Create a Bot">
+            <p>Two ways to create a bot:</p>
 
-            <p><strong>Параметры:</strong></p>
-            <div className="bg-white/5 rounded-xl p-4 space-y-2">
-              <div className="flex gap-3 text-xs"><code className="text-primary-400 w-24 shrink-0">chatId</code><span className="text-gray-400">string — ID чата (обязательный)</span></div>
-              <div className="flex gap-3 text-xs"><code className="text-primary-400 w-24 shrink-0">text</code><span className="text-gray-400">string — текст сообщения (обязательный)</span></div>
-              <div className="flex gap-3 text-xs"><code className="text-primary-400 w-24 shrink-0">replyToId</code><span className="text-gray-400">string? — ID сообщения для ответа</span></div>
-              <div className="flex gap-3 text-xs"><code className="text-primary-400 w-24 shrink-0">buttons</code><span className="text-gray-400">Button[][]? — inline-кнопки (см. ниже)</span></div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
+                <p className="font-semibold text-white mb-2">📱 Via UI</p>
+                <ol className="text-xs space-y-1 list-decimal list-inside text-gray-400">
+                  <li>Open Pulsar app</li>
+                  <li>Click 🤖 Bot icon in sidebar</li>
+                  <li>"Create Bot" → enter name</li>
+                  <li>Configure avatar, bio, start message</li>
+                  <li>Copy API token</li>
+                </ol>
+              </div>
+              <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
+                <p className="font-semibold text-white mb-2">💬 Via PulsarBot (chat)</p>
+                <ol className="text-xs space-y-1 list-decimal list-inside text-gray-400">
+                  <li>Open chat with @pulsarbot</li>
+                  <li>Send <code className="bg-dark-900 px-1">/newbot</code></li>
+                  <li>Enter bot name</li>
+                  <li>Save the API token</li>
+                </ol>
+              </div>
+            </div>
+
+            <p className="text-amber-400 text-xs">⚠️ Keep your API token secret. Anyone with the token controls your bot.</p>
+          </Section>
+
+          {/* AUTH */}
+          <Section id="authentication" icon={Lock} title="Authentication">
+            <p>All bot API requests require <code className="bg-dark-900 px-1.5 py-0.5 rounded text-xs">Authorization: Bearer YOUR_TOKEN</code> header.</p>
+
+            <CodeBlock language="curl" code={`curl -X GET "${baseUrl}/bot/me" \\
+  -H "Authorization: Bearer YOUR_BOT_TOKEN"`} />
+          </Section>
+
+          {/* RECEIVE */}
+          <Section id="receive" icon={MessageSquare} title="Receiving Updates">
+            <p>Two ways to receive messages from users:</p>
+
+            <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
+              <p className="font-semibold text-white mb-2 flex items-center gap-2">
+                <Terminal size={14} /> 1. Long Polling (easy, for development)
+              </p>
+              <p className="text-xs text-gray-400 mb-3">Periodically request new messages. No public server needed.</p>
+              <CodeBlock language="js" code={`// Node.js — long polling loop
+let offset = 0;
+
+setInterval(async () => {
+  const res = await fetch('${baseUrl}/bot/updates?offset=' + offset + '&timeout=30', {
+    headers: { 'Authorization': 'Bearer YOUR_TOKEN' }
+  });
+  const { result } = await res.json();
+
+  for (const update of result) {
+    console.log('New update:', update);
+    offset = update.update_id + 1;
+    // Handle update here
+  }
+}, 1000);`} />
+            </div>
+
+            <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
+              <p className="font-semibold text-white mb-2 flex items-center gap-2">
+                <Webhook size={14} /> 2. Webhook (instant, for production)
+              </p>
+              <p className="text-xs text-gray-400 mb-3">Pulsar sends POST requests to your URL when events happen.</p>
+              <CodeBlock language="js" code={`// Set webhook
+await fetch('${baseUrl}/bot/setWebhook', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN', 'Content-Type': 'application/json' },
+  body: JSON.stringify({ url: 'https://yourbot.example.com/webhook' })
+});
+
+// Receive in your Express server
+app.post('/webhook', (req, res) => {
+  const update = req.body;
+  console.log('Got update:', update);
+  res.json({ ok: true });
+});`} />
             </div>
           </Section>
 
-          <Section icon={<Keyboard size={18} />} title="Inline-кнопки" id="buttons">
-            <p>Добавьте интерактивные кнопки к сообщению. Кнопки организованы в ряды (массив массивов):</p>
-            <CodeBlock code={`curl -X POST ${BASE_URL}/bot/sendMessage \\
-  -H "Authorization: Bot <token>" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "chatId": "uuid-чата",
-    "text": "Выберите действие:",
-    "buttons": [
+          {/* SEND */}
+          <Section id="send" icon={Send} title="Sending Messages">
+            <CodeBlock language="js" code={`await fetch('${baseUrl}/bot/sendMessage', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    chatId: '<chat-uuid>',
+    text: 'Hello from my bot!'
+  })
+});`} />
+          </Section>
+
+          {/* BUTTONS */}
+          <Section id="buttons" icon={Keyboard} title="Inline Buttons">
+            <p>Send messages with clickable buttons. Each button has text and callback data.</p>
+
+            <CodeBlock language="js" code={`await fetch('${baseUrl}/bot/sendMessage', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN', 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    chatId: '<chat-uuid>',
+    text: 'Choose an option:',
+    buttons: [
       [
-        {"text": "Да", "callbackData": "vote_yes"},
-        {"text": "Нет", "callbackData": "vote_no"}
+        { text: '✅ Yes', callbackData: 'choice:yes' },
+        { text: '❌ No', callbackData: 'choice:no' }
       ],
       [
-        {"text": "Подробнее", "callbackData": "info"}
+        { text: 'ℹ️ More info', callbackData: 'info' }
       ]
     ]
-  }'`} />
+  })
+});`} />
+          </Section>
 
-            <p>Когда пользователь нажимает кнопку, бот получает <code className="text-primary-400">callback_query</code> update:</p>
+          {/* CALLBACKS */}
+          <Section id="callbacks" icon={Zap} title="Callback Queries">
+            <p>When user clicks an inline button, you receive a <code className="bg-dark-900 px-1.5 py-0.5 rounded text-xs">callback_query</code> update:</p>
+
             <CodeBlock language="json" code={`{
-  "type": "callback_query",
-  "callbackQuery": {
-    "id": "msg123:1712345678",
+  "update_id": 12345,
+  "callback_query": {
+    "id": "abc-123",
     "from": { "id": "user-uuid" },
-    "message": { "id": "msg-uuid", "chatId": "chat-uuid" },
-    "data": "vote_yes"
+    "message": { "id": "msg-uuid", "chat": { "id": "chat-uuid" } },
+    "data": "choice:yes"
   }
 }`} />
+
+            <p>Acknowledge the click:</p>
+            <CodeBlock language="js" code={`await fetch('${baseUrl}/bot/answerCallback', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN', 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    callbackQueryId: update.callback_query.id,
+    text: 'Thanks for your answer!'
+  })
+});`} />
           </Section>
 
-          <Section icon={<MessageSquare size={18} />} title="Получение обновлений" id="updates">
-            <p>Long-polling — простой способ получать обновления. Запрос блокируется до появления новых событий или истечения таймаута:</p>
-            <CodeBlock code={`curl "${BASE_URL}/bot/updates?offset=0&timeout=30&limit=100" \\
-  -H "Authorization: Bot <token>"`} />
+          {/* MODERATION */}
+          <Section id="moderation" icon={Shield} title="Moderation Actions">
+            <p>If your bot is admin in a group, it can moderate:</p>
 
-            <p><strong>Параметры:</strong></p>
-            <div className="bg-white/5 rounded-xl p-4 space-y-2">
-              <div className="flex gap-3 text-xs"><code className="text-primary-400 w-24 shrink-0">offset</code><span className="text-gray-400">number — ID последнего обработанного update + 1</span></div>
-              <div className="flex gap-3 text-xs"><code className="text-primary-400 w-24 shrink-0">timeout</code><span className="text-gray-400">number — время ожидания в секундах (макс. 60)</span></div>
-              <div className="flex gap-3 text-xs"><code className="text-primary-400 w-24 shrink-0">limit</code><span className="text-gray-400">number — максимум обновлений (макс. 100)</span></div>
-            </div>
+            <CodeBlock language="js" code={`// Delete a message
+await fetch('${baseUrl}/bot/deleteMessage', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN', 'Content-Type': 'application/json' },
+  body: JSON.stringify({ messageId: '<message-uuid>' })
+});
 
-            <p><strong>Типы обновлений:</strong></p>
-            <div className="bg-white/5 rounded-xl p-4 space-y-2">
-              <div className="flex gap-3 text-xs"><code className="text-green-400 w-32 shrink-0">message</code><span className="text-gray-400">Новое сообщение в чате бота</span></div>
-              <div className="flex gap-3 text-xs"><code className="text-green-400 w-32 shrink-0">command</code><span className="text-gray-400">Сообщение начинающееся с /</span></div>
-              <div className="flex gap-3 text-xs"><code className="text-green-400 w-32 shrink-0">callback_query</code><span className="text-gray-400">Нажатие inline-кнопки</span></div>
-            </div>
-
-            <CodeBlock language="json" code={`// Пример ответа
-{
-  "ok": true,
-  "result": [
-    {
-      "id": "42",
-      "botId": "uuid",
-      "type": "message",
-      "payload": {
-        "type": "message",
-        "message": {
-          "id": "msg-uuid",
-          "chatId": "chat-uuid",
-          "from": { "id": "user-uuid", "username": "john", "displayName": "John" },
-          "text": "/start",
-          "date": "2026-04-09T12:00:00.000Z",
-          "replyToId": null
-        }
-      }
-    }
-  ]
-}`} />
+// Kick a member
+await fetch('${baseUrl}/bot/kickMember', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN', 'Content-Type': 'application/json' },
+  body: JSON.stringify({ chatId: '<chat-uuid>', userId: '<user-uuid>' })
+});`} />
           </Section>
 
-          <Section icon={<Webhook size={18} />} title="Вебхуки" id="webhook">
-            <p>Альтернатива long-polling — настройте вебхук, и Pulsar будет POST'ить обновления на ваш сервер:</p>
-            <CodeBlock code={`curl -X POST ${BASE_URL}/bot/setWebhook \\
-  -H "Authorization: Bot <token>" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "url": "https://your-server.com/webhook",
-    "secret": "my_secret_key"
-  }'`} />
+          {/* API REFERENCE */}
+          <Section id="endpoints" icon={BookOpen} title="API Reference">
+            <p>Complete list of bot API endpoints. All require <code className="bg-dark-900 px-1.5 py-0.5 rounded text-xs">Authorization: Bearer TOKEN</code>.</p>
 
-            <p><strong>Заголовки запроса к вашему серверу:</strong></p>
-            <div className="bg-white/5 rounded-xl p-4 space-y-2">
-              <div className="flex gap-3 text-xs"><code className="text-primary-400 shrink-0">Content-Type</code><span className="text-gray-400">application/json</span></div>
-              <div className="flex gap-3 text-xs"><code className="text-primary-400 shrink-0">X-Pulsar-Bot-Id</code><span className="text-gray-400">ID вашего бота</span></div>
-              <div className="flex gap-3 text-xs"><code className="text-primary-400 shrink-0">X-Pulsar-Signature</code><span className="text-gray-400">sha256=HMAC подпись (если задан secret)</span></div>
+            <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
+              <p className="font-semibold text-white mb-2">Bot Identity</p>
+              <Endpoint method="GET" path="/bot/me" desc="Get bot info (id, username, displayName)" />
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <p className="text-xs text-gray-400">Pulsar повторяет неудачную доставку до 4 раз с exponential backoff (10с → 30с → 90с → 270с). URL должен быть HTTPS.</p>
+            <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
+              <p className="font-semibold text-white mb-2">Messages</p>
+              <Endpoint method="POST" path="/bot/sendMessage" desc="Send text/buttons to chat" />
+              <Endpoint method="POST" path="/bot/deleteMessage" desc="Delete a message" />
+              <Endpoint method="POST" path="/bot/answerCallback" desc="Reply to button click" />
             </div>
 
-            <p>Чтобы удалить вебхук:</p>
-            <CodeBlock code={`curl -X POST ${BASE_URL}/bot/setWebhook \\
-  -H "Authorization: Bot <token>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"url": null}'`} />
-          </Section>
+            <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
+              <p className="font-semibold text-white mb-2">Updates</p>
+              <Endpoint method="GET" path="/bot/updates" desc="Long polling — get new updates" />
+              <Endpoint method="POST" path="/bot/setWebhook" desc="Configure webhook URL" />
+            </div>
 
-          <Section icon={<Shield size={18} />} title="Модерация" id="moderation">
-            <p>Боты с ролью <code className="text-primary-400">MODERATOR</code> и выше могут модерировать чат:</p>
+            <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
+              <p className="font-semibold text-white mb-2">Chats</p>
+              <Endpoint method="GET" path="/bot/getChats" desc="List bot's chats" />
+              <Endpoint method="POST" path="/bot/leaveChat" desc="Bot leaves a chat" />
+              <Endpoint method="POST" path="/bot/kickMember" desc="Kick user (requires admin)" />
+            </div>
 
-            <p><strong>Удалить сообщение:</strong></p>
-            <CodeBlock code={`curl -X POST ${BASE_URL}/bot/deleteMessage \\
-  -H "Authorization: Bot <token>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"chatId": "...", "messageId": "..."}'`} />
-
-            <p><strong>Кикнуть пользователя:</strong></p>
-            <CodeBlock code={`curl -X POST ${BASE_URL}/bot/kickMember \\
-  -H "Authorization: Bot <token>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"chatId": "...", "userId": "..."}'`} />
-
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <p className="text-xs text-gray-400">Бот может модерировать только участников с ролью ниже своей. Чтобы дать боту права модератора, измените его роль в панели участников группы.</p>
+            <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
+              <p className="font-semibold text-white mb-2">Configuration</p>
+              <Endpoint method="POST" path="/bot/setCommands" desc="Set bot commands menu" />
             </div>
           </Section>
 
-          <Section icon={<Bot size={18} />} title="Команды бота" id="commands">
-            <p>Зарегистрируйте команды, и пользователи увидят их в меню бота:</p>
-            <CodeBlock code={`curl -X POST ${BASE_URL}/bot/setCommands \\
-  -H "Authorization: Bot <token>" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "commands": [
-      {"command": "start", "description": "Запустить бота"},
-      {"command": "help", "description": "Показать справку"},
-      {"command": "price", "description": "Курс криптовалюты"},
-      {"command": "settings", "description": "Настройки"}
-    ]
-  }'`} />
+          {/* EXAMPLES */}
+          <Section id="examples" icon={Code} title="Full Examples">
+            <p>Complete working bot in different languages:</p>
 
-            <p>Или через @pulsarbot:</p>
-            <CodeBlock code={`/setcommands @mybot_pls
-/start - Запустить бота
-/help - Показать справку`} />
-          </Section>
-
-          <Section icon={<MessageSquare size={18} />} title="Все эндпоинты" id="endpoints">
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 divide-y divide-white/5">
-              <Endpoint method="GET" path="/bot/me" desc="Информация о боте" />
-              <Endpoint method="POST" path="/bot/sendMessage" desc="Отправить сообщение (+ inline-кнопки)" />
-              <Endpoint method="GET" path="/bot/updates" desc="Long-polling обновлений" />
-              <Endpoint method="POST" path="/bot/setWebhook" desc="Установить/удалить вебхук" />
-              <Endpoint method="GET" path="/bot/getChats" desc="Список чатов бота" />
-              <Endpoint method="POST" path="/bot/setCommands" desc="Установить команды бота" />
-              <Endpoint method="POST" path="/bot/leaveChat" desc="Покинуть чат" />
-              <Endpoint method="POST" path="/bot/deleteMessage" desc="Удалить сообщение (модерация)" />
-              <Endpoint method="POST" path="/bot/kickMember" desc="Кикнуть участника (модерация)" />
-              <Endpoint method="POST" path="/bot/answerCallback" desc="Ответить на callback_query" />
+            <div className="flex gap-2 mb-3">
+              {(['js', 'py', 'curl'] as const).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    lang === l ? 'bg-primary-500 text-white' : 'bg-dark-700 text-gray-400 hover:bg-dark-600'
+                  }`}
+                >
+                  {l === 'js' ? 'Node.js' : l === 'py' ? 'Python' : 'cURL'}
+                </button>
+              ))}
             </div>
-          </Section>
 
-          <Section icon={<Users size={18} />} title="Примеры" id="examples">
-            <p><strong>Python — простой эхо-бот:</strong></p>
-            <CodeBlock language="python" code={`import requests, time
-
-TOKEN = "ваш_токен"
-BASE = "${BASE_URL}/bot"
-HEADERS = {"Authorization": f"Bot {TOKEN}", "Content-Type": "application/json"}
-
-offset = 0
-while True:
-    r = requests.get(f"{BASE}/updates", headers=HEADERS,
-                     params={"offset": offset, "timeout": 30})
-    updates = r.json().get("result", [])
-
-    for u in updates:
-        offset = int(u["id"]) + 1
-        msg = u.get("payload", {}).get("message")
-        if not msg or not msg.get("text"):
-            continue
-
-        # Эхо: отправляем текст обратно
-        requests.post(f"{BASE}/sendMessage", headers=HEADERS, json={
-            "chatId": msg["chatId"],
-            "text": f"Вы сказали: {msg['text']}",
-            "replyToId": msg["id"]
-        })`} />
-
-            <p><strong>Node.js — бот с inline-кнопками:</strong></p>
-            <CodeBlock language="javascript" code={`const TOKEN = "ваш_токен";
-const BASE = "${BASE_URL}/bot";
-const headers = { Authorization: \`Bot \${TOKEN}\`, "Content-Type": "application/json" };
+            {lang === 'js' && (
+              <CodeBlock language="js" code={`// Echo Bot — Node.js + long polling
+const TOKEN = 'YOUR_BOT_TOKEN';
+const API = '${baseUrl}/bot';
 
 let offset = 0;
 
 async function poll() {
-  while (true) {
-    const res = await fetch(\`\${BASE}/updates?offset=\${offset}&timeout=30\`, { headers });
-    const { result = [] } = await res.json();
+  try {
+    const res = await fetch(\`\${API}/updates?offset=\${offset}&timeout=30\`, {
+      headers: { 'Authorization': \`Bearer \${TOKEN}\` }
+    });
+    const { result } = await res.json();
 
-    for (const u of result) {
-      offset = Number(u.id) + 1;
+    for (const update of result || []) {
+      offset = update.update_id + 1;
 
-      if (u.payload.type === "message" && u.payload.message?.text === "/start") {
-        await fetch(\`\${BASE}/sendMessage\`, {
-          method: "POST", headers,
-          body: JSON.stringify({
-            chatId: u.payload.message.chatId,
-            text: "Привет! Выберите действие:",
-            buttons: [
-              [{ text: "Курсы", callbackData: "prices" }, { text: "Помощь", callbackData: "help" }]
-            ]
-          })
-        });
-      }
-
-      if (u.payload.type === "callback_query") {
-        const data = u.payload.callbackQuery.data;
-        const chatId = u.payload.callbackQuery.message.chatId;
-        await fetch(\`\${BASE}/sendMessage\`, {
-          method: "POST", headers,
-          body: JSON.stringify({ chatId, text: \`Вы нажали: \${data}\` })
-        });
+      if (update.message?.text) {
+        await sendMessage(update.message.chat.id, \`Echo: \${update.message.text}\`);
       }
     }
+  } catch (err) {
+    console.error(err);
   }
+  setTimeout(poll, 1000);
+}
+
+async function sendMessage(chatId, text) {
+  return fetch(\`\${API}/sendMessage\`, {
+    method: 'POST',
+    headers: { 'Authorization': \`Bearer \${TOKEN}\`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId, text })
+  });
 }
 
 poll();`} />
+            )}
+
+            {lang === 'py' && (
+              <CodeBlock language="py" code={`# Echo Bot — Python + long polling
+import requests
+import time
+
+TOKEN = 'YOUR_BOT_TOKEN'
+API = '${baseUrl}/bot'
+HEADERS = {'Authorization': f'Bearer {TOKEN}'}
+
+offset = 0
+
+while True:
+    try:
+        r = requests.get(f'{API}/updates', params={'offset': offset, 'timeout': 30}, headers=HEADERS)
+        for update in r.json().get('result', []):
+            offset = update['update_id'] + 1
+            msg = update.get('message')
+            if msg and msg.get('text'):
+                requests.post(f'{API}/sendMessage', json={
+                    'chatId': msg['chat']['id'],
+                    'text': f"Echo: {msg['text']}"
+                }, headers=HEADERS)
+    except Exception as e:
+        print(e)
+        time.sleep(5)`} />
+            )}
+
+            {lang === 'curl' && (
+              <CodeBlock language="bash" code={`# Get bot info
+curl "${baseUrl}/bot/me" \\
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Send a message
+curl -X POST "${baseUrl}/bot/sendMessage" \\
+  -H "Authorization: Bearer YOUR_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"chatId":"chat-uuid","text":"Hello!"}'
+
+# Get updates (long poll)
+curl "${baseUrl}/bot/updates?offset=0&timeout=30" \\
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Set webhook
+curl -X POST "${baseUrl}/bot/setWebhook" \\
+  -H "Authorization: Bearer YOUR_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"url":"https://yourbot.com/webhook"}'`} />
+            )}
           </Section>
 
-        </main>
+          {/* HOSTING */}
+          <Section id="hosting" icon={Globe} title="Where to Host Your Bot">
+            <p>Free or cheap hosting options:</p>
+
+            <div className="grid md:grid-cols-2 gap-3">
+              {[
+                { name: 'Vercel / Netlify', desc: 'Serverless functions for webhook bots. Free tier.', tier: 'Free' },
+                { name: 'Railway / Render', desc: 'Full Node.js apps. Free tier with sleep.', tier: 'Free' },
+                { name: 'Cloudflare Workers', desc: 'Fast serverless. 100K requests/day free.', tier: 'Free' },
+                { name: 'GitHub Actions', desc: 'For cron-bots that run on schedule.', tier: 'Free' },
+                { name: 'Replit', desc: 'Code in browser. Always-on with paid tier.', tier: 'Free/Paid' },
+                { name: 'Hetzner / Timeweb VPS', desc: 'Full server. From €4/mo or 200₽/mo.', tier: 'Paid' },
+              ].map((h) => (
+                <div key={h.name} className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-semibold text-white text-sm">{h.name}</p>
+                    <span className={`text-[10px] px-2 py-0.5 rounded ${h.tier === 'Free' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                      {h.tier}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400">{h.desc}</p>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          {/* SUPPORT */}
+          <Section id="support" icon={MessageSquare} title="Get Help">
+            <div className="bg-gradient-to-br from-primary-500/10 to-primary-700/5 border border-primary-500/30 rounded-2xl p-6 text-center">
+              <Bot size={40} className="mx-auto mb-3 text-primary-400" />
+              <h3 className="text-xl font-bold text-white mb-2">Need Help?</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Chat with @pulsarbot for bot management commands, or join our community.
+              </p>
+              <button
+                onClick={() => navigate('/')}
+                className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
+              >
+                Open Pulsar
+              </button>
+            </div>
+          </Section>
+        </div>
       </div>
     </div>
   );
