@@ -1,4 +1,4 @@
-FROM node:20-slim AS builder
+FROM node:20 AS builder
 WORKDIR /app
 
 COPY . .
@@ -8,13 +8,11 @@ RUN cd apps/server && npx prisma generate --schema=src/db/schema.prisma
 RUN cd apps/server && npm run build
 
 # Production
-FROM node:20-slim AS runner
+FROM node:20 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN apt-get update && apt-get install -y openssl ca-certificates && \
-    rm -rf /var/lib/apt/lists/* && \
-    addgroup --system --gid 1001 nodejs && \
+RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 pulsar
 
 # Copy entire monorepo structure needed at runtime
