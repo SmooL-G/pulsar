@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { Chat } from '@pulsar/shared';
 import { formatDistanceToNow } from 'date-fns';
 import { ru as ruLocale } from 'date-fns/locale/ru';
-import { Trash2, LogOut, Eraser } from 'lucide-react';
+import { Trash2, LogOut, Eraser, Bot } from 'lucide-react';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
@@ -123,8 +123,13 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
               )}
             </div>
           </NftAvatarBorder>
-          {chat.type === 'DIRECT' && chat.otherUser?.isOnline && !(chat.unreadCount && chat.unreadCount > 0) && (
+          {chat.type === 'DIRECT' && chat.otherUser?.isOnline && !(chat.unreadCount && chat.unreadCount > 0) && !chat.otherUser?.isBot && (
             <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-dark-700" />
+          )}
+          {chat.type === 'DIRECT' && chat.otherUser?.isBot && (
+            <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary-500 text-white rounded-full border-2 border-white dark:border-dark-700 flex items-center justify-center">
+              <Bot size={8} />
+            </span>
           )}
           {chat.unreadCount && chat.unreadCount > 0 ? (
             <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-dark-700 leading-none">

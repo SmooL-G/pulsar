@@ -40,6 +40,8 @@ export async function chatRoutes(app: FastifyInstance) {
                     lastSeenAt: true,
                     walletAddress: true,
                     createdAt: true,
+                    isBot: true,
+                    role: true,
                   },
                 },
               },
@@ -185,6 +187,8 @@ export async function chatRoutes(app: FastifyInstance) {
                 verificationLevel: true,
                 profileBadge: true,
                 socialLinks: true,
+                isBot: true,
+                role: true,
               },
             },
           },
@@ -193,7 +197,8 @@ export async function chatRoutes(app: FastifyInstance) {
     });
 
     if (existing) {
-      return { chat: existing };
+      const otherUser = existing.members.find((m) => m.userId !== userId)?.user;
+      return { chat: { ...existing, otherUser } };
     }
 
     // Create new DM
@@ -220,6 +225,8 @@ export async function chatRoutes(app: FastifyInstance) {
                 verificationLevel: true,
                 profileBadge: true,
                 socialLinks: true,
+                isBot: true,
+                role: true,
               },
             },
           },
@@ -227,7 +234,8 @@ export async function chatRoutes(app: FastifyInstance) {
       },
     });
 
-    return reply.status(201).send({ chat });
+    const otherUser = chat.members.find((m) => m.userId !== userId)?.user;
+    return reply.status(201).send({ chat: { ...chat, otherUser } });
   });
 
   // Mute / unmute chat
