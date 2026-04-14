@@ -1,8 +1,11 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install build dependencies for native modules (usb, etc.)
-RUN apk add --no-cache python3 make g++ linux-headers libusb-dev eudev-dev
+# Install build dependencies for native modules (usb, etc.) with retry
+RUN for i in 1 2 3; do \
+      apk add --no-cache python3 make g++ linux-headers libusb-dev eudev-dev && break || \
+      (echo "apk failed, retry $i..." && sleep 10); \
+    done
 
 COPY . .
 RUN cd packages/shared && npm install && npx tsc || true
