@@ -8,7 +8,7 @@ RUN cd apps/server && npx prisma generate --schema=src/db/schema.prisma
 RUN cd apps/server && npm run build
 
 # Production
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
