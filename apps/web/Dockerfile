@@ -1,11 +1,9 @@
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
-# Install build dependencies for native modules (usb, etc.) with retry
-RUN for i in 1 2 3; do \
-      apk add --no-cache python3 make g++ linux-headers libusb-dev eudev-dev && break || \
-      (echo "apk failed, retry $i..." && sleep 10); \
-    done
+# Install build dependencies for native modules
+RUN apt-get update && apt-get install -y python3 make g++ libusb-1.0-0-dev libudev-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY . .
 RUN cd packages/shared && npm install && npx tsc || true
