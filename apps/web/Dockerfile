@@ -1,9 +1,7 @@
-FROM node:20-slim AS builder
+FROM node:20 AS builder
 WORKDIR /app
 
-# Install build dependencies for native modules
-RUN apt-get update && apt-get install -y python3 make g++ libusb-1.0-0-dev libudev-dev && \
-    rm -rf /var/lib/apt/lists/*
+# Full node:20 image already has build tools (python3, make, g++)
 
 COPY . .
 RUN cd packages/shared && npm install && npx tsc || true
