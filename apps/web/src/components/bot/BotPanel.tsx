@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Bot, Copy, RefreshCw, Trash2, Check, Globe, ChevronLeft, Eye, EyeOff } from 'lucide-react';
+import { X, Plus, Bot, Copy, RefreshCw, Trash2, Check, Globe, ChevronLeft, Eye, EyeOff, Camera, Loader2 } from 'lucide-react';
 import { useBotStore, type Bot, type BotCommand } from '../../store/botStore';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
+import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 
 interface BotPanelProps {
@@ -23,9 +24,12 @@ export function BotPanel({ onClose }: BotPanelProps) {
 
   // Edit form
   const [editName, setEditName] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editAvatar, setEditAvatar] = useState<string | null>(null);
   const [editWebhook, setEditWebhook] = useState('');
   const [editCommands, setEditCommands] = useState<BotCommand[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => { fetchBots(); }, [fetchBots]);
 
@@ -38,6 +42,8 @@ export function BotPanel({ onClose }: BotPanelProps) {
       setShowToken(true);
       setSelectedBot(bot);
       setEditName(bot.displayName || '');
+      setEditBio(bot.bio || '');
+      setEditAvatar(bot.avatarUrl || null);
       setEditWebhook(bot.webhookUrl || '');
       setEditCommands(bot.commands || []);
       setView('detail');
@@ -53,11 +59,31 @@ export function BotPanel({ onClose }: BotPanelProps) {
   const openDetail = (bot: Bot) => {
     setSelectedBot(bot);
     setEditName(bot.displayName || '');
+    setEditBio(bot.bio || '');
+    setEditAvatar(bot.avatarUrl || null);
     setEditWebhook(bot.webhookUrl || '');
     setEditCommands(bot.commands || []);
-    setToken(null);
+    setToken(bot.token || null);
     setShowToken(false);
     setView('detail');
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedBot) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data: uploadData } = await api.post('/upload/avatar', formData);
+      await updateBot(selectedBot.id, { avatarUrl: uploadData.avatarUrl });
+      setEditAvatar(uploadData.avatarUrl);
+      toast.success('Аватар обновлён');
+    } catch {
+      toast.error('Ошибка загрузки');
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleSave = async () => {
@@ -66,6 +92,7 @@ export function BotPanel({ onClose }: BotPanelProps) {
     try {
       await updateBot(selectedBot.id, {
         name: editName,
+        bio: editBio,
         webhookUrl: editWebhook,
         commands: editCommands,
       });
@@ -214,10 +241,28 @@ export function BotPanel({ onClose }: BotPanelProps) {
           {/* Detail view */}
           {view === 'detail' && selectedBot && (
             <div className="p-5 space-y-5">
-              {/* Token */}
+              {/* Avatar */}
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+                    {editAvatar ? (
+                      <img src={editAvatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <GenerativeAvatar seed={selectedBot.userId} size={80} />
+                    )}
+                  </div>
+                  <label className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary-500 hover:bg-primary-600 border-2 border-gray-900 flex items-center justify-center cursor-pointer">
+                    {uploadingAvatar ? <Loader2 size={12} className="animate-spin text-white" /> : <Camera size={12} className="text-white" />}
+                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploadingAvatar} />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">@{selectedBot.username}</p>
+              </div>
+
+              {/* Token — always visible */}
               {token && (
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-                  <p className="text-xs text-yellow-400 font-semibold mb-2">🔑 Токен API (показывается один раз)</p>
+                  <p className="text-xs text-yellow-400 font-semibold mb-2">🔑 API Token</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 text-xs break-all text-yellow-300 font-mono">
                       {showToken ? token : '••••••••:••••••••••••••••••••••••••'}
@@ -229,7 +274,6 @@ export function BotPanel({ onClose }: BotPanelProps) {
                       <Copy size={14} className="text-gray-400" />
                     </button>
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-2">Сохраните токен — он больше не будет показан!</p>
                 </div>
               )}
 
@@ -241,6 +285,19 @@ export function BotPanel({ onClose }: BotPanelProps) {
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary-500/60"
+                />
+              </div>
+
+              {/* Bio */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">О боте</label>
+                <textarea
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  placeholder="Что делает этот бот..."
+                  rows={3}
+                  maxLength={256}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary-500/60 resize-none"
                 />
               </div>
 

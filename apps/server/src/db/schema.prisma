@@ -398,6 +398,7 @@ model Bot {
   userId          String    @unique @map("user_id") @db.Uuid
   ownerId         String    @map("owner_id") @db.Uuid
   tokenHash       String    @map("token_hash")
+  tokenPlain      String?   @map("token_plain")
   webhookUrl      String?   @map("webhook_url")
   webhookSecret   String?   @map("webhook_secret")
   commands        Json?     @default("[]")

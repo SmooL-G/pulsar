@@ -30,9 +30,11 @@ function serializeBot(bot: any) {
     username: bot.user?.username,
     displayName: bot.user?.displayName,
     avatarUrl: bot.user?.avatarUrl,
+    bio: bot.user?.bio,
     webhookUrl: bot.webhookUrl,
     commands: bot.commands || [],
     isActive: bot.isActive,
+    token: bot.tokenPlain,
     lastSeenAt: bot.lastSeenAt?.toISOString() || null,
     createdAt: bot.createdAt.toISOString(),
     updatedAt: bot.updatedAt.toISOString(),
@@ -78,15 +80,16 @@ export async function botManagementRoutes(app: FastifyInstance) {
         userId: botUser.id,
         ownerId,
         tokenHash,
+        tokenPlain: tokenRaw,
       },
       include: {
-        user: { select: { username: true, displayName: true, avatarUrl: true } },
+        user: { select: { username: true, displayName: true, avatarUrl: true, bio: true } },
       },
     });
 
     return reply.status(201).send({
       bot: serializeBot(bot),
-      token: tokenRaw, // shown once
+      token: tokenRaw,
     });
   });
 
@@ -95,7 +98,7 @@ export async function botManagementRoutes(app: FastifyInstance) {
     const ownerId = request.user!.userId;
     const bots = await prisma.bot.findMany({
       where: { ownerId, isSystemBot: false },
-      include: { user: { select: { username: true, displayName: true, avatarUrl: true } } },
+      include: { user: { select: { username: true, displayName: true, avatarUrl: true, bio: true } } },
       orderBy: { createdAt: 'desc' },
     });
     return { bots: bots.map(serializeBot) };
@@ -106,18 +109,18 @@ export async function botManagementRoutes(app: FastifyInstance) {
     const ownerId = request.user!.userId;
     const bot = await prisma.bot.findFirst({
       where: { id: request.params.botId, ownerId, isSystemBot: false },
-      include: { user: { select: { username: true, displayName: true, avatarUrl: true } } },
+      include: { user: { select: { username: true, displayName: true, avatarUrl: true, bio: true } } },
     });
     if (!bot) return reply.status(404).send({ error: 'BOT_NOT_FOUND' });
     return { bot: serializeBot(bot) };
   });
 
   // PATCH /:botId — обновить имя / вебхук / команды
-  app.patch<{ Params: { botId: string }; Body: { name?: string; webhookUrl?: string; commands?: any[] } }>(
+  app.patch<{ Params: { botId: string }; Body: { name?: string; bio?: string; avatarUrl?: string; webhookUrl?: string; commands?: any[] } }>(
     '/:botId',
     async (request, reply) => {
       const ownerId = request.user!.userId;
-      const { name, webhookUrl, commands } = request.body;
+      const { name, bio, avatarUrl, webhookUrl, commands } = request.body;
 
       const bot = await prisma.bot.findFirst({
         where: { id: request.params.botId, ownerId, isSystemBot: false },
@@ -131,6 +134,8 @@ export async function botManagementRoutes(app: FastifyInstance) {
 
       const userUpdates: any = {};
       if (name) userUpdates.displayName = name.trim();
+      if (bio !== undefined) userUpdates.bio = bio || null;
+      if (avatarUrl !== undefined) userUpdates.avatarUrl = avatarUrl || null;
 
       await Promise.all([
         Object.keys(updates).length ? prisma.bot.update({ where: { id: bot.id }, data: updates }) : Promise.resolve(),
@@ -156,7 +161,7 @@ export async function botManagementRoutes(app: FastifyInstance) {
     const tokenRaw = `${prefix}:${secret}`;
     const tokenHash = await bcrypt.hash(tokenRaw, 10);
 
-    await prisma.bot.update({ where: { id: bot.id }, data: { tokenHash } });
+    await prisma.bot.update({ where: { id: bot.id }, data: { tokenHash, tokenPlain: tokenRaw } });
     await redis.del(`bot:auth:${bot.id}`);
 
     return { token: tokenRaw };

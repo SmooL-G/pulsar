@@ -10,10 +10,15 @@ export async function seedPulsarBot(): Promise<string> {
 
   if (existing) {
     PULSAR_BOT_USER_ID = existing.id;
-    // Гарантируем что бот всегда онлайн
+    // Гарантируем что бот всегда онлайн + актуальный bio
     await prisma.user.update({
       where: { id: existing.id },
-      data: { isOnline: true, lastSeenAt: new Date() },
+      data: {
+        isOnline: true,
+        lastSeenAt: new Date(),
+        displayName: 'PulsarBot',
+        bio: 'Official Pulsar system bot. Send /help for commands.',
+      },
     }).catch(() => {});
     return existing.id;
   }
@@ -22,6 +27,7 @@ export async function seedPulsarBot(): Promise<string> {
     data: {
       username: 'pulsarbot',
       displayName: 'PulsarBot',
+      bio: 'Official Pulsar system bot. Send /help for commands.',
       walletAddress: 'system_pulsarbot_v1',
       walletType: 'CUSTODIAL',
       isBot: true,

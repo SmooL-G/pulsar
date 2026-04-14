@@ -20,9 +20,16 @@ export async function cleanupPresenceOnStart() {
   }
 
   // Reset ALL users to offline on server start (they'll reconnect via socket)
+  // Bots stay online always
   await prisma.user.updateMany({
     where: { isOnline: true, isBot: false },
     data: { isOnline: false, lastSeenAt: new Date() },
+  });
+
+  // Ensure all bots are online
+  await prisma.user.updateMany({
+    where: { isBot: true },
+    data: { isOnline: true, lastSeenAt: new Date() },
   });
 
   // Clear all online keys

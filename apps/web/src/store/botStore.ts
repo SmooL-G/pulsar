@@ -13,9 +13,11 @@ export interface Bot {
   username: string;
   displayName: string | null;
   avatarUrl: string | null;
+  bio: string | null;
   webhookUrl: string | null;
   commands: BotCommand[];
   isActive: boolean;
+  token?: string | null;
   lastSeenAt: string | null;
   createdAt: string;
 }
@@ -25,7 +27,7 @@ interface BotState {
   isLoading: boolean;
   fetchBots: () => Promise<void>;
   createBot: (name: string) => Promise<{ bot: Bot; token: string }>;
-  updateBot: (botId: string, data: { name?: string; webhookUrl?: string; commands?: BotCommand[] }) => Promise<void>;
+  updateBot: (botId: string, data: { name?: string; bio?: string; avatarUrl?: string; webhookUrl?: string; commands?: BotCommand[] }) => Promise<void>;
   regenerateToken: (botId: string) => Promise<string>;
   deleteBot: (botId: string) => Promise<void>;
 }
