@@ -3,6 +3,8 @@ import { env } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { redis } from './config/redis.js';
 import { initSocketServer } from './socket/index.js';
+import { seedPulsarBot } from './modules/bot/pulsarBot.seed.js';
+import { startWebhookWorker } from './modules/bot/webhookWorker.js';
 
 async function main() {
   const app = await buildApp();
@@ -18,6 +20,18 @@ async function main() {
   // Initialize Socket.IO
   initSocketServer(app.server);
   console.log('Socket.IO initialized');
+
+  // Seed PulsarBot system account
+  try {
+    await seedPulsarBot();
+    console.log('PulsarBot seeded');
+  } catch (e) {
+    console.error('Failed to seed PulsarBot:', e);
+  }
+
+  // Start webhook worker (bot webhooks delivery)
+  startWebhookWorker().catch((err) => console.error('Webhook worker error:', err));
+  console.log('Webhook worker started');
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

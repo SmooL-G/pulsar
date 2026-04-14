@@ -215,6 +215,46 @@ export async function messageRoutes(app: FastifyInstance) {
     return { count };
   });
 
+  // POST /messages/:messageId/callback — user clicks inline bot button
+  app.post<{ Params: { messageId: string }; Body: { callbackData: string } }>(
+    '/:messageId/callback',
+    async (request, reply) => {
+      const userId = request.user!.userId;
+      const { messageId } = request.params;
+      const { callbackData } = request.body;
+
+      const message = await prisma.message.findUnique({
+        where: { id: messageId },
+        select: {
+          id: true, chatId: true, senderId: true,
+          sender: { select: { id: true, username: true, botProfile: { select: { id: true, webhookUrl: true, webhookSecret: true } } } },
+        },
+      });
+
+      if (!message) return reply.status(404).send({ error: 'MESSAGE_NOT_FOUND' });
+
+      const botProfile = (message.sender as any)?.botProfile;
+      if (!botProfile) return reply.status(400).send({ error: 'NOT_A_BOT_MESSAGE' });
+
+      // Dispatch to bot
+      const { dispatchBotCallback } = await import('../bot/webhook.service.js');
+      await dispatchBotCallback(
+        { id: botProfile.id, webhookUrl: botProfile.webhookUrl, webhookSecret: botProfile.webhookSecret },
+        {
+          update_id: Date.now(),
+          callback_query: {
+            id: `${messageId}-${Date.now()}`,
+            from: { id: userId },
+            message: { id: messageId, chat: { id: message.chatId } },
+            data: callbackData,
+          },
+        }
+      );
+
+      return { ok: true };
+    }
+  );
+
   // GET /messages/shared/:chatId — get shared media & documents for a chat
   app.get<{ Params: { chatId: string } }>('/shared/:chatId', async (request, reply) => {
     const userId = request.user!.userId;

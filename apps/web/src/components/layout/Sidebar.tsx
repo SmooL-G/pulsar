@@ -9,6 +9,7 @@ import { SettingsPanel } from '../settings/SettingsPanel';
 import { FriendsPanel } from '../friends/FriendsPanel';
 
 import { WalletPanel } from '../wallet/WalletPanel';
+import { BotPanel } from '../bot/BotPanel';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { api } from '../../services/api';
@@ -30,6 +31,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
   const [showFriends, setShowFriends] = useState(false);
 
   const [showWallet, setShowWallet] = useState(false);
+  const [showBots, setShowBots] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
   const [searchLoading, setSearchLoading] = useState(false);
 
@@ -149,6 +151,13 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
             title={t('friends.title')}
           >
             <Users size={20} />
+          </button>
+          <button
+            onClick={() => setShowBots(true)}
+            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
+            title={t('bots.title')}
+          >
+            <Bot size={20} />
           </button>
           <button
             onClick={() => setShowNewChat(true)}
@@ -372,6 +381,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       {showFriends && <FriendsPanel onClose={() => setShowFriends(false)} />}
       {showWallet && <WalletPanel onClose={() => setShowWallet(false)} />}
+      {showBots && <BotPanel onClose={() => setShowBots(false)} />}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
 import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck, Lock, MessageCircle } from 'lucide-react';
+import { InlineBotButtons } from './InlineBotButtons';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -275,6 +276,14 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
                 <Lock size={11} />
                 {t('chat.encryptedMessage')}
               </p>
+            )}
+
+            {/* Inline bot buttons */}
+            {(message.metadata as any)?.buttons && Array.isArray((message.metadata as any).buttons) && (
+              <InlineBotButtons
+                buttons={(message.metadata as any).buttons}
+                messageId={message.id}
+              />
             )}
 
             {/* Time, signature, edited & status indicator */}
