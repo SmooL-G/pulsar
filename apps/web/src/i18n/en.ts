@@ -195,6 +195,7 @@ export const en = {
   'roadmap.title': 'Pulsar Vector',
   'roadmap.subtitle': 'Development Roadmap',
   'roadmap.link': 'Roadmap',
+  'info.link': 'Info',
   'roadmap.phase': 'Phase',
   'roadmap.complete': 'Complete',
   'roadmap.inProgress': 'In Progress',

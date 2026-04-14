@@ -195,6 +195,7 @@ export const ru = {
   'roadmap.title': 'Pulsar Vector',
   'roadmap.subtitle': 'Карта развития',
   'roadmap.link': 'Дорожная карта',
+  'info.link': 'Инфо',
   'roadmap.phase': 'Фаза',
   'roadmap.complete': 'Завершено',
   'roadmap.inProgress': 'В процессе',
