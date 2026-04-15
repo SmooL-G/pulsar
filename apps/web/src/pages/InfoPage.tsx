@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Code, Map, Heart, Shield, FileText, Cookie, Sparkles, Bot } from 'lucide-react';
+import { ArrowLeft, Code, Map, Heart, Shield, FileText, Cookie, Sparkles } from 'lucide-react';
+import { useI18n } from '../i18n';
+import type { TranslationKey } from '../i18n';
 
 interface Tile {
   to: string;
   icon: any;
-  title: { en: string; ru: string };
-  desc: { en: string; ru: string };
+  titleKey: TranslationKey;
+  descKey: TranslationKey;
   color: string;
   badge?: string;
 }
@@ -14,58 +16,51 @@ const TILES: Tile[] = [
   {
     to: '/developers',
     icon: Code,
-    title: { en: 'For Developers', ru: 'Для разработчиков' },
-    desc: { en: 'Build bots with our API. Full documentation + examples.', ru: 'Создавайте ботов через наш API. Полная документация + примеры.' },
+    titleKey: 'info.tiles.dev.title',
+    descKey: 'info.tiles.dev.desc',
     color: 'from-blue-500/20 to-blue-700/5 border-blue-500/30',
     badge: 'Bot API',
   },
   {
     to: '/roadmap',
     icon: Map,
-    title: { en: 'Roadmap', ru: 'Дорожная карта' },
-    desc: { en: 'See what\'s shipped and what\'s coming next.', ru: 'Что уже сделано и что впереди.' },
+    titleKey: 'info.tiles.roadmap.title',
+    descKey: 'info.tiles.roadmap.desc',
     color: 'from-emerald-500/20 to-emerald-700/5 border-emerald-500/30',
   },
   {
     to: '/donate',
     icon: Heart,
-    title: { en: 'Support the Project', ru: 'Поддержать проект' },
-    desc: { en: 'Help Pulsar grow. Donate PLS, SOL, or crypto.', ru: 'Помогите Pulsar развиваться. Донаты PLS, SOL, крипто.' },
+    titleKey: 'info.tiles.donate.title',
+    descKey: 'info.tiles.donate.desc',
     color: 'from-pink-500/20 to-pink-700/5 border-pink-500/30',
   },
   {
     to: '/privacy',
     icon: Shield,
-    title: { en: 'Privacy Policy', ru: 'Политика конфиденциальности' },
-    desc: { en: 'How we handle your data and messages.', ru: 'Как мы обращаемся с вашими данными.' },
+    titleKey: 'info.tiles.privacy.title',
+    descKey: 'info.tiles.privacy.desc',
     color: 'from-gray-500/20 to-gray-700/5 border-gray-500/30',
   },
   {
     to: '/terms',
     icon: FileText,
-    title: { en: 'Terms of Service', ru: 'Условия использования' },
-    desc: { en: 'Rules and agreements for using Pulsar.', ru: 'Правила и соглашения использования Pulsar.' },
+    titleKey: 'info.tiles.terms.title',
+    descKey: 'info.tiles.terms.desc',
     color: 'from-gray-500/20 to-gray-700/5 border-gray-500/30',
   },
   {
     to: '/cookies',
     icon: Cookie,
-    title: { en: 'Cookies Policy', ru: 'Политика cookies' },
-    desc: { en: 'How we use cookies and similar technologies.', ru: 'Как мы используем cookies и похожие технологии.' },
+    titleKey: 'info.tiles.cookies.title',
+    descKey: 'info.tiles.cookies.desc',
     color: 'from-amber-500/20 to-amber-700/5 border-amber-500/30',
   },
 ];
 
-// Simple bilingual helper
-function getLang(): 'en' | 'ru' {
-  const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('pulsar_locale') : null;
-  if (stored === 'ru' || stored === 'en') return stored;
-  return 'en';
-}
-
 export function InfoPage() {
   const navigate = useNavigate();
-  const lang = getLang();
+  const { t, locale, setLocale } = useI18n();
 
   return (
     <div className="bg-dark-900 text-white relative" style={{ height: '100dvh', overflowY: 'auto' }}>
@@ -74,27 +69,46 @@ export function InfoPage() {
       }} />
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 pt-8 pb-16">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-400 hover:text-white transition-colors mb-8"
-        >
-          <ArrowLeft size={16} />
-          <span className="text-sm">{lang === 'ru' ? 'Назад' : 'Back'}</span>
-        </button>
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft size={16} />
+            <span className="text-sm">{t('common.back')}</span>
+          </button>
+
+          {/* Language switcher */}
+          <select
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as any)}
+            className="px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-300 text-sm outline-none"
+          >
+            <option value="en">EN</option>
+            <option value="ru">RU</option>
+            <option value="uk">UA</option>
+            <option value="de">DE</option>
+            <option value="es">ES</option>
+            <option value="fr">FR</option>
+            <option value="pt">PT</option>
+            <option value="tr">TR</option>
+            <option value="zh">CN</option>
+            <option value="ja">JP</option>
+            <option value="ko">KR</option>
+          </select>
+        </div>
 
         {/* Hero */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-xs font-medium mb-4">
             <Sparkles size={12} />
-            {lang === 'ru' ? 'Информация о проекте' : 'About the project'}
+            {t('info.badge')}
           </div>
           <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3">
-            {lang === 'ru' ? 'Центр информации' : 'Info Center'}
+            {t('info.title')}
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            {lang === 'ru'
-              ? 'Всё что нужно знать о Pulsar — в одном месте.'
-              : 'Everything you need to know about Pulsar — in one place.'}
+            {t('info.subtitle')}
           </p>
         </div>
 
@@ -115,9 +129,9 @@ export function InfoPage() {
                 )}
               </div>
               <h3 className="text-lg font-bold text-white mb-1 group-hover:text-primary-300 transition-colors">
-                {tile.title[lang]}
+                {t(tile.titleKey)}
               </h3>
-              <p className="text-sm text-gray-400">{tile.desc[lang]}</p>
+              <p className="text-sm text-gray-400">{t(tile.descKey)}</p>
             </button>
           ))}
         </div>
@@ -125,9 +139,7 @@ export function InfoPage() {
         {/* Footer note */}
         <div className="mt-12 text-center">
           <p className="text-xs text-gray-500">
-            {lang === 'ru'
-              ? 'Больше разделов скоро будет добавлено'
-              : 'More sections coming soon'}
+            {t('info.more')}
           </p>
         </div>
       </div>

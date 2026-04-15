@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bot, Send, Webhook, Shield, Keyboard, MessageSquare, Users, Trash2, Copy, Check, Code, BookOpen, Zap, Globe, Terminal, Lock } from 'lucide-react';
+import { ArrowLeft, Bot, Send, Webhook, Shield, Keyboard, MessageSquare, Copy, Check, Code, BookOpen, Zap, Globe, Terminal, Lock } from 'lucide-react';
 import { useState } from 'react';
+import { useI18n } from '../i18n';
 
 function CodeBlock({ code, language = 'bash' }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
@@ -58,6 +59,7 @@ function Endpoint({ method, path, desc }: { method: string; path: string; desc: 
 
 export function DevelopersPage() {
   const navigate = useNavigate();
+  const { t, locale, setLocale } = useI18n();
   const [lang, setLang] = useState<'js' | 'py' | 'curl'>('js');
 
   const baseUrl = 'https://pulsar-chat.fun/api/v1';
@@ -69,46 +71,67 @@ export function DevelopersPage() {
       }} />
 
       <div className="relative z-10 max-w-4xl mx-auto px-6 pt-8 pb-16">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-400 hover:text-white transition-colors mb-8"
-        >
-          <ArrowLeft size={16} />
-          <span className="text-sm">Back</span>
-        </button>
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft size={16} />
+            <span className="text-sm">{t('common.back')}</span>
+          </button>
+
+          {/* Language switcher */}
+          <select
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as any)}
+            className="px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-300 text-sm outline-none"
+          >
+            <option value="en">EN</option>
+            <option value="ru">RU</option>
+            <option value="uk">UA</option>
+            <option value="de">DE</option>
+            <option value="es">ES</option>
+            <option value="fr">FR</option>
+            <option value="pt">PT</option>
+            <option value="tr">TR</option>
+            <option value="zh">CN</option>
+            <option value="ja">JP</option>
+            <option value="ko">KR</option>
+          </select>
+        </div>
 
         {/* Hero */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-xs font-medium mb-4">
             <Code size={12} />
-            Developer Documentation
+            {t('dev.badge')}
           </div>
-          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3">Pulsar Bot API</h1>
+          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3">{t('dev.title')}</h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Build powerful bots for Pulsar messenger. REST API + Webhooks + Long Polling.
+            {t('dev.subtitle')}
           </p>
         </div>
 
         {/* TOC */}
         <div className="bg-dark-800/50 border border-dark-500/30 rounded-2xl p-5 mb-8">
-          <p className="text-xs uppercase text-gray-500 font-semibold mb-3">Table of Contents</p>
+          <p className="text-xs uppercase text-gray-500 font-semibold mb-3">{t('dev.toc')}</p>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            {[
-              ['quick-start', '🚀 Quick Start'],
-              ['create-bot', '🤖 Create a Bot'],
-              ['authentication', '🔑 Authentication'],
-              ['receive', '📥 Receiving Updates'],
-              ['send', '📤 Sending Messages'],
-              ['buttons', '🎛️ Inline Buttons'],
-              ['callbacks', '🔔 Callback Queries'],
-              ['moderation', '🛡️ Moderation'],
-              ['endpoints', '📚 API Reference'],
-              ['examples', '💡 Full Examples'],
-              ['hosting', '🌐 Where to Host'],
-              ['support', '💬 Get Help'],
-            ].map(([id, label]) => (
+            {([
+              ['quick-start', 'dev.toc.quickStart'],
+              ['create-bot', 'dev.toc.createBot'],
+              ['authentication', 'dev.toc.auth'],
+              ['receive', 'dev.toc.receive'],
+              ['send', 'dev.toc.send'],
+              ['buttons', 'dev.toc.buttons'],
+              ['callbacks', 'dev.toc.callbacks'],
+              ['moderation', 'dev.toc.moderation'],
+              ['endpoints', 'dev.toc.endpoints'],
+              ['examples', 'dev.toc.examples'],
+              ['hosting', 'dev.toc.hosting'],
+              ['support', 'dev.toc.support'],
+            ] as const).map(([id, key]) => (
               <a key={id} href={`#${id}`} className="text-gray-300 hover:text-primary-400 transition-colors py-1">
-                {label}
+                {t(key)}
               </a>
             ))}
           </div>
@@ -116,14 +139,14 @@ export function DevelopersPage() {
 
         <div className="space-y-12">
           {/* QUICK START */}
-          <Section id="quick-start" icon={Zap} title="Quick Start">
-            <p>Get your first bot running in 5 minutes:</p>
+          <Section id="quick-start" icon={Zap} title={t('dev.sec.quickStart.title')}>
+            <p>{t('dev.sec.quickStart.p1')}</p>
             <ol className="list-decimal list-inside space-y-2 ml-2">
-              <li>Create a bot via <a href="/" className="text-primary-400 hover:underline">PulsarBot</a> or click the Bots button in sidebar</li>
-              <li>Copy your API token from bot settings</li>
-              <li>Choose: <strong>Long Polling</strong> (easy) or <strong>Webhook</strong> (production)</li>
-              <li>Write code that calls Pulsar API to send/receive messages</li>
-              <li>Deploy to any Node.js/Python hosting</li>
+              <li>{t('dev.sec.quickStart.s1')}</li>
+              <li>{t('dev.sec.quickStart.s2')}</li>
+              <li>{t('dev.sec.quickStart.s3')}</li>
+              <li>{t('dev.sec.quickStart.s4')}</li>
+              <li>{t('dev.sec.quickStart.s5')}</li>
             </ol>
 
             <div className="bg-primary-500/10 border border-primary-500/20 rounded-xl p-4 text-sm">
@@ -134,12 +157,12 @@ export function DevelopersPage() {
           </Section>
 
           {/* CREATE BOT */}
-          <Section id="create-bot" icon={Bot} title="Create a Bot">
-            <p>Two ways to create a bot:</p>
+          <Section id="create-bot" icon={Bot} title={t('dev.sec.createBot.title')}>
+            <p>{t('dev.sec.createBot.p1')}</p>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
-                <p className="font-semibold text-white mb-2">📱 Via UI</p>
+                <p className="font-semibold text-white mb-2">📱 {t('dev.sec.createBot.viaUi')}</p>
                 <ol className="text-xs space-y-1 list-decimal list-inside text-gray-400">
                   <li>Open Pulsar app</li>
                   <li>Click 🤖 Bot icon in sidebar</li>
@@ -149,7 +172,7 @@ export function DevelopersPage() {
                 </ol>
               </div>
               <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
-                <p className="font-semibold text-white mb-2">💬 Via PulsarBot (chat)</p>
+                <p className="font-semibold text-white mb-2">💬 {t('dev.sec.createBot.viaChat')}</p>
                 <ol className="text-xs space-y-1 list-decimal list-inside text-gray-400">
                   <li>Open chat with @pulsarbot</li>
                   <li>Send <code className="bg-dark-900 px-1">/newbot</code></li>
@@ -159,26 +182,26 @@ export function DevelopersPage() {
               </div>
             </div>
 
-            <p className="text-amber-400 text-xs">⚠️ Keep your API token secret. Anyone with the token controls your bot.</p>
+            <p className="text-amber-400 text-xs">⚠️ {t('dev.sec.createBot.warn')}</p>
           </Section>
 
           {/* AUTH */}
-          <Section id="authentication" icon={Lock} title="Authentication">
-            <p>All bot API requests require <code className="bg-dark-900 px-1.5 py-0.5 rounded text-xs">Authorization: Bearer YOUR_TOKEN</code> header.</p>
+          <Section id="authentication" icon={Lock} title={t('dev.sec.auth.title')}>
+            <p>{t('dev.sec.auth.p1')}</p>
 
             <CodeBlock language="curl" code={`curl -X GET "${baseUrl}/bot/me" \\
   -H "Authorization: Bearer YOUR_BOT_TOKEN"`} />
           </Section>
 
           {/* RECEIVE */}
-          <Section id="receive" icon={MessageSquare} title="Receiving Updates">
-            <p>Two ways to receive messages from users:</p>
+          <Section id="receive" icon={MessageSquare} title={t('dev.sec.receive.title')}>
+            <p>{t('dev.sec.receive.p1')}</p>
 
             <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
               <p className="font-semibold text-white mb-2 flex items-center gap-2">
-                <Terminal size={14} /> 1. Long Polling (easy, for development)
+                <Terminal size={14} /> {t('dev.sec.receive.longPoll')}
               </p>
-              <p className="text-xs text-gray-400 mb-3">Periodically request new messages. No public server needed.</p>
+              <p className="text-xs text-gray-400 mb-3">{t('dev.sec.receive.longPollDesc')}</p>
               <CodeBlock language="js" code={`// Node.js — long polling loop
 let offset = 0;
 
@@ -198,9 +221,9 @@ setInterval(async () => {
 
             <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
               <p className="font-semibold text-white mb-2 flex items-center gap-2">
-                <Webhook size={14} /> 2. Webhook (instant, for production)
+                <Webhook size={14} /> {t('dev.sec.receive.webhook')}
               </p>
-              <p className="text-xs text-gray-400 mb-3">Pulsar sends POST requests to your URL when events happen.</p>
+              <p className="text-xs text-gray-400 mb-3">{t('dev.sec.receive.webhookDesc')}</p>
               <CodeBlock language="js" code={`// Set webhook
 await fetch('${baseUrl}/bot/setWebhook', {
   method: 'POST',
@@ -218,7 +241,7 @@ app.post('/webhook', (req, res) => {
           </Section>
 
           {/* SEND */}
-          <Section id="send" icon={Send} title="Sending Messages">
+          <Section id="send" icon={Send} title={t('dev.sec.send.title')}>
             <CodeBlock language="js" code={`await fetch('${baseUrl}/bot/sendMessage', {
   method: 'POST',
   headers: {
@@ -233,8 +256,8 @@ app.post('/webhook', (req, res) => {
           </Section>
 
           {/* BUTTONS */}
-          <Section id="buttons" icon={Keyboard} title="Inline Buttons">
-            <p>Send messages with clickable buttons. Each button has text and callback data.</p>
+          <Section id="buttons" icon={Keyboard} title={t('dev.sec.buttons.title')}>
+            <p>{t('dev.sec.buttons.p1')}</p>
 
             <CodeBlock language="js" code={`await fetch('${baseUrl}/bot/sendMessage', {
   method: 'POST',
@@ -256,8 +279,8 @@ app.post('/webhook', (req, res) => {
           </Section>
 
           {/* CALLBACKS */}
-          <Section id="callbacks" icon={Zap} title="Callback Queries">
-            <p>When user clicks an inline button, you receive a <code className="bg-dark-900 px-1.5 py-0.5 rounded text-xs">callback_query</code> update:</p>
+          <Section id="callbacks" icon={Zap} title={t('dev.sec.callbacks.title')}>
+            <p>{t('dev.sec.callbacks.p1')}</p>
 
             <CodeBlock language="json" code={`{
   "update_id": 12345,
@@ -269,7 +292,7 @@ app.post('/webhook', (req, res) => {
   }
 }`} />
 
-            <p>Acknowledge the click:</p>
+            <p>{t('dev.sec.callbacks.p2')}</p>
             <CodeBlock language="js" code={`await fetch('${baseUrl}/bot/answerCallback', {
   method: 'POST',
   headers: { 'Authorization': 'Bearer YOUR_TOKEN', 'Content-Type': 'application/json' },
@@ -281,8 +304,8 @@ app.post('/webhook', (req, res) => {
           </Section>
 
           {/* MODERATION */}
-          <Section id="moderation" icon={Shield} title="Moderation Actions">
-            <p>If your bot is admin in a group, it can moderate:</p>
+          <Section id="moderation" icon={Shield} title={t('dev.sec.moderation.title')}>
+            <p>{t('dev.sec.moderation.p1')}</p>
 
             <CodeBlock language="js" code={`// Delete a message
 await fetch('${baseUrl}/bot/deleteMessage', {
@@ -300,43 +323,43 @@ await fetch('${baseUrl}/bot/kickMember', {
           </Section>
 
           {/* API REFERENCE */}
-          <Section id="endpoints" icon={BookOpen} title="API Reference">
-            <p>Complete list of bot API endpoints. All require <code className="bg-dark-900 px-1.5 py-0.5 rounded text-xs">Authorization: Bearer TOKEN</code>.</p>
+          <Section id="endpoints" icon={BookOpen} title={t('dev.sec.endpoints.title')}>
+            <p>{t('dev.sec.endpoints.p1')}</p>
 
             <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
-              <p className="font-semibold text-white mb-2">Bot Identity</p>
+              <p className="font-semibold text-white mb-2">{t('dev.sec.endpoints.identity')}</p>
               <Endpoint method="GET" path="/bot/me" desc="Get bot info (id, username, displayName)" />
             </div>
 
             <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
-              <p className="font-semibold text-white mb-2">Messages</p>
+              <p className="font-semibold text-white mb-2">{t('dev.sec.endpoints.messages')}</p>
               <Endpoint method="POST" path="/bot/sendMessage" desc="Send text/buttons to chat" />
               <Endpoint method="POST" path="/bot/deleteMessage" desc="Delete a message" />
               <Endpoint method="POST" path="/bot/answerCallback" desc="Reply to button click" />
             </div>
 
             <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
-              <p className="font-semibold text-white mb-2">Updates</p>
+              <p className="font-semibold text-white mb-2">{t('dev.sec.endpoints.updates')}</p>
               <Endpoint method="GET" path="/bot/updates" desc="Long polling — get new updates" />
               <Endpoint method="POST" path="/bot/setWebhook" desc="Configure webhook URL" />
             </div>
 
             <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
-              <p className="font-semibold text-white mb-2">Chats</p>
+              <p className="font-semibold text-white mb-2">{t('dev.sec.endpoints.chats')}</p>
               <Endpoint method="GET" path="/bot/getChats" desc="List bot's chats" />
               <Endpoint method="POST" path="/bot/leaveChat" desc="Bot leaves a chat" />
               <Endpoint method="POST" path="/bot/kickMember" desc="Kick user (requires admin)" />
             </div>
 
             <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
-              <p className="font-semibold text-white mb-2">Configuration</p>
+              <p className="font-semibold text-white mb-2">{t('dev.sec.endpoints.config')}</p>
               <Endpoint method="POST" path="/bot/setCommands" desc="Set bot commands menu" />
             </div>
           </Section>
 
           {/* EXAMPLES */}
-          <Section id="examples" icon={Code} title="Full Examples">
-            <p>Complete working bot in different languages:</p>
+          <Section id="examples" icon={Code} title={t('dev.sec.examples.title')}>
+            <p>{t('dev.sec.examples.p1')}</p>
 
             <div className="flex gap-2 mb-3">
               {(['js', 'py', 'curl'] as const).map((l) => (
@@ -441,8 +464,8 @@ curl -X POST "${baseUrl}/bot/setWebhook" \\
           </Section>
 
           {/* HOSTING */}
-          <Section id="hosting" icon={Globe} title="Where to Host Your Bot">
-            <p>Free or cheap hosting options:</p>
+          <Section id="hosting" icon={Globe} title={t('dev.sec.hosting.title')}>
+            <p>{t('dev.sec.hosting.p1')}</p>
 
             <div className="grid md:grid-cols-2 gap-3">
               {[
@@ -467,18 +490,18 @@ curl -X POST "${baseUrl}/bot/setWebhook" \\
           </Section>
 
           {/* SUPPORT */}
-          <Section id="support" icon={MessageSquare} title="Get Help">
+          <Section id="support" icon={MessageSquare} title={t('dev.sec.support.title')}>
             <div className="bg-gradient-to-br from-primary-500/10 to-primary-700/5 border border-primary-500/30 rounded-2xl p-6 text-center">
               <Bot size={40} className="mx-auto mb-3 text-primary-400" />
-              <h3 className="text-xl font-bold text-white mb-2">Need Help?</h3>
+              <h3 className="text-xl font-bold text-white mb-2">{t('dev.sec.support.h')}</h3>
               <p className="text-sm text-gray-400 mb-4">
-                Chat with @pulsarbot for bot management commands, or join our community.
+                {t('dev.sec.support.p')}
               </p>
               <button
                 onClick={() => navigate('/')}
                 className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
               >
-                Open Pulsar
+                {t('dev.sec.support.btn')}
               </button>
             </div>
           </Section>
