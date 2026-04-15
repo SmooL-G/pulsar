@@ -18,6 +18,7 @@ import { InfoPage } from './pages/InfoPage';
 import { DonatePage } from './pages/DonatePage';
 import { TermsPage } from './pages/TermsPage';
 import { CookiesPage } from './pages/CookiesPage';
+import { InstallPrompt } from './components/pwa/InstallPrompt';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -83,6 +84,7 @@ export function App() {
               className: 'dark:bg-dark-600 dark:text-white',
             }}
           />
+          <InstallPrompt />
         </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

@@ -14,6 +14,7 @@ import { TransferModal } from '../wallet/TransferModal';
 import { exportKeys, importKeys, hasLocalKeys } from '../../crypto/keyManager';
 import { useWallet } from '@solana/wallet-adapter-react';
 import bs58 from 'bs58';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -256,6 +257,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             {/* Notifications */}
             {tab === 'notifications' && (
               <div className="space-y-4">
+                <WebPushSection />
                 <ToggleSetting
                   label={t('settings.pushNotifications')}
                   description={t('settings.pushDescription')}
@@ -813,6 +815,70 @@ function E2EKeysSection() {
             </button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function WebPushSection() {
+  const { t, locale } = useI18n();
+  const { status, subscribe, unsubscribe } = usePushNotifications();
+
+  const ru = locale === 'ru';
+  const titles = {
+    title: ru ? 'Push-уведомления на устройстве' : 'Device push notifications',
+    desc: ru
+      ? 'Получайте уведомления, даже когда Pulsar закрыт.'
+      : 'Get notifications even when Pulsar is closed.',
+    enable: ru ? 'Включить' : 'Enable',
+    enabled: ru ? '✓ Включено' : '✓ Enabled',
+    disable: ru ? 'Отключить' : 'Disable',
+    pending: ru ? 'Минутку...' : 'Working...',
+    denied: ru
+      ? 'Доступ запрещён в браузере. Разрешите уведомления в настройках сайта.'
+      : 'Permission denied. Enable notifications in your browser site settings.',
+    unsupported: ru
+      ? 'Браузер не поддерживает Web Push.'
+      : 'Browser does not support Web Push.',
+  };
+  void t;
+
+  return (
+    <div className="p-4 bg-gray-50 dark:bg-dark-600 rounded-xl">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex-1">
+          <p className="text-sm font-medium">{titles.title}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{titles.desc}</p>
+        </div>
+        {status === 'subscribed' && (
+          <button
+            onClick={unsubscribe}
+            className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors"
+            title={titles.disable}
+          >
+            {titles.enabled}
+          </button>
+        )}
+        {status === 'idle' && (
+          <button
+            onClick={subscribe}
+            className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary-500 hover:bg-primary-600 text-white transition-colors"
+          >
+            {titles.enable}
+          </button>
+        )}
+        {status === 'pending' && (
+          <span className="shrink-0 px-3 py-1.5 rounded-lg text-xs text-gray-400 inline-flex items-center gap-1">
+            <Loader2 size={12} className="animate-spin" />
+            {titles.pending}
+          </span>
+        )}
+      </div>
+      {status === 'denied' && (
+        <p className="text-xs text-amber-400 mt-1">{titles.denied}</p>
+      )}
+      {status === 'unsupported' && (
+        <p className="text-xs text-gray-500 mt-1">{titles.unsupported}</p>
       )}
     </div>
   );

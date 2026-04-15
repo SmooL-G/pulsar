@@ -48,6 +48,7 @@ model User {
   ownedBots         Bot[]              @relation("botOwner")
   reports           Report[]
   punishments       UserPunishment[]
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
 }
@@ -477,6 +478,22 @@ model UserPunishment {
 
   @@index([userId])
   @@map("user_punishments")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  endpoint  String   @unique @db.Text
+  p256dh    String   @db.Text
+  auth      String   @db.Text
+  userAgent String?  @map("user_agent") @db.VarChar(256)
+  createdAt DateTime @default(now()) @map("created_at")
+  lastUsedAt DateTime @default(now()) @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 enum ReportReason {

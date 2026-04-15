@@ -167,6 +167,49 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
       // Broadcast to all members of the chat
       io.to(`chat:${data.chatId}`).emit('message:new', messagePayload);
 
+      // Push notifications to chat members who don't have the chat open right now
+      (async () => {
+        try {
+          const recipients = await prisma.chatMember.findMany({
+            where: {
+              chatId: data.chatId,
+              leftAt: null,
+              NOT: { userId },
+              user: { isBot: false },
+            },
+            select: { userId: true },
+          });
+          if (recipients.length === 0) return;
+
+          // Build set of userIds currently focused on this chat (have a socket in the room)
+          const activeUserIds = new Set(roomSockets.map((s) => s.data.userId).filter(Boolean));
+          const targets = recipients.map((r) => r.userId).filter((id) => !activeUserIds.has(id));
+          if (targets.length === 0) return;
+
+          const chat = await prisma.chat.findUnique({
+            where: { id: data.chatId },
+            select: { name: true, type: true },
+          });
+          const senderName =
+            (message.sender as any)?.displayName || (message.sender as any)?.username || 'Someone';
+          const isDM = chat?.type === 'DIRECT';
+          const title = isDM ? senderName : `${senderName} · ${chat?.name || 'group'}`;
+          const preview =
+            (data.content || '').slice(0, 140) ||
+            (data.attachments?.length ? '📎 attachment' : '');
+
+          const { sendPushToUsers } = await import('../../modules/push/push.service.js');
+          await sendPushToUsers(targets, {
+            title,
+            body: preview,
+            url: `/?chat=${data.chatId}`,
+            tag: `chat:${data.chatId}`,
+          });
+        } catch (err) {
+          console.error('[push] dispatch error:', err);
+        }
+      })();
+
       // Dispatch to bots in the chat (PulsarBot system handler + user bot webhooks)
       if (data.content) {
         (async () => {

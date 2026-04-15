@@ -27,6 +27,7 @@ import { moderatorRoutes } from './modules/moderation/moderator.routes.js';
 import { botManagementRoutes } from './modules/bot/bot.routes.js';
 import { botApiRoutes } from './modules/bot/botApi.routes.js';
 import { searchRoutes } from './modules/search/search.routes.js';
+import { pushRoutes } from './modules/push/push.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -100,6 +101,7 @@ export async function buildApp() {
   await app.register(botManagementRoutes, { prefix: '/api/v1/bots' });
   await app.register(botApiRoutes, { prefix: '/api/v1/bot' });
   await app.register(searchRoutes, { prefix: '/api/v1/search' });
+  await app.register(pushRoutes, { prefix: '/api/v1/push' });
 
   return app;
 }

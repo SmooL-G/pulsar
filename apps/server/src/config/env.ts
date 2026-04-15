@@ -33,4 +33,9 @@ export const env = cleanEnv(process.env, {
   SMTP_USER: str({ default: '' }),
   SMTP_PASS: str({ default: '' }),
   SMTP_FROM: str({ default: 'noreply@pulsar.chat' }),
+
+  // Web Push (VAPID). Generate via: npx web-push generate-vapid-keys
+  VAPID_PUBLIC_KEY: str({ default: '' }),
+  VAPID_PRIVATE_KEY: str({ default: '' }),
+  VAPID_SUBJECT: str({ default: 'mailto:support@pulsar-chat.fun' }),
 });
