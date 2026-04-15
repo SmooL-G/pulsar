@@ -21,7 +21,7 @@ export function BotChatBar({ chatId, onCommandSelect }: BotChatBarProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showBotPanel, setShowBotPanel] = useState(false);
 
-  const hasBot = (activeChat?.members as any[])?.some((m: any) => m.user?.isBot && !m.user?.username?.includes('pulsarbot'));
+  const hasBot = (activeChat?.members as any[])?.some((m: any) => m.user?.isBot);
 
   useEffect(() => {
     if (!hasBot || !chatId) return;

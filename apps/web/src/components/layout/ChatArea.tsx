@@ -102,6 +102,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         chatId={activeChat.id}
         chatType={activeChat.type as 'DIRECT' | 'GROUP' | 'CHANNEL'}
         otherUserId={(activeChat as any).otherUser?.id}
+        otherUserIsBot={!!(activeChat as any).otherUser?.isBot}
         onOpenComments={async (commentChatId) => {
           try {
             const res = await import('../../services/api').then(m => m.api.get(`/chats/${commentChatId}`));

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useMessageStore } from '../../store/messageStore';
 import { MessageBubble } from './MessageBubble';
+import { BotStartButton } from './BotStartButton';
 import { useAuthStore } from '../../store/authStore';
 import { getSocket } from '../../hooks/useSocket';
 
@@ -8,10 +9,11 @@ interface MessageListProps {
   chatId: string;
   chatType?: 'DIRECT' | 'GROUP' | 'CHANNEL';
   otherUserId?: string;
+  otherUserIsBot?: boolean;
   onOpenComments?: (commentChatId: string) => void;
 }
 
-export function MessageList({ chatId, chatType, otherUserId, onOpenComments }: MessageListProps) {
+export function MessageList({ chatId, chatType, otherUserId, otherUserIsBot, onOpenComments }: MessageListProps) {
   const { messages, fetchMessages, isLoading } = useMessageStore();
   const user = useAuthStore((s) => s.user);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -43,6 +45,10 @@ export function MessageList({ chatId, chatType, otherUserId, onOpenComments }: M
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
       </div>
     );
+  }
+
+  if (!isLoading && chatMessages.length === 0 && chatType === 'DIRECT' && otherUserIsBot) {
+    return <BotStartButton chatId={chatId} />;
   }
 
   return (
