@@ -147,11 +147,11 @@ export async function botApiRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  // POST /answerCallback — respond to inline button press
-  app.post<{ Body: { chatId: string; messageId: string; userId: string; callbackData: string } }>(
+  // POST /answerCallback — acknowledge an inline button press (optionally show toast to user)
+  app.post<{ Body: { callbackQueryId?: string; text?: string } }>(
     '/answerCallback',
-    async (request) => {
-      // Just acknowledge — the bot processes callbackData via updates/webhook
+    async (_request) => {
+      // No-op ack. Toast delivery via notifications is future work.
       return { ok: true };
     }
   );

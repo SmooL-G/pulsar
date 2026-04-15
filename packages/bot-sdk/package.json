@@ -1,0 +1,29 @@
+{
+  "name": "@pulsar/bot-sdk",
+  "version": "0.1.0",
+  "description": "Official Pulsar messenger Bot SDK — Telegram-style API for Node.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch"
+  },
+  "keywords": ["pulsar", "bot", "messenger", "chat", "sdk", "crypto", "solana"],
+  "author": "Pulsar",
+  "license": "MIT",
+  "homepage": "https://pulsar-chat.fun/developers",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SmooL-G/pulsar.git",
+    "directory": "packages/bot-sdk"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

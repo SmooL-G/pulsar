@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bot, Send, Webhook, Shield, Keyboard, MessageSquare, Copy, Check, Code, BookOpen, Zap, Globe, Terminal, Lock } from 'lucide-react';
+import { ArrowLeft, Bot, Send, Webhook, Shield, Keyboard, MessageSquare, Copy, Check, Code, BookOpen, Zap, Globe, Terminal, Lock, Package } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '../i18n';
 
@@ -116,6 +116,9 @@ export function DevelopersPage() {
         <div className="bg-dark-800/50 border border-dark-500/30 rounded-2xl p-5 mb-8">
           <p className="text-xs uppercase text-gray-500 font-semibold mb-3">{t('dev.toc')}</p>
           <div className="grid grid-cols-2 gap-2 text-sm">
+            <a href="#sdk" className="text-emerald-400 hover:text-emerald-300 transition-colors py-1 font-semibold">
+              📦 {locale === 'ru' ? 'SDK (рекомендуем)' : 'SDK (recommended)'}
+            </a>
             {([
               ['quick-start', 'dev.toc.quickStart'],
               ['create-bot', 'dev.toc.createBot'],
@@ -138,6 +141,91 @@ export function DevelopersPage() {
         </div>
 
         <div className="space-y-12">
+          {/* SDK PROMO — always at top */}
+          <section id="sdk" className="scroll-mt-24">
+            <div className="bg-gradient-to-br from-primary-500/10 to-emerald-500/5 border border-primary-500/20 rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Package size={22} className="text-primary-400" />
+                <h2 className="text-2xl font-bold text-white">
+                  {locale === 'ru' ? 'Официальные SDK' : 'Official SDKs'}
+                </h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 ml-auto">
+                  {locale === 'ru' ? 'РЕКОМЕНДУЕМ' : 'RECOMMENDED'}
+                </span>
+              </div>
+              <p className="text-gray-300 text-sm mb-4">
+                {locale === 'ru'
+                  ? 'Пишите ботов в Telegram-стиле — без ручных fetch-вызовов. Установите пакет, передайте токен и регистрируйте хендлеры.'
+                  : 'Write bots Telegram-style — no manual fetch calls. Install the package, pass your token, register handlers.'}
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-dark-800/70 border border-dark-500/30 rounded-xl p-4">
+                  <p className="font-semibold text-white mb-2 flex items-center gap-2">
+                    <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">Node.js</span>
+                    @pulsar/bot-sdk
+                  </p>
+                  <CodeBlock language="bash" code="npm install @pulsar/bot-sdk" />
+                  <CodeBlock language="js" code={`import { Bot, Keyboard } from '@pulsar/bot-sdk';
+
+const bot = new Bot('YOUR_TOKEN');
+
+bot.command('start', (ctx) =>
+  ctx.reply('Hi! Pick one:', {
+    buttons: Keyboard.inline([
+      [{ text: '✅ Yes', data: 'yes' },
+       { text: '❌ No', data: 'no' }],
+    ]),
+  }),
+);
+
+bot.onCallback('yes', (ctx) => ctx.reply('Great!'));
+bot.onMessage((ctx) => ctx.reply(\`Echo: \${ctx.text}\`));
+
+bot.start();`} />
+                </div>
+
+                <div className="bg-dark-800/70 border border-dark-500/30 rounded-xl p-4">
+                  <p className="font-semibold text-white mb-2 flex items-center gap-2">
+                    <span className="text-[10px] font-mono bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded">Python</span>
+                    pulsar-bot
+                  </p>
+                  <CodeBlock language="bash" code="pip install pulsar-bot" />
+                  <CodeBlock language="py" code={`from pulsar_bot import Bot, Keyboard
+
+bot = Bot("YOUR_TOKEN")
+
+@bot.command("start")
+async def start(ctx):
+    await ctx.reply(
+        "Hi! Pick one:",
+        buttons=Keyboard.inline([
+            [{"text": "✅ Yes", "data": "yes"},
+             {"text": "❌ No", "data": "no"}],
+        ]),
+    )
+
+@bot.on_callback("yes")
+async def yes(ctx):
+    await ctx.reply("Great!")
+
+@bot.on_message()
+async def echo(ctx):
+    if ctx.text:
+        await ctx.reply(f"Echo: {ctx.text}")
+
+bot.run()`} />
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 mt-4">
+                {locale === 'ru'
+                  ? 'Предпочитаете сырой REST? Примеры на fetch/requests/cURL ниже ↓'
+                  : 'Prefer raw REST? fetch/requests/cURL examples below ↓'}
+              </p>
+            </div>
+          </section>
+
           {/* QUICK START */}
           <Section id="quick-start" icon={Zap} title={t('dev.sec.quickStart.title')}>
             <p>{t('dev.sec.quickStart.p1')}</p>

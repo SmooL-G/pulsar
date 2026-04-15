@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pulsar-bot"
+version = "0.1.0"
+description = "Official Pulsar messenger Bot SDK for Python — Telegram-style API"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Pulsar" }]
+requires-python = ">=3.9"
+keywords = ["pulsar", "bot", "messenger", "chat", "sdk", "crypto", "solana"]
+dependencies = [
+  "httpx>=0.24",
+]
+
+[project.urls]
+Homepage = "https://pulsar-chat.fun/developers"
+Repository = "https://github.com/SmooL-G/pulsar"
+
+[tool.setuptools.packages.find]
+include = ["pulsar_bot*"]
