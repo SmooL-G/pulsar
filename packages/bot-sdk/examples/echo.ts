@@ -1,4 +1,4 @@
-import { Bot, Keyboard } from '@pulsar/bot-sdk';
+import { Bot, Keyboard } from '@pulsar-chat/bot-sdk';
 
 const bot = new Bot(process.env.BOT_TOKEN!);
 
@@ -15,6 +15,6 @@ bot.onMessage((ctx) => {
   ctx.reply(`Echo: ${ctx.text}`);
 });
 
-bot.onCallback('about', (ctx) => ctx.reply('Я простой эхо-бот на @pulsar/bot-sdk 🚀'));
+bot.onCallback('about', (ctx) => ctx.reply('Я простой эхо-бот на @pulsar-chat/bot-sdk 🚀'));
 
 bot.start();

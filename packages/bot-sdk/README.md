@@ -1,11 +1,11 @@
-# @pulsar/bot-sdk
+# @pulsar-chat/bot-sdk
 
 Официальный SDK для создания ботов в мессенджере [Pulsar](https://pulsar-chat.fun). Написан в стиле Telegram Bot API — если у вас был опыт с `telegraf` или `node-telegram-bot-api`, вы сразу поймёте.
 
 ## Установка
 
 ```bash
-npm install @pulsar/bot-sdk
+npm install @pulsar-chat/bot-sdk
 ```
 
 Требуется **Node.js 18+** (используется встроенный `fetch`).
@@ -16,7 +16,7 @@ npm install @pulsar/bot-sdk
 2. Напишите бота:
 
 ```ts
-import { Bot, Keyboard } from '@pulsar/bot-sdk';
+import { Bot, Keyboard } from '@pulsar-chat/bot-sdk';
 
 const bot = new Bot('YOUR_TOKEN');
 

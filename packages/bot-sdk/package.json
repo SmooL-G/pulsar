@@ -1,5 +1,5 @@
 {
-  "name": "@pulsar/bot-sdk",
+  "name": "@pulsar-chat/bot-sdk",
   "version": "0.1.0",
   "description": "Official Pulsar messenger Bot SDK — Telegram-style API for Node.js",
   "main": "dist/index.js",

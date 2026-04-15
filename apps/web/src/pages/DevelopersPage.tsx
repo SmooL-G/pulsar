@@ -163,10 +163,10 @@ export function DevelopersPage() {
                 <div className="bg-dark-800/70 border border-dark-500/30 rounded-xl p-4">
                   <p className="font-semibold text-white mb-2 flex items-center gap-2">
                     <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">Node.js</span>
-                    @pulsar/bot-sdk
+                    @pulsar-chat/bot-sdk
                   </p>
-                  <CodeBlock language="bash" code="npm install @pulsar/bot-sdk" />
-                  <CodeBlock language="js" code={`import { Bot, Keyboard } from '@pulsar/bot-sdk';
+                  <CodeBlock language="bash" code="npm install @pulsar-chat/bot-sdk" />
+                  <CodeBlock language="js" code={`import { Bot, Keyboard } from '@pulsar-chat/bot-sdk';
 
 const bot = new Bot('YOUR_TOKEN');
 
