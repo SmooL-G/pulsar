@@ -167,6 +167,34 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
       // Broadcast to all members of the chat
       io.to(`chat:${data.chatId}`).emit('message:new', messagePayload);
 
+      // Dispatch to bots in the chat (PulsarBot system handler + user bot webhooks)
+      if (data.content) {
+        (async () => {
+          try {
+            const { PULSAR_BOT_USER_ID } = await import('../../modules/bot/pulsarBot.seed.js');
+            const botMembers = await prisma.chatMember.findMany({
+              where: {
+                chatId: data.chatId,
+                leftAt: null,
+                NOT: { userId },
+                user: { isBot: true },
+              },
+              select: { userId: true },
+            });
+            const hasPulsarBot = botMembers.some((m) => m.userId === PULSAR_BOT_USER_ID);
+            if (hasPulsarBot && PULSAR_BOT_USER_ID) {
+              const { handlePulsarBotMessage } = await import('../../modules/bot/pulsarBot.handler.js');
+              await handlePulsarBotMessage(userId, data.chatId, data.content);
+            }
+            // Dispatch to user bots (webhooks + long-poll queue)
+            const { dispatchBotUpdates } = await import('../../modules/bot/webhook.service.js');
+            await dispatchBotUpdates(messagePayload as any);
+          } catch (err) {
+            console.error('[bot dispatch] error:', err);
+          }
+        })();
+      }
+
       // Async: fetch link preview if message contains URLs
       if (data.content) {
         const urls = data.content.match(URL_REGEX);

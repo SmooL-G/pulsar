@@ -34,6 +34,7 @@ export function BotStartButton({ chatId }: BotStartButtonProps) {
     if (!socket?.connected) return;
     setSending(true);
     socket.emit('message:send', { chatId, content: '/start', type: 'TEXT' });
+    setTimeout(() => setSending(false), 1500);
   };
 
   return (
