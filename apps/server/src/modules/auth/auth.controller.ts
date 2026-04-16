@@ -179,7 +179,8 @@ const resetSchema = z.object({
 export async function handleForgotPassword(request: FastifyRequest, reply: FastifyReply) {
   const { prisma } = await import('../../config/database.js');
   const { redis } = await import('../../config/redis.js');
-  const { email } = forgotSchema.parse(request.body);
+  const parsed = forgotSchema.parse(request.body);
+  const email = parsed.email.trim().toLowerCase();
 
   const user = await prisma.user.findUnique({
     where: { email },
@@ -215,7 +216,9 @@ export async function handleResetPassword(request: FastifyRequest, reply: Fastif
   const { prisma } = await import('../../config/database.js');
   const { redis } = await import('../../config/redis.js');
   const bcrypt = await import('bcrypt');
-  const { email, code, newPassword } = resetSchema.parse(request.body);
+  const parsed = resetSchema.parse(request.body);
+  const email = parsed.email.trim().toLowerCase();
+  const { code, newPassword } = parsed;
 
   // Verify code from Redis
   const storedCode = await redis.get(`reset:code:${email}`);

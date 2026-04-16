@@ -96,6 +96,9 @@ export async function registerWithEmail(
   password: string,
   displayName?: string
 ): Promise<{ tokens: TokenPair; walletAddress: string }> {
+  // Email is case-insensitive in practice — store and compare in lowercase
+  email = email.trim().toLowerCase();
+
   // Check uniqueness
   const existingUsername = await prisma.user.findUnique({ where: { username } });
   if (existingUsername) {
@@ -140,6 +143,7 @@ export async function loginWithEmail(
   email: string,
   password: string
 ): Promise<TokenPair> {
+  email = email.trim().toLowerCase();
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.passwordHash) {
     throw createError(401, ERROR_CODES.INVALID_CREDENTIALS, 'Invalid email or password');
