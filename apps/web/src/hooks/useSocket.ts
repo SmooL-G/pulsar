@@ -39,17 +39,42 @@ export function useSocket() {
     socket = io(window.location.origin, {
       auth: { token },
       transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 500,
+      reconnectionDelayMax: 3000,
+      reconnectionAttempts: Infinity,
+      timeout: 8000,
     });
 
     socket.on('connect', () => {
       connectedRef.current = true;
-      console.log('Socket connected');
+      // Refetch active chat messages — we may have missed pushes while disconnected
+      const activeChatId = useChatStore.getState().activeChat?.id;
+      if (activeChatId) {
+        useMessageStore.getState().fetchMessages(activeChatId).catch(() => {});
+      }
     });
 
     socket.on('disconnect', () => {
       connectedRef.current = false;
-      console.log('Socket disconnected');
     });
+
+    // iOS Safari pauses WebSockets when the page is hidden — force reconnect on resume
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'visible' || !socket) return;
+      if (!socket.connected) {
+        socket.connect();
+      } else {
+        // Refetch in case socket stayed alive but missed events during sleep
+        const activeChatId = useChatStore.getState().activeChat?.id;
+        if (activeChatId) {
+          useMessageStore.getState().fetchMessages(activeChatId).catch(() => {});
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onVisibilityChange);
+    window.addEventListener('online', onVisibilityChange);
 
     // Message events
     socket.on('message:new', (message: Message) => {
@@ -117,6 +142,9 @@ export function useSocket() {
 
     return () => {
       clearInterval(heartbeatInterval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onVisibilityChange);
+      window.removeEventListener('online', onVisibilityChange);
       if (socket) {
         socket.disconnect();
         socket = null;

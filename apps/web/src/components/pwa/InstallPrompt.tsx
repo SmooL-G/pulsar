@@ -88,7 +88,10 @@ export function InstallPrompt() {
   const ru = locale === 'ru';
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-sm w-[calc(100%-2rem)]">
+    <div
+      className="fixed left-1/2 -translate-x-1/2 z-50 max-w-sm w-[calc(100%-2rem)]"
+      style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+    >
       <div className="bg-dark-700/95 border border-primary-500/40 backdrop-blur-md rounded-2xl shadow-2xl shadow-primary-500/20 p-4 flex items-start gap-3 animate-slide-up">
         <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center">
           <Smartphone size={20} className="text-white" />

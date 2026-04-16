@@ -135,7 +135,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-dark-700">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-dark-500">
+      <div className="flex items-center justify-between px-4 py-3 pt-3-safe pl-safe pr-safe border-b border-gray-200 dark:border-dark-500">
         <h1 className="text-xl font-bold text-primary-600">Pulsar</h1>
         <div className="flex items-center gap-1">
           <button
