@@ -85,7 +85,7 @@ function OfferRu() {
       </section>
       <section>
         <h2 className="text-lg font-semibold text-white">8. Контакты Оператора</h2>
-        <p>По вопросам исполнения Оферты: <span className="text-primary-400">legal@pulsar.chat</span></p>
+        <p>По вопросам исполнения Оферты: <span className="text-primary-400">legal@pulsar-chat.fun</span></p>
       </section>
     </div>
   );
@@ -148,7 +148,7 @@ function OfferEn() {
       </section>
       <section>
         <h2 className="text-lg font-semibold text-white">8. Operator Contacts</h2>
-        <p>For Offer inquiries: <span className="text-primary-400">legal@pulsar.chat</span></p>
+        <p>For Offer inquiries: <span className="text-primary-400">legal@pulsar-chat.fun</span></p>
       </section>
     </div>
   );

@@ -77,7 +77,7 @@ function CookiesRu() {
       </section>
       <section>
         <h2 className="text-lg font-semibold text-white">7. Контакты</h2>
-        <p>По вопросам: <span className="text-primary-400">privacy@pulsar.chat</span></p>
+        <p>По вопросам: <span className="text-primary-400">privacy@pulsar-chat.fun</span></p>
       </section>
     </div>
   );
@@ -133,7 +133,7 @@ function CookiesEn() {
       </section>
       <section>
         <h2 className="text-lg font-semibold text-white">7. Contact</h2>
-        <p>For inquiries: <span className="text-primary-400">privacy@pulsar.chat</span></p>
+        <p>For inquiries: <span className="text-primary-400">privacy@pulsar-chat.fun</span></p>
       </section>
     </div>
   );

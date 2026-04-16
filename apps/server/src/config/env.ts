@@ -32,7 +32,7 @@ export const env = cleanEnv(process.env, {
   SMTP_PORT: num({ default: 587 }),
   SMTP_USER: str({ default: '' }),
   SMTP_PASS: str({ default: '' }),
-  SMTP_FROM: str({ default: 'noreply@pulsar.chat' }),
+  SMTP_FROM: str({ default: 'noreply@pulsar-chat.fun' }),
 
   // Web Push (VAPID). Generate via: npx web-push generate-vapid-keys
   VAPID_PUBLIC_KEY: str({ default: '' }),

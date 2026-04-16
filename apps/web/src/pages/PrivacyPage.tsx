@@ -117,7 +117,7 @@ function PrivacyContentRu() {
           <li><strong>Отказ от продажи данных</strong> — мы не продаём персональные данные (CCPA)</li>
         </ul>
         <p className="mt-2">
-          Для реализации своих прав свяжитесь с нами по адресу: <span className="text-primary-400">privacy@pulsar.chat</span>
+          Для реализации своих прав свяжитесь с нами по адресу: <span className="text-primary-400">privacy@pulsar-chat.fun</span>
         </p>
       </section>
 
@@ -167,7 +167,7 @@ function PrivacyContentRu() {
       <section>
         <h2 className="text-lg font-semibold text-white">12. Контакты</h2>
         <p>
-          По вопросам конфиденциальности и защиты данных: <span className="text-primary-400">privacy@pulsar.chat</span>
+          По вопросам конфиденциальности и защиты данных: <span className="text-primary-400">privacy@pulsar-chat.fun</span>
         </p>
       </section>
     </div>
@@ -261,7 +261,7 @@ function PrivacyContentEn() {
           <li><strong>Opt-out of data sale</strong> — we do not sell personal data (CCPA)</li>
         </ul>
         <p className="mt-2">
-          To exercise your rights, contact us at: <span className="text-primary-400">privacy@pulsar.chat</span>
+          To exercise your rights, contact us at: <span className="text-primary-400">privacy@pulsar-chat.fun</span>
         </p>
       </section>
 
@@ -310,7 +310,7 @@ function PrivacyContentEn() {
       <section>
         <h2 className="text-lg font-semibold text-white">12. Contact</h2>
         <p>
-          For privacy and data protection inquiries: <span className="text-primary-400">privacy@pulsar.chat</span>
+          For privacy and data protection inquiries: <span className="text-primary-400">privacy@pulsar-chat.fun</span>
         </p>
       </section>
     </div>

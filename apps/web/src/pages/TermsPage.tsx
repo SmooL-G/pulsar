@@ -83,7 +83,7 @@ function TermsRu() {
       </section>
       <section>
         <h2 className="text-lg font-semibold text-white">10. Контакты</h2>
-        <p>По вопросам Соглашения: <span className="text-primary-400">legal@pulsar.chat</span></p>
+        <p>По вопросам Соглашения: <span className="text-primary-400">legal@pulsar-chat.fun</span></p>
       </section>
     </div>
   );
@@ -145,7 +145,7 @@ function TermsEn() {
       </section>
       <section>
         <h2 className="text-lg font-semibold text-white">10. Contact</h2>
-        <p>For Agreement inquiries: <span className="text-primary-400">legal@pulsar.chat</span></p>
+        <p>For Agreement inquiries: <span className="text-primary-400">legal@pulsar-chat.fun</span></p>
       </section>
     </div>
   );
