@@ -521,4 +521,15 @@ export const ko = {
   'dev.sec.support.p': '봇 관리 명령은 @pulsarbot과 채팅하거나 커뮤니티에 참여하세요.',
   'dev.sec.support.btn': 'Pulsar 열기',
   'common.back': '뒤로',
+
+  // Donate page
+  'donate.title': 'Pulsar 후원하기',
+  'donate.subtitle': 'Pulsar는 커뮤니티 프로젝트입니다. 후원은 서버, 감사, 성장에 사용됩니다. 함께해 주셔서 감사합니다.',
+  'donate.address': '주소',
+  'donate.copy': '주소 복사',
+  'donate.copied': '주소가 클립보드에 복사되었습니다',
+  'donate.scanQr': '지갑 앱으로 스캔하세요',
+  'donate.boostyDesc': '구독하고 혜택을 받아보세요',
+  'donate.support': '후원하기',
+  'donate.thanks': '열린, 암호화된 미래를 지지해 주셔서 감사합니다.',
 };

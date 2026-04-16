@@ -521,4 +521,15 @@ export const fr = {
   'dev.sec.support.p': 'Discutez avec @pulsarbot pour les commandes de gestion de bots, ou rejoignez notre communauté.',
   'dev.sec.support.btn': 'Ouvrir Pulsar',
   'common.back': 'Retour',
+
+  // Donate page
+  'donate.title': 'Soutenir Pulsar',
+  'donate.subtitle': 'Pulsar est un projet communautaire. Les dons aident à couvrir les serveurs, les audits et la croissance. Merci d\'être là.',
+  'donate.address': 'Adresse',
+  'donate.copy': 'Copier l\'adresse',
+  'donate.copied': 'Adresse copiée dans le presse-papiers',
+  'donate.scanQr': 'Scannez avec votre application wallet',
+  'donate.boostyDesc': 'Abonnez-vous et débloquez des avantages',
+  'donate.support': 'Soutenir',
+  'donate.thanks': 'Merci de soutenir un avenir ouvert et chiffré.',
 };

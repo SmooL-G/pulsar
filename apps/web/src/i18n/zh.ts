@@ -521,4 +521,15 @@ export const zh = {
   'dev.sec.support.p': '与 @pulsarbot 聊天获取机器人管理命令，或加入我们的社区。',
   'dev.sec.support.btn': '打开 Pulsar',
   'common.back': '返回',
+
+  // Donate page
+  'donate.title': '支持 Pulsar',
+  'donate.subtitle': 'Pulsar 是一个社区项目。捐赠有助于支付服务器、审计和发展费用。感谢您的支持。',
+  'donate.address': '地址',
+  'donate.copy': '复制地址',
+  'donate.copied': '地址已复制到剪贴板',
+  'donate.scanQr': '使用钱包应用扫描',
+  'donate.boostyDesc': '订阅并解锁专属福利',
+  'donate.support': '支持',
+  'donate.thanks': '感谢您支持开放、加密的未来。',
 };

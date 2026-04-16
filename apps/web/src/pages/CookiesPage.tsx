@@ -7,11 +7,11 @@ export function CookiesPage() {
   const { t, locale } = useI18n();
 
   return (
-    <div className="min-h-screen bg-dark-800 text-gray-200">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="bg-dark-800 text-gray-200" style={{ height: '100dvh', overflowY: 'auto' }}>
+      <div className="max-w-3xl mx-auto px-4 pt-3-safe pb-safe py-8">
         <div className="flex items-center gap-3 mb-8">
           <button
-            onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/login')}
+            onClick={() => navigate('/info')}
             className="p-2 rounded-lg hover:bg-dark-600 transition-colors"
           >
             <ArrowLeft size={20} />

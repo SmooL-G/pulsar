@@ -89,7 +89,7 @@ export function DonatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 text-white" style={{ touchAction: 'pan-y' }}>
+    <div className="bg-dark-900 text-white" style={{ height: '100dvh', overflowY: 'auto', touchAction: 'pan-y' }}>
       {/* Stars */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(76,110,245,0.07) 0%, rgba(16,17,19,1) 60%)' }} />
@@ -100,9 +100,9 @@ export function DonatePage() {
       </div>
 
       {/* Header */}
-      <header className="relative z-20 flex items-center px-4 sm:px-8 py-4 border-b border-white/5 backdrop-blur-sm bg-dark-900/60">
+      <header className="relative z-20 flex items-center px-4 sm:px-8 py-4 pt-3-safe border-b border-white/5 backdrop-blur-sm bg-dark-900/60">
         <button
-          onClick={() => navigate('/login')}
+          onClick={() => navigate('/info')}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft size={15} />

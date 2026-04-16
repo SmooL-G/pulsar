@@ -521,4 +521,15 @@ export const tr = {
   'dev.sec.support.p': 'Bot yönetim komutları için @pulsarbot ile sohbet edin veya topluluğumuza katılın.',
   'dev.sec.support.btn': "Pulsar'ı aç",
   'common.back': 'Geri',
+
+  // Donate page
+  'donate.title': "Pulsar'ı Destekle",
+  'donate.subtitle': 'Pulsar bir topluluk projesidir. Bağışlar sunucuları, denetimleri ve büyümeyi karşılamaya yardımcı olur. Burada olduğunuz için teşekkürler.',
+  'donate.address': 'Adres',
+  'donate.copy': 'Adresi kopyala',
+  'donate.copied': 'Adres panoya kopyalandı',
+  'donate.scanQr': 'Cüzdan uygulamanla tara',
+  'donate.boostyDesc': 'Abone ol ve avantajların kilidini aç',
+  'donate.support': 'Destekle',
+  'donate.thanks': 'Açık ve şifreli bir geleceği desteklediğin için teşekkürler.',
 };

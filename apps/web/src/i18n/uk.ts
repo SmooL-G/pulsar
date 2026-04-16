@@ -521,4 +521,15 @@ export const uk = {
   'dev.sec.support.p': 'Напишіть @pulsarbot для команд керування ботами або приєднуйтесь до нашої спільноти.',
   'dev.sec.support.btn': 'Відкрити Pulsar',
   'common.back': 'Назад',
+
+  // Donate page
+  'donate.title': 'Підтримати Pulsar',
+  'donate.subtitle': 'Pulsar — це проєкт спільноти. Пожертви допомагають оплачувати сервери, аудити та розвиток. Дякуємо, що ви з нами.',
+  'donate.address': 'Адреса',
+  'donate.copy': 'Скопіювати адресу',
+  'donate.copied': 'Адресу скопійовано до буфера обміну',
+  'donate.scanQr': 'Відскануйте у своєму гаманці',
+  'donate.boostyDesc': 'Підпишіться та отримайте бонуси',
+  'donate.support': 'Підтримати',
+  'donate.thanks': 'Дякуємо, що підтримуєте відкрите та зашифроване майбутнє.',
 };

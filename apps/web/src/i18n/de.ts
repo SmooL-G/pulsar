@@ -521,4 +521,15 @@ export const de = {
   'dev.sec.support.p': 'Chatte mit @pulsarbot für Bot-Verwaltungsbefehle oder tritt unserer Community bei.',
   'dev.sec.support.btn': 'Pulsar öffnen',
   'common.back': 'Zurück',
+
+  // Donate page
+  'donate.title': 'Pulsar unterstützen',
+  'donate.subtitle': 'Pulsar ist ein Community-Projekt. Spenden helfen, Server, Audits und Wachstum zu finanzieren. Danke, dass du dabei bist.',
+  'donate.address': 'Adresse',
+  'donate.copy': 'Adresse kopieren',
+  'donate.copied': 'Adresse in die Zwischenablage kopiert',
+  'donate.scanQr': 'Mit deiner Wallet-App scannen',
+  'donate.boostyDesc': 'Abonniere und schalte Vorteile frei',
+  'donate.support': 'Unterstützen',
+  'donate.thanks': 'Danke, dass du eine offene, verschlüsselte Zukunft unterstützt.',
 };
