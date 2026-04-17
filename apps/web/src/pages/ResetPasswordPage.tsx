@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, KeyRound, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, KeyRound, Loader2, Check, Eye, EyeOff } from 'lucide-react';
 import { api } from '../services/api';
 import { useI18n } from '../i18n';
 import toast from 'react-hot-toast';
@@ -14,6 +14,7 @@ export function ResetPasswordPage() {
   const [email, setEmail] = useState(emailFromState);
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -100,15 +101,25 @@ export function ResetPasswordPage() {
 
             <div>
               <label className="block text-sm text-gray-400 mb-1.5">{t('reset.newPassword')}</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={t('auth.passwordPlaceholder')}
-                minLength={8}
-                className="w-full px-4 py-2.5 bg-dark-600 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-primary-500"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder={t('auth.passwordPlaceholder')}
+                  minLength={8}
+                  className="w-full px-4 py-2.5 pr-10 bg-dark-600 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <button

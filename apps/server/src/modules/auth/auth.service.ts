@@ -12,7 +12,7 @@ import {
 import { ERROR_CODES } from '@pulsar/shared';
 
 const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '7d';
+const REFRESH_TOKEN_EXPIRY = '30d';
 const NONCE_TTL = 300; // 5 minutes
 
 interface TokenPair {
