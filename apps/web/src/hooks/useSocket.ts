@@ -78,10 +78,18 @@ export function useSocket() {
 
     // Message events
     socket.on('message:new', (message: Message) => {
-      addMessage(message);
-      const activeChatId = useChatStore.getState().activeChat?.id;
+      // Remove optimistic pending message if this is our own confirmed message
       const currentUserId = useAuthStore.getState().user?.id;
       const isOwnMessage = message.senderId === currentUserId;
+      if (isOwnMessage) {
+        const chatMsgs = useMessageStore.getState().messages[message.chatId] || [];
+        const pending = chatMsgs.find((m) => m.id.startsWith('pending-') && m.senderId === currentUserId);
+        if (pending) {
+          useMessageStore.getState().deleteMessage(message.chatId, pending.id);
+        }
+      }
+      addMessage(message);
+      const activeChatId = useChatStore.getState().activeChat?.id;
       const isActiveChat = activeChatId === message.chatId;
       const chat = useChatStore.getState().chats.find((c) => c.id === message.chatId);
       const newUnread = (!isOwnMessage && !isActiveChat)

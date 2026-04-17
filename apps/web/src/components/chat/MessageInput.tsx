@@ -4,6 +4,8 @@ import { EmojiPicker } from './EmojiPicker';
 import { BotChatBar } from './BotChatBar';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
+import { useMessageStore } from '../../store/messageStore';
+import { useAuthStore } from '../../store/authStore';
 import { api } from '../../services/api';
 import { useI18n } from '../../i18n';
 import toast from 'react-hot-toast';
@@ -107,15 +109,53 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
         if (encrypted) encryptedContent = encrypted;
       }
 
+      const msgType = attachments.length > 0 ? (attachments[0].mimeType.startsWith('image/') ? 'IMAGE' : 'FILE') : 'TEXT';
+
       socket.emit('message:send', {
         chatId,
         content: encryptedContent ? undefined : (content || undefined),
-        type: attachments.length > 0 ? (attachments[0].mimeType.startsWith('image/') ? 'IMAGE' : 'FILE') : 'TEXT',
+        type: msgType,
         ...(signed && { signature: signed.signature, signerWallet: signed.signerWallet }),
         ...(encryptedContent && { encryptedContent }),
         ...(chatType === 'CHANNEL' && commentsOn && { commentsEnabled: true }),
         ...(attachments.length > 0 && { attachments }),
       });
+
+      // Optimistic render — show message immediately without waiting for server broadcast
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) {
+        useMessageStore.getState().addMessage({
+          id: `pending-${Date.now()}`,
+          chatId,
+          senderId: currentUser.id,
+          content: encryptedContent ? undefined : (content || undefined),
+          type: msgType,
+          replyToId: null,
+          isEdited: false,
+          isDeleted: false,
+          metadata: null,
+          signature: null,
+          signerWallet: null,
+          encryptedContent: encryptedContent || null,
+          encryptionType: encryptedContent ? 'nacl-box' : null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          sender: {
+            id: currentUser.id,
+            username: currentUser.username,
+            displayName: currentUser.displayName,
+            avatarUrl: currentUser.avatarUrl,
+          },
+          attachments: attachments.map((a, i) => ({
+            id: `pending-att-${i}`,
+            fileName: a.fileName,
+            fileSize: a.fileSize,
+            mimeType: a.mimeType,
+            url: a.url,
+          })),
+          status: 'sending',
+        } as any);
+      }
     }
 
     setText('');
