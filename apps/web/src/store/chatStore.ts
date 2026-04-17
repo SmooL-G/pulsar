@@ -49,13 +49,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   updateChat: (chatId, updates) => {
-    set((state) => ({
-      chats: state.chats.map((c) => (c.id === chatId ? { ...c, ...updates } : c)),
-      activeChat:
-        state.activeChat?.id === chatId
-          ? { ...state.activeChat, ...updates }
-          : state.activeChat,
-    }));
+    set((state) => {
+      const updated = state.chats.map((c) => (c.id === chatId ? { ...c, ...updates } : c));
+      // Move chat with new message to top
+      if ((updates as any).lastMessage) {
+        const idx = updated.findIndex((c) => c.id === chatId);
+        if (idx > 0) {
+          const [chat] = updated.splice(idx, 1);
+          updated.unshift(chat);
+        }
+      }
+      return {
+        chats: updated,
+        activeChat:
+          state.activeChat?.id === chatId
+            ? { ...state.activeChat, ...updates }
+            : state.activeChat,
+      };
+    });
   },
 
   removeChat: (chatId) => {
