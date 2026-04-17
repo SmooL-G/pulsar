@@ -70,6 +70,9 @@ const PHASES: Phase[] = [
       { text: { en: 'Message signing with Solana wallet', ru: 'Подпись сообщений кошельком Solana' }, status: 'done' },
       { text: { en: 'NFT avatar verification', ru: 'Верификация NFT-аватаров' }, status: 'done' },
       { text: { en: 'Generative avatars', ru: 'Генеративные аватары' }, status: 'done' },
+      { text: { en: 'Multi-device E2E key sync (QR / backup phrase)', ru: 'Синхронизация E2E-ключей между устройствами (QR / бекап-фраза)' }, status: 'planned', icon: <Shield size={14} /> },
+      { text: { en: 'Session verification (key fingerprints)', ru: 'Верификация сессий (отпечатки ключей)' }, status: 'planned', icon: <Shield size={14} /> },
+      { text: { en: 'Secret Chats with perfect forward secrecy', ru: 'Секретные чаты с perfect forward secrecy' }, status: 'planned', icon: <Shield size={14} /> },
     ],
   },
   {
