@@ -25,21 +25,21 @@ export async function botAuthMiddleware(request: FastifyRequest, reply: FastifyR
     return reply.status(401).send({ error: 'INVALID_TOKEN', message: 'Invalid token format' });
   }
 
-  const botId = rawToken.slice(0, colonIdx);
-  const cacheKey = `bot:auth:${botId}`;
+  const tokenPrefix = rawToken.slice(0, colonIdx);
+  const cacheKey = `bot:auth:${tokenPrefix}`;
 
   // Try Redis cache first
   const cached = await redis.get(cacheKey);
   if (cached) {
     request.user = JSON.parse(cached);
-    // Update lastSeenAt async
-    prisma.bot.update({ where: { id: botId }, data: { lastSeenAt: new Date() } }).catch(() => {});
+    const parsed = JSON.parse(cached);
+    prisma.bot.update({ where: { id: parsed.botId }, data: { lastSeenAt: new Date() } }).catch(() => {});
     return;
   }
 
-  // Fetch from DB
-  const bot = await prisma.bot.findUnique({
-    where: { id: botId },
+  // Token prefix is first 8 hex chars of bot UUID — find by tokenPlain or by prefix match
+  const bot = await prisma.bot.findFirst({
+    where: { tokenPlain: rawToken },
     include: {
       user: { select: { id: true, walletAddress: true, status: true } },
     },
@@ -54,9 +54,12 @@ export async function botAuthMiddleware(request: FastifyRequest, reply: FastifyR
     return reply.status(401).send({ error: 'UNAUTHORIZED', message: 'System bots cannot authenticate via token' });
   }
 
-  const valid = await bcrypt.compare(rawToken, bot.tokenHash);
-  if (!valid) {
-    return reply.status(401).send({ error: 'INVALID_TOKEN', message: 'Invalid token' });
+  // If found by tokenPlain — already verified. Otherwise fall back to bcrypt.
+  if (bot.tokenPlain !== rawToken) {
+    const valid = await bcrypt.compare(rawToken, bot.tokenHash);
+    if (!valid) {
+      return reply.status(401).send({ error: 'INVALID_TOKEN', message: 'Invalid token' });
+    }
   }
 
   const payload: BotAuthPayload = {
@@ -74,5 +77,5 @@ export async function botAuthMiddleware(request: FastifyRequest, reply: FastifyR
   await redis.setex(cacheKey, 300, JSON.stringify(payload));
 
   // Update lastSeenAt async
-  prisma.bot.update({ where: { id: botId }, data: { lastSeenAt: new Date() } }).catch(() => {});
+  prisma.bot.update({ where: { id: bot.id }, data: { lastSeenAt: new Date() } }).catch(() => {});
 }
