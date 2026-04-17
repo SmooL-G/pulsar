@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n';
 
@@ -16,10 +16,17 @@ export function CookiesPage() {
           >
             <ArrowLeft size={20} />
           </button>
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold text-white">{t('legal.cookiesTitle')}</h1>
             <p className="text-sm text-gray-400">{t('privacy.lastUpdated')}: 04.04.2026</p>
           </div>
+          <button
+            onClick={() => navigate('/')}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-500/15 border border-primary-500/30 text-primary-400 hover:bg-primary-500/25 text-xs font-medium transition-colors"
+          >
+            <Home size={12} />
+            Pulsar
+          </button>
         </div>
         {locale === 'ru' ? <CookiesRu /> : <CookiesEn />}
       </div>

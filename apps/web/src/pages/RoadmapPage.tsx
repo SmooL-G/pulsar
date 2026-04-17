@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Loader2, Clock, Sparkles, Shield, Gem, Crown, Search, MessageCircle, Globe, Megaphone, Bot, Zap } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Clock, Sparkles, Shield, Gem, Crown, Search, MessageCircle, Globe, Megaphone, Bot, Zap, Home } from 'lucide-react';
 import { useI18n } from '../i18n';
 
 type Status = 'done' | 'active' | 'planned';
@@ -309,11 +309,19 @@ export function RoadmapPage() {
       <div className="relative z-10 max-w-5xl mx-auto px-6 pt-8 pb-12">
         <div className="flex items-center justify-between mb-8">
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/info')}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-700/50 border border-dark-500/30 backdrop-blur-sm text-gray-400 hover:text-white transition-colors"
           >
             <ArrowLeft size={16} />
             <span className="text-sm">{t('roadmap.back')}</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-500/15 border border-primary-500/30 text-primary-400 hover:bg-primary-500/25 text-sm font-medium transition-colors"
+          >
+            <Home size={14} />
+            Pulsar
           </button>
 
           {/* Language switcher */}

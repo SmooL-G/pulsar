@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, Check, ExternalLink, Heart, Gem, Mail, MessageCircle, Users, Handshake } from 'lucide-react';
+import { ArrowLeft, Copy, Check, ExternalLink, Heart, Gem, Mail, MessageCircle, Users, Handshake, Home } from 'lucide-react';
 import { useI18n } from '../i18n';
 
 function generateStars(count: number) {
@@ -111,7 +111,13 @@ export function DonatePage() {
         <div className="flex-1 text-center">
           <span className="text-sm font-semibold tracking-widest uppercase text-primary-400">Pulsar</span>
         </div>
-        <div className="w-20" />
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-500/15 border border-primary-500/30 text-primary-400 hover:bg-primary-500/25 text-xs font-medium transition-colors"
+        >
+          <Home size={12} />
+          Pulsar
+        </button>
       </header>
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-8 pb-24">

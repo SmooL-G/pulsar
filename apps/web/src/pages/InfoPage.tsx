@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Code, Map, Heart, Shield, FileText, Cookie, Sparkles } from 'lucide-react';
+import { ArrowLeft, Code, Map, Heart, Shield, FileText, Cookie, Sparkles, Home } from 'lucide-react';
 import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n';
 
@@ -76,6 +76,14 @@ export function InfoPage() {
           >
             <ArrowLeft size={16} />
             <span className="text-sm">{t('common.back')}</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-500/15 border border-primary-500/30 text-primary-400 hover:bg-primary-500/25 hover:text-primary-300 transition-colors text-sm font-medium"
+          >
+            <Home size={14} />
+            Pulsar
           </button>
 
           {/* Language switcher */}

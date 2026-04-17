@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bot, Send, Webhook, Shield, Keyboard, MessageSquare, Copy, Check, Code, BookOpen, Zap, Globe, Terminal, Lock, Package } from 'lucide-react';
+import { ArrowLeft, Bot, Send, Webhook, Shield, Keyboard, MessageSquare, Copy, Check, Code, BookOpen, Zap, Globe, Terminal, Lock, Package, Home } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '../i18n';
 
@@ -78,6 +78,14 @@ export function DevelopersPage() {
           >
             <ArrowLeft size={16} />
             <span className="text-sm">{t('common.back')}</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-500/15 border border-primary-500/30 text-primary-400 hover:bg-primary-500/25 text-sm font-medium transition-colors"
+          >
+            <Home size={14} />
+            Pulsar
           </button>
 
           {/* Language switcher */}
