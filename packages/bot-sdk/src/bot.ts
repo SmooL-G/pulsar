@@ -68,7 +68,7 @@ export class Bot {
 
   private headers(): Record<string, string> {
     return {
-      'Authorization': `Bearer ${this.token}`,
+      'Authorization': `Bot ${this.token}`,
       'Content-Type': 'application/json',
     };
   }
@@ -147,7 +147,7 @@ export class Bot {
           limit: String(this.pollLimit),
         });
         const res = await fetch(`${this.apiUrl}/updates?${query}`, {
-          headers: { Authorization: `Bearer ${this.token}` },
+          headers: { Authorization: `Bot ${this.token}` },
         });
         if (!res.ok) {
           await this.sleep(2000);

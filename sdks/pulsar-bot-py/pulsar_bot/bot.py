@@ -131,7 +131,7 @@ class Bot:
         if self._client is None:
             self._client = httpx.AsyncClient(
                 base_url=self.api_url,
-                headers={"Authorization": f"Bearer {self.token}"},
+                headers={"Authorization": f"Bot {self.token}"},
                 timeout=httpx.Timeout(self.poll_timeout + 10),
             )
         return self._client
