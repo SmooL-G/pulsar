@@ -218,7 +218,7 @@ class Bot:
                     },
                 )
                 for update in data.get("result") or []:
-                    self._offset = str(int(update["id"]) + 1)
+                    self._offset = update.get("createdAt") or update.get("id", self._offset)
                     await self._dispatch(update)
             except asyncio.CancelledError:
                 raise

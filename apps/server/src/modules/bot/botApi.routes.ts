@@ -156,24 +156,38 @@ export async function botApiRoutes(app: FastifyInstance) {
     }
   );
 
-  // GET /updates — long polling
+  // GET /updates — long polling (offset = ISO createdAt cursor or '0')
   app.get<{ Querystring: { offset?: string; timeout?: string; limit?: string } }>(
     '/updates',
     async (request, reply) => {
       const { botId } = request.user as any;
-      const offset = BigInt(request.query.offset || '0');
+      const rawOffset = request.query.offset || '';
+      const cursorDate = rawOffset && rawOffset !== '0' ? new Date(rawOffset) : null;
       const timeout = Math.min(Number(request.query.timeout || 30), 60);
       const limit = Math.min(Number(request.query.limit || 100), 100);
 
+      const whereClause = {
+        botId,
+        ...(cursorDate && !isNaN(cursorDate.getTime()) ? { createdAt: { gt: cursorDate } } : {}),
+      };
+
       // Immediate fetch
       let updates = await prisma.botUpdate.findMany({
-        where: { botId, ...(offset ? { id: { gt: String(offset) } } : {}) },
-        orderBy: { id: 'asc' },
+        where: whereClause,
+        orderBy: { createdAt: 'asc' },
         take: limit,
       });
 
       if (updates.length > 0) {
-        return { ok: true, result: updates.map(u => ({ ...u, id: u.id.toString() })) };
+        return {
+          ok: true,
+          result: updates.map((u) => ({
+            id: u.id,
+            type: u.type,
+            payload: u.payload,
+            createdAt: u.createdAt.toISOString(),
+          })),
+        };
       }
 
       // Long-poll via Redis pub/sub
@@ -202,12 +216,20 @@ export async function botApiRoutes(app: FastifyInstance) {
       });
 
       updates = await prisma.botUpdate.findMany({
-        where: { botId, ...(offset ? { id: { gt: String(offset) } } : {}) },
-        orderBy: { id: 'asc' },
+        where: whereClause,
+        orderBy: { createdAt: 'asc' },
         take: limit,
       });
 
-      return { ok: true, result: updates.map(u => ({ ...u, id: u.id.toString() })) };
+      return {
+        ok: true,
+        result: updates.map((u) => ({
+          id: u.id,
+          type: u.type,
+          payload: u.payload,
+          createdAt: u.createdAt.toISOString(),
+        })),
+      };
     }
   );
 
