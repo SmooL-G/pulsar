@@ -20,13 +20,13 @@ interface MessageInputProps {
 
 // Настройка E2E шифрования — localStorage
 function getE2EEnabled(): boolean {
-  return localStorage.getItem('pulsar_e2e_enabled') !== 'false';
+  return localStorage.getItem('pulsar_e2e_enabled') === 'true';
 }
 function setE2EEnabled(v: boolean) {
   localStorage.setItem('pulsar_e2e_enabled', v ? 'true' : 'false');
 }
 function getSignEnabled(): boolean {
-  return localStorage.getItem('pulsar_sign_enabled') !== 'false';
+  return localStorage.getItem('pulsar_sign_enabled') === 'true';
 }
 function setSignEnabled(v: boolean) {
   localStorage.setItem('pulsar_sign_enabled', v ? 'true' : 'false');
