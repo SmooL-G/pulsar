@@ -3,6 +3,7 @@ import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
 import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck, Lock, MessageCircle } from 'lucide-react';
 import { InlineBotButtons } from './InlineBotButtons';
+import { AudioAttachment } from './AudioAttachment';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -228,6 +229,7 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
                 {message.attachments.map((file) => {
                   const url = (file as any).url || (file as any).s3Key || '';
                   const isImage = file.mimeType?.startsWith('image/');
+                  const isAudio = file.mimeType?.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac|aac|opus|webm)$/i.test(file.fileName || '');
 
                   if (isImage) {
                     return (
@@ -245,6 +247,18 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
                   const sizeStr = file.fileSize < 1024 * 1024
                     ? `${(file.fileSize / 1024).toFixed(0)} KB`
                     : `${(file.fileSize / 1024 / 1024).toFixed(1)} MB`;
+
+                  if (isAudio) {
+                    return (
+                      <AudioAttachment
+                        key={file.id}
+                        url={url}
+                        fileName={file.fileName}
+                        sizeStr={sizeStr}
+                        isOwn={isOwn}
+                      />
+                    );
+                  }
 
                   return (
                     <a
