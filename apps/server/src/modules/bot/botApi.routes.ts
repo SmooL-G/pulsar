@@ -1,9 +1,12 @@
 import type { FastifyInstance } from 'fastify';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { nanoid } from 'nanoid';
 import { prisma } from '../../config/database.js';
 import { botAuthMiddleware } from '../../middleware/botAuth.js';
 import { redis } from '../../config/redis.js';
 import { getIO } from '../../socket/index.js';
 import { env } from '../../config/env.js';
+import { s3Client } from '../../config/s3.js';
 
 export async function botApiRoutes(app: FastifyInstance) {
   app.addHook('preHandler', botAuthMiddleware);
@@ -93,6 +96,122 @@ export async function botApiRoutes(app: FastifyInstance) {
       return { ok: true, message: payload };
     }
   );
+
+  // POST /sendAudio — send an audio file (downloaded from URL or base64)
+  // Body: { chatId, audioUrl, fileName?, caption? }
+  app.post<{
+    Body: { chatId: string; audioUrl: string; fileName?: string; caption?: string };
+  }>('/sendAudio', async (request, reply) => {
+    const { userId } = request.user as any;
+    const { chatId, audioUrl, fileName, caption } = request.body;
+
+    if (!chatId || !audioUrl) {
+      return reply.status(400).send({ error: 'INVALID_INPUT', message: 'chatId and audioUrl required' });
+    }
+
+    const membership = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId, userId } },
+      select: { leftAt: true },
+    });
+    if (!membership || membership.leftAt) {
+      return reply.status(403).send({ error: 'BOT_NOT_IN_CHAT' });
+    }
+
+    // Download audio from given URL
+    let buffer: Buffer;
+    let mimeType = 'audio/mpeg';
+    try {
+      const r = await fetch(audioUrl, { redirect: 'follow' });
+      if (!r.ok) {
+        return reply.status(400).send({ error: 'DOWNLOAD_FAILED', message: `HTTP ${r.status} fetching audio` });
+      }
+      const ab = await r.arrayBuffer();
+      buffer = Buffer.from(ab);
+      const ct = r.headers.get('content-type');
+      if (ct && ct.startsWith('audio/')) mimeType = ct;
+    } catch (err: any) {
+      return reply.status(500).send({ error: 'DOWNLOAD_FAILED', message: err.message });
+    }
+
+    // Limit: 50MB for bots
+    if (buffer.length > 50 * 1024 * 1024) {
+      return reply.status(413).send({ error: 'FILE_TOO_LARGE', message: 'Audio exceeds 50MB' });
+    }
+
+    const ext = (fileName?.split('.').pop()?.toLowerCase()) || 'mp3';
+    const finalName = fileName || `audio-${Date.now()}.${ext}`;
+    const key = `files/bot-${userId}/${nanoid()}.${ext}`;
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: env.S3_BUCKET,
+        Key: key,
+        Body: buffer,
+        ContentType: mimeType,
+      }),
+    );
+
+    const url = env.S3_PUBLIC_URL ? `${env.S3_PUBLIC_URL}/${key}` : `/s3/${env.S3_BUCKET}/${key}`;
+
+    const message = await prisma.message.create({
+      data: {
+        chatId,
+        senderId: userId,
+        content: caption?.trim() || null,
+        type: 'FILE',
+        attachments: {
+          create: [{
+            uploaderId: userId,
+            fileName: finalName,
+            fileSize: BigInt(buffer.length),
+            mimeType,
+            s3Key: url,
+            s3Bucket: env.S3_BUCKET,
+          }],
+        },
+      },
+      include: {
+        sender: {
+          select: { id: true, username: true, displayName: true, avatarUrl: true, isBot: true },
+        },
+        attachments: {
+          select: { id: true, fileName: true, fileSize: true, mimeType: true, s3Key: true },
+        },
+      },
+    });
+
+    const payload = {
+      id: message.id,
+      chatId: message.chatId,
+      senderId: message.senderId,
+      content: message.content,
+      type: message.type,
+      replyToId: null,
+      isEdited: false,
+      isDeleted: false,
+      metadata: null,
+      signature: null,
+      signerWallet: null,
+      encryptedContent: null,
+      encryptionType: null,
+      createdAt: message.createdAt.toISOString(),
+      updatedAt: message.updatedAt.toISOString(),
+      sender: message.sender,
+      status: 'sent',
+      attachments: message.attachments.map((a: any) => ({
+        id: a.id,
+        fileName: a.fileName,
+        fileSize: Number(a.fileSize),
+        mimeType: a.mimeType,
+        url: a.s3Key,
+      })),
+    };
+
+    const io = getIO();
+    if (io) io.to(`chat:${chatId}`).emit('message:new', payload as any);
+
+    return { ok: true, message: payload };
+  });
 
   // POST /deleteMessage — moderate: delete a message
   app.post<{ Body: { chatId: string; messageId: string } }>('/deleteMessage', async (request, reply) => {
