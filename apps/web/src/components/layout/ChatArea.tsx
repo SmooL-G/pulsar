@@ -121,6 +121,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         chatId={activeChat.id}
         chatType={activeChat.type as 'DIRECT' | 'GROUP'}
         recipientUserId={(activeChat as any).otherUser?.id}
+        recipientIsBot={!!(activeChat as any).otherUser?.isBot}
       />
 
       {showTransfer && (

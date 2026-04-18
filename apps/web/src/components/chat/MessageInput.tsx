@@ -16,6 +16,7 @@ interface MessageInputProps {
   chatId: string;
   chatType?: 'DIRECT' | 'GROUP' | 'CHANNEL';
   recipientUserId?: string;
+  recipientIsBot?: boolean;
 }
 
 // Настройка E2E шифрования — localStorage
@@ -32,7 +33,7 @@ function setSignEnabled(v: boolean) {
   localStorage.setItem('pulsar_sign_enabled', v ? 'true' : 'false');
 }
 
-export function MessageInput({ chatId, chatType, recipientUserId }: MessageInputProps) {
+export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot }: MessageInputProps) {
   const { t } = useI18n();
   const [text, setText] = useState('');
   const [e2eOn, setE2eOn] = useState(getE2EEnabled);
@@ -94,8 +95,8 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
         setUploading(false);
       }
 
-      // Подпись сообщения кошельком Solana (только если включена)
-      const signed = signOn ? await signMessage(
+      // Подпись сообщения кошельком Solana (только если включена и собеседник не бот)
+      const signed = signOn && !recipientIsBot ? await signMessage(
         chatId,
         content || 'file',
         walletSignMessage ?? undefined,
@@ -104,7 +105,7 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
 
       // E2E шифрование только для DM и если включено
       let encryptedContent: string | undefined;
-      if (e2eOn && chatType === 'DIRECT' && recipientUserId && content) {
+      if (e2eOn && chatType === 'DIRECT' && !recipientIsBot && recipientUserId && content) {
         const encrypted = await encryptMessage(content, recipientUserId);
         if (encrypted) encryptedContent = encrypted;
       }
@@ -196,7 +197,7 @@ export function MessageInput({ chatId, chatType, recipientUserId }: MessageInput
     <div className="px-4 py-3 pb-3-safe pl-safe pr-safe shrink-0">
      <BotChatBar chatId={chatId} onCommandSelect={handleBotCommand} />
      <div className="bg-white dark:bg-dark-600 rounded-2xl shadow-lg shadow-black/10 dark:shadow-black/30 border border-gray-200/50 dark:border-dark-500/50 px-3 py-2">
-      {chatType === 'DIRECT' && (
+      {chatType === 'DIRECT' && !recipientIsBot && (
         <div className="flex items-center gap-3 mb-1 ml-1">
           <button
             onClick={toggleE2E}
