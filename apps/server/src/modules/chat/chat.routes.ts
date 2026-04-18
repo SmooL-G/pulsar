@@ -19,7 +19,7 @@ export async function chatRoutes(app: FastifyInstance) {
               take: 1,
               include: {
                 sender: {
-                  select: { username: true, displayName: true, verificationLevel: true, profileBadge: true },
+                  select: { username: true, displayName: true, verificationLevel: true, profileBadge: true, nickColor: true },
                 },
               },
             },
@@ -35,6 +35,7 @@ export async function chatRoutes(app: FastifyInstance) {
                     isOnline: true,
                     verificationLevel: true,
                     profileBadge: true,
+                    nickColor: true,
                     socialLinks: true,
                     bio: true,
                     lastSeenAt: true,
@@ -186,6 +187,7 @@ export async function chatRoutes(app: FastifyInstance) {
                 isOnline: true,
                 verificationLevel: true,
                 profileBadge: true,
+                nickColor: true,
                 socialLinks: true,
                 isBot: true,
                 role: true,
@@ -224,6 +226,7 @@ export async function chatRoutes(app: FastifyInstance) {
                 isOnline: true,
                 verificationLevel: true,
                 profileBadge: true,
+                nickColor: true,
                 socialLinks: true,
                 isBot: true,
                 role: true,

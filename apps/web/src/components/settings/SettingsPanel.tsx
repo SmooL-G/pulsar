@@ -200,6 +200,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                     {t('wallet.badges')}
                   </button>
                 </div>
+
+                <NickColorSection />
               </div>
             )}
 
@@ -880,6 +882,100 @@ function WebPushSection() {
       {status === 'unsupported' && (
         <p className="text-xs text-gray-500 mt-1">{titles.unsupported}</p>
       )}
+    </div>
+  );
+}
+
+function NickColorSection() {
+  const { user, setUser } = useAuthStore();
+  const { locale } = useI18n();
+  const ru = locale === 'ru';
+  const currentColor = (user as any)?.nickColor as string | null;
+  const verificationLevel = (user as any)?.verificationLevel || 0;
+  const isPro = verificationLevel >= 2;
+  const ownsColor = !!currentColor;
+
+  const presets = [
+    '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6',
+    '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#06b6d4',
+  ];
+
+  const [selected, setSelected] = useState<string>(currentColor || presets[5]);
+  const [busy, setBusy] = useState(false);
+
+  const apply = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { data } = await api.post('/wallet/purchase-nick-color', { color: selected });
+      if (user) {
+        setUser({ ...user, nickColor: data.nickColor, ...(data.balance ? { plsBalance: data.balance } : {}) } as any);
+      }
+      const msg = data.charged
+        ? (ru ? `Цвет применён! Списано 2000 PLS` : 'Color applied! 2000 PLS charged')
+        : (ru ? 'Цвет обновлён' : 'Color updated');
+      toast.success(msg);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || (ru ? 'Ошибка' : 'Error'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const labelPrice = ownsColor
+    ? (ru ? 'Применить (бесплатно)' : 'Apply (free)')
+    : isPro
+      ? (ru ? 'Применить (включено в Pro)' : 'Apply (Pro included)')
+      : (ru ? 'Купить за 2000 PLS' : 'Buy for 2000 PLS');
+
+  return (
+    <div className="p-4 bg-gradient-to-br from-purple-500/5 to-pink-500/5 border border-purple-500/20 rounded-xl space-y-3">
+      <div>
+        <p className="text-sm font-semibold flex items-center gap-2">
+          🎨 {ru ? 'Цвет ника' : 'Nickname color'}
+        </p>
+        <p className="text-xs text-gray-400 mt-0.5">
+          {ru
+            ? 'Выделяйтесь в чатах своим цветом ника. Изменяется бесплатно после покупки.'
+            : 'Stand out in chats with your custom nickname color. Free changes after purchase.'}
+        </p>
+      </div>
+
+      {/* Preview */}
+      <div className="px-3 py-2 bg-dark-700/30 rounded-lg">
+        <span className="text-xs text-gray-500">Preview:</span>{' '}
+        <span className="text-sm font-semibold" style={{ color: selected }}>
+          @{user?.username || 'username'}
+        </span>
+      </div>
+
+      {/* Preset palette */}
+      <div className="flex flex-wrap gap-2">
+        {presets.map((c) => (
+          <button
+            key={c}
+            onClick={() => setSelected(c)}
+            className={`w-8 h-8 rounded-full border-2 transition-transform ${selected === c ? 'border-white scale-110' : 'border-transparent hover:scale-105'}`}
+            style={{ backgroundColor: c }}
+            aria-label={c}
+          />
+        ))}
+        <input
+          type="color"
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          className="w-8 h-8 rounded-full bg-transparent cursor-pointer border-2 border-dashed border-gray-500"
+          title={ru ? 'Свой цвет' : 'Custom color'}
+        />
+      </div>
+
+      <button
+        onClick={apply}
+        disabled={busy || (currentColor === selected)}
+        className="w-full py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+      >
+        {busy ? '…' : labelPrice}
+      </button>
     </div>
   );
 }

@@ -24,6 +24,7 @@ model User {
   bio                 String?    @db.VarChar(256)
   socialLinks         Json?      @map("social_links") @db.JsonB
   profileBadge        String?    @map("profile_badge") @db.VarChar(20)
+  nickColor           String?    @map("nick_color") @db.VarChar(7)
   verificationLevel   Int        @default(0) @map("verification_level") @db.SmallInt
   role                UserRole   @default(USER)
   status              UserStatus @default(ACTIVE)

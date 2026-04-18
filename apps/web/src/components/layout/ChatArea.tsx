@@ -55,7 +55,14 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         </NftAvatarBorder>
 
         <div className="flex-1 min-w-0">
-          <h2 className="font-semibold truncate flex items-center gap-1">
+          <h2
+            className="font-semibold truncate flex items-center gap-1"
+            style={
+              activeChat.type === 'DIRECT' && (activeChat as any).otherUser?.nickColor
+                ? { color: (activeChat as any).otherUser.nickColor }
+                : undefined
+            }
+          >
             {chatName}
             {activeChat.type === 'DIRECT' && (
               <>

@@ -36,6 +36,7 @@ export async function searchRoutes(app: FastifyInstance) {
           isOnline: true,
           verificationLevel: true,
           profileBadge: true,
+          nickColor: true,
         },
         take,
       }),

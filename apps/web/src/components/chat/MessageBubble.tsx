@@ -185,6 +185,7 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
           {!isOwn && showAvatar && (
             <p
               className="text-xs font-medium text-primary-500 mb-0.5 ml-1 flex items-center gap-1 cursor-pointer hover:underline"
+              style={(message.sender as any)?.nickColor ? { color: (message.sender as any).nickColor } : undefined}
               onContextMenu={(e) => {
                 if (isStaff && message.sender) {
                   e.preventDefault();

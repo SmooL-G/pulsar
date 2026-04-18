@@ -431,6 +431,95 @@ export async function walletRoutes(app: FastifyInstance) {
     };
   });
 
+  // Custom nickname color (one-time purchase, then free to change)
+  const NICK_COLOR_PRICE = BigInt(2000);
+  const HEX_RE = /^#([0-9a-fA-F]{6})$/;
+
+  app.post('/purchase-nick-color', async (request: FastifyRequest<{
+    Body: { color: string };
+  }>, reply) => {
+    const userId = request.user!.userId;
+    const { color } = request.body;
+
+    if (!color || !HEX_RE.test(color)) {
+      return reply.status(400).send({ error: 'INVALID_COLOR', message: 'Color must be #RRGGBB hex' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { nickColor: true, verificationLevel: true },
+    });
+    if (!user) return reply.status(404).send({ error: 'NOT_FOUND' });
+
+    // Already owned — free to change
+    if (user.nickColor) {
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { nickColor: color },
+        select: { id: true, nickColor: true },
+      });
+      return { success: true, nickColor: updated.nickColor, charged: false };
+    }
+
+    // Pro+ verification (level 2+) gets it free
+    const isFree = user.verificationLevel >= 2;
+
+    if (isFree) {
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { nickColor: color },
+        select: { id: true, nickColor: true },
+      });
+      return { success: true, nickColor: updated.nickColor, charged: false, reason: 'PRO_INCLUDED' };
+    }
+
+    // Charge PLS
+    const wallet = await getOrCreateWallet(userId);
+    if (wallet.balance < NICK_COLOR_PRICE) {
+      return reply.status(400).send({
+        error: 'INSUFFICIENT',
+        message: `Need ${NICK_COLOR_PRICE} PLS (or upgrade to Pro for free)`,
+      });
+    }
+
+    const [updatedWallet, , updatedUser] = await prisma.$transaction([
+      prisma.plsWallet.update({
+        where: { id: wallet.id },
+        data: { balance: { decrement: NICK_COLOR_PRICE } },
+      }),
+      prisma.plsTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'PURCHASE',
+          amount: NICK_COLOR_PRICE,
+          description: `Custom nickname color: ${color}`,
+          status: 'COMPLETED',
+        },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { nickColor: color },
+        select: { id: true, nickColor: true },
+      }),
+    ]);
+
+    try {
+      const io = getIO();
+      io.to(`user:${userId}`).emit('wallet:balance-updated', {
+        balance: updatedWallet.balance.toString(),
+        change: `-${NICK_COLOR_PRICE.toString()}`,
+        type: 'PURCHASE' as const,
+      });
+    } catch {}
+
+    return {
+      success: true,
+      balance: updatedWallet.balance.toString(),
+      nickColor: updatedUser.nickColor,
+      charged: true,
+    };
+  });
+
   // SuperChat — donate message in group/channel
   app.post('/superchat', async (request: FastifyRequest<{
     Body: { chatId: string; content: string; amount: number };
@@ -526,7 +615,7 @@ export async function walletRoutes(app: FastifyInstance) {
         sender: {
           select: {
             id: true, username: true, displayName: true, avatarUrl: true,
-            verificationLevel: true, profileBadge: true, nftAvatarMint: true, role: true,
+            verificationLevel: true, profileBadge: true, nickColor: true, nftAvatarMint: true, role: true,
           },
         },
       },

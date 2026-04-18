@@ -147,6 +147,7 @@ export async function handleGetMe(request: FastifyRequest, reply: FastifyReply) 
       verificationLevel: true,
       socialLinks: true,
       profileBadge: true,
+      nickColor: true,
     },
   });
 

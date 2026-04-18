@@ -39,6 +39,7 @@ export async function userRoutes(app: FastifyInstance) {
         lastSeenAt: true,
         verificationLevel: true,
         profileBadge: true,
+        nickColor: true,
       },
       take: Math.min(Number(limit), 50),
       skip: Number(offset),
@@ -64,6 +65,7 @@ export async function userRoutes(app: FastifyInstance) {
         verificationLevel: true,
         socialLinks: true,
         profileBadge: true,
+        nickColor: true,
       },
     });
 
@@ -76,12 +78,15 @@ export async function userRoutes(app: FastifyInstance) {
 
   // Update own profile
   app.patch('/me', async (request) => {
-    const { displayName, bio, avatarUrl, socialLinks } = request.body as {
+    const { displayName, bio, avatarUrl, socialLinks, nickColor: _nickColor } = request.body as {
       displayName?: string;
       bio?: string;
       avatarUrl?: string;
       socialLinks?: Record<string, string>;
+      nickColor?: string;
     };
+    // nickColor is set only via /wallet/purchase-nick-color, not here
+    void _nickColor;
 
     // Sanitize socialLinks — only allow known keys
     let cleanLinks: Record<string, string> | undefined;
@@ -113,6 +118,7 @@ export async function userRoutes(app: FastifyInstance) {
         verificationLevel: true,
         socialLinks: true,
         profileBadge: true,
+        nickColor: true,
       },
     });
 
@@ -187,6 +193,7 @@ export async function userRoutes(app: FastifyInstance) {
         walletType: true,
         verificationLevel: true,
         profileBadge: true,
+        nickColor: true,
       },
     });
 

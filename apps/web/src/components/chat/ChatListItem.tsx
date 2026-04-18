@@ -141,7 +141,14 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-sm truncate flex items-center gap-1">
+            <span
+              className="font-medium text-sm truncate flex items-center gap-1"
+              style={
+                chat.type === 'DIRECT' && (chat.otherUser as any)?.nickColor
+                  ? { color: (chat.otherUser as any).nickColor }
+                  : undefined
+              }
+            >
               {name}
               <PulsarBadge level={(chat.type === 'DIRECT' ? (chat.otherUser as any)?.verificationLevel : 0) || 0} size={13} />
               {chat.type === 'DIRECT' && <ProfileBadgeIcon badge={(chat.otherUser as any)?.profileBadge} size={13} />}
