@@ -50,9 +50,25 @@ export interface InlineButton {
 
 export type InlineKeyboard = InlineButton[][];
 
+/** Persistent buttons shown above the input area (Telegram-style reply keyboard).
+ *  Pass null in editMessage to remove the keyboard. */
+export type ReplyKeyboard = string[][];
+
 export interface SendMessageOptions {
   replyToId?: string;
   buttons?: InlineKeyboard;
+  replyKeyboard?: ReplyKeyboard | null;
+}
+
+export interface EditMessageOptions {
+  text?: string;
+  buttons?: InlineKeyboard;
+  replyKeyboard?: ReplyKeyboard | null;
+}
+
+export interface SendAudioOptions {
+  fileName?: string;
+  caption?: string;
 }
 
 export interface BotCommand {

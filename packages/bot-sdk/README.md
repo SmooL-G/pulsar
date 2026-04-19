@@ -65,13 +65,61 @@ bot.onError((err, ctx) => { ... });
 
 ### Методы API
 ```ts
-await bot.sendMessage(chatId, text, { buttons, replyToId });
+await bot.sendMessage(chatId, text, { buttons, replyToId, replyKeyboard });
+await bot.editMessage(chatId, messageId, { text, buttons, replyKeyboard });
+await bot.sendAudio(chatId, audioUrl, { fileName, caption });
 await bot.deleteMessage(chatId, messageId);
 await bot.kickMember(chatId, userId);
 await bot.setCommands([{ command: 'start', description: 'Начать' }]);
 await bot.setWebhook('https://mybot.example.com/hook', 'secret');
 await bot.getChats();
 await bot.leaveChat(chatId);
+```
+
+### Reply Keyboard (приклеенные кнопки)
+
+Persistent кнопки над полем ввода — как в Telegram. Клик отправляет текст кнопки как обычное сообщение.
+
+```ts
+bot.command('start', (ctx) =>
+  ctx.bot.sendMessage(ctx.chatId, 'Главное меню', {
+    replyKeyboard: [
+      ['▶️ Старт', '🆘 Поддержка'],
+      ['💎 Профиль'],
+    ],
+  }),
+);
+
+// Чтобы убрать клавиатуру — передайте пустой массив:
+await bot.sendMessage(chatId, 'Готово', { replyKeyboard: [] });
+```
+
+### Edit Message (редактирование сообщений)
+
+Меняет текст / inline-кнопки / reply-keyboard уже отправленного ботом сообщения. Удобно для wizard-флоу — одно сообщение перерисовывается шаг за шагом, чат не засоряется.
+
+```ts
+const msg = await bot.sendMessage(chatId, 'Шаг 1 из 3', {
+  buttons: Keyboard.inline([[{ text: 'Далее', data: 'step2' }]]),
+});
+
+bot.onCallback('step2', (ctx) =>
+  bot.editMessage(ctx.chatId, ctx.callbackQuery.message.id, {
+    text: 'Шаг 2 из 3',
+    buttons: Keyboard.inline([[{ text: 'Далее', data: 'step3' }]]),
+  }),
+);
+```
+
+### Send Audio (отправка аудио)
+
+Сервер скачает MP3 по URL, загрузит в хранилище и прикрепит к сообщению с встроенным плеером.
+
+```ts
+await bot.sendAudio(chatId, 'https://example.com/song.mp3', {
+  fileName: 'my-song.mp3',
+  caption: '🎵 Готово!',
+});
 ```
 
 ### Keyboard

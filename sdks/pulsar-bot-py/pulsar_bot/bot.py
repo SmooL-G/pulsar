@@ -187,6 +187,21 @@ class Bot:
             body["replyKeyboard"] = reply_keyboard
         return await self._post("/editMessage", body)
 
+    async def send_audio(
+        self,
+        chat_id: str,
+        audio_url: str,
+        file_name: Optional[str] = None,
+        caption: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Send an audio file by URL — server downloads it, uploads to storage, attaches to a message."""
+        body: Dict[str, Any] = {"chatId": chat_id, "audioUrl": audio_url}
+        if file_name:
+            body["fileName"] = file_name
+        if caption:
+            body["caption"] = caption
+        return await self._post("/sendAudio", body)
+
     async def delete_message(self, chat_id: str, message_id: str) -> Dict[str, Any]:
         return await self._post("/deleteMessage", {"chatId": chat_id, "messageId": message_id})
 

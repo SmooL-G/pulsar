@@ -3,6 +3,8 @@ import type {
   BotOptions,
   Update,
   SendMessageOptions,
+  EditMessageOptions,
+  SendAudioOptions,
   BotCommand,
 } from './types.js';
 
@@ -94,6 +96,16 @@ export class Bot {
 
   async sendMessage(chatId: string, text: string, options?: SendMessageOptions) {
     return this.request('/sendMessage', { chatId, text, ...options });
+  }
+
+  /** Edit a previous message (text, inline buttons, or persistent keyboard). */
+  async editMessage(chatId: string, messageId: string, options: EditMessageOptions) {
+    return this.request('/editMessage', { chatId, messageId, ...options });
+  }
+
+  /** Send an audio file by URL — server downloads, uploads to storage, sends as attachment. */
+  async sendAudio(chatId: string, audioUrl: string, options?: SendAudioOptions) {
+    return this.request('/sendAudio', { chatId, audioUrl, ...options });
   }
 
   async deleteMessage(chatId: string, messageId: string) {

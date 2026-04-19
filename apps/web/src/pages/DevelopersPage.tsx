@@ -134,6 +134,9 @@ export function DevelopersPage() {
               ['receive', 'dev.toc.receive'],
               ['send', 'dev.toc.send'],
               ['buttons', 'dev.toc.buttons'],
+              ['reply-keyboard', 'dev.toc.replyKeyboard'],
+              ['edit-message', 'dev.toc.editMessage'],
+              ['send-audio', 'dev.toc.sendAudio'],
               ['callbacks', 'dev.toc.callbacks'],
               ['moderation', 'dev.toc.moderation'],
               ['endpoints', 'dev.toc.endpoints'],
@@ -374,6 +377,112 @@ app.post('/webhook', (req, res) => {
 });`} />
           </Section>
 
+          {/* REPLY KEYBOARD */}
+          <Section id="reply-keyboard" icon={Keyboard} title={locale === 'ru' ? 'Reply Keyboard — приклеенные кнопки' : 'Reply Keyboard — pinned buttons'}>
+            <p>
+              {locale === 'ru'
+                ? 'Persistent кнопки над полем ввода, как в Telegram. Клик по кнопке отправляет её текст как обычное сообщение от пользователя — это удобно для главного меню бота, быстрых команд, навигации.'
+                : 'Persistent buttons above the input field, like in Telegram. Tapping a button sends its label as a normal user message — perfect for main menus, quick commands, navigation.'}
+            </p>
+
+            <CodeBlock language="js" code={`// Set persistent buttons (replaces previous keyboard)
+await fetch('${baseUrl}/bot/sendMessage', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN', 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    chatId: '<chat-uuid>',
+    text: 'Welcome! Use the menu below.',
+    replyKeyboard: [
+      ['▶️ Start', '🆘 Support'],
+      ['💎 Profile']
+    ]
+  })
+});
+
+// Remove the keyboard — pass an empty array
+await fetch('${baseUrl}/bot/sendMessage', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN', 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    chatId: '<chat-uuid>',
+    text: 'Done',
+    replyKeyboard: []
+  })
+});`} />
+
+            <CodeBlock language="py" code={`# Python SDK — pulsar-bot
+@bot.command("start")
+async def start(ctx):
+    await ctx.bot.send_message(
+        ctx.chat_id,
+        "Welcome! Use the menu below.",
+        reply_keyboard=[
+            ["▶️ Start", "🆘 Support"],
+            ["💎 Profile"],
+        ],
+    )`} />
+
+            <p className="text-xs text-amber-400">
+              {locale === 'ru'
+                ? '💡 Клавиатура сохраняется до тех пор, пока бот не пришлёт новую (или пустой массив, чтобы убрать). Кнопка отправляет ТЕКСТ метки — обрабатывайте её в @bot.on_message().'
+                : '💡 The keyboard persists until the bot sends a new one (or an empty array to remove it). The button sends its LABEL as text — handle it in your @bot.on_message() / bot.onMessage() handler.'}
+            </p>
+          </Section>
+
+          {/* EDIT MESSAGE */}
+          <Section id="edit-message" icon={MessageSquare} title={locale === 'ru' ? 'Edit Message — редактирование сообщений' : 'Edit Message — in-place updates'}>
+            <p>
+              {locale === 'ru'
+                ? 'Меняйте текст / inline-кнопки / reply-keyboard уже отправленного ботом сообщения. Идеально для wizard-флоу — одно сообщение перерисовывается шаг за шагом, чат не засоряется.'
+                : 'Update the text / inline buttons / reply-keyboard of a message your bot already sent. Perfect for wizard flows — a single message redraws step by step, instead of cluttering the chat.'}
+            </p>
+
+            <CodeBlock language="js" code={`await fetch('${baseUrl}/bot/editMessage', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN', 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    chatId: '<chat-uuid>',
+    messageId: '<message-uuid>',
+    text: 'Step 2 of 3',
+    buttons: [
+      [{ text: 'Next →', callbackData: 'step3' }]
+    ]
+  })
+});`} />
+
+            <p className="text-xs text-gray-400">
+              {locale === 'ru'
+                ? 'Бот может редактировать только свои сообщения. Передавайте только те поля, которые меняете — остальные останутся как были.'
+                : 'A bot can edit only its own messages. Send only the fields you want to change — others stay as-is.'}
+            </p>
+          </Section>
+
+          {/* SEND AUDIO */}
+          <Section id="send-audio" icon={Send} title={locale === 'ru' ? 'Send Audio — отправка аудио' : 'Send Audio'}>
+            <p>
+              {locale === 'ru'
+                ? 'Передайте URL на MP3 — сервер скачает файл, загрузит в наше хранилище и прикрепит к сообщению с встроенным плеером (play / pause / seek / download).'
+                : 'Pass a URL to an MP3 — the server downloads it, stores it in our object storage, and attaches it to a message with an inline audio player (play / pause / seek / download).'}
+            </p>
+
+            <CodeBlock language="js" code={`await fetch('${baseUrl}/bot/sendAudio', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN', 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    chatId: '<chat-uuid>',
+    audioUrl: 'https://example.com/song.mp3',
+    fileName: 'my-song.mp3',
+    caption: '🎵 Here is your track!'
+  })
+});`} />
+
+            <p className="text-xs text-gray-400">
+              {locale === 'ru'
+                ? 'Поддерживаются MP3 / WAV / OGG / M4A. Максимальный размер: 50 MB. URL должен быть публично доступен.'
+                : 'Supports MP3 / WAV / OGG / M4A. Max size: 50 MB. The URL must be publicly accessible.'}
+            </p>
+          </Section>
+
           {/* CALLBACKS */}
           <Section id="callbacks" icon={Zap} title={t('dev.sec.callbacks.title')}>
             <p>{t('dev.sec.callbacks.p1')}</p>
@@ -429,7 +538,9 @@ await fetch('${baseUrl}/bot/kickMember', {
 
             <div className="bg-dark-800/50 border border-dark-500/30 rounded-xl p-4">
               <p className="font-semibold text-white mb-2">{t('dev.sec.endpoints.messages')}</p>
-              <Endpoint method="POST" path="/bot/sendMessage" desc="Send text/buttons to chat" />
+              <Endpoint method="POST" path="/bot/sendMessage" desc="Send text + inline buttons + replyKeyboard" />
+              <Endpoint method="POST" path="/bot/editMessage" desc="Edit text / buttons / replyKeyboard of bot's message" />
+              <Endpoint method="POST" path="/bot/sendAudio" desc="Attach an MP3 by URL with built-in player" />
               <Endpoint method="POST" path="/bot/deleteMessage" desc="Delete a message" />
               <Endpoint method="POST" path="/bot/answerCallback" desc="Reply to button click" />
             </div>
