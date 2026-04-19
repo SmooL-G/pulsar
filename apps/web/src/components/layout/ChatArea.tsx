@@ -3,6 +3,8 @@ import { ArrowLeft, Info, Phone, Video, Send } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { MessageList } from '../chat/MessageList';
 import { MessageInput } from '../chat/MessageInput';
+import { BotReplyKeyboard } from '../chat/BotReplyKeyboard';
+import { getSocket } from '../../hooks/useSocket';
 import { TransferModal } from '../wallet/TransferModal';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
@@ -117,6 +119,17 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
           } catch { /* chat will be fetched on next load */ }
         }}
       />
+      {(activeChat as any).otherUser?.isBot && (
+        <BotReplyKeyboard
+          chatId={activeChat.id}
+          onSendText={(text) => {
+            const socket = getSocket();
+            if (socket?.connected) {
+              socket.emit('message:send', { chatId: activeChat.id, content: text, type: 'TEXT' });
+            }
+          }}
+        />
+      )}
       <MessageInput
         chatId={activeChat.id}
         chatType={activeChat.type as 'DIRECT' | 'GROUP'}

@@ -159,12 +159,15 @@ class Bot:
         text: str,
         buttons: Optional[List[List[Dict[str, str]]]] = None,
         reply_to_id: Optional[str] = None,
+        reply_keyboard: Optional[List[List[str]]] = None,
     ) -> Dict[str, Any]:
         body: Dict[str, Any] = {"chatId": chat_id, "text": text}
         if buttons:
             body["buttons"] = buttons
         if reply_to_id:
             body["replyToId"] = reply_to_id
+        if reply_keyboard is not None:
+            body["replyKeyboard"] = reply_keyboard
         return await self._post("/sendMessage", body)
 
     async def edit_message(
@@ -173,12 +176,15 @@ class Bot:
         message_id: str,
         text: Optional[str] = None,
         buttons: Optional[List[List[Dict[str, str]]]] = None,
+        reply_keyboard: Optional[List[List[str]]] = None,
     ) -> Dict[str, Any]:
         body: Dict[str, Any] = {"chatId": chat_id, "messageId": message_id}
         if text is not None:
             body["text"] = text
         if buttons is not None:
             body["buttons"] = buttons
+        if reply_keyboard is not None:
+            body["replyKeyboard"] = reply_keyboard
         return await self._post("/editMessage", body)
 
     async def delete_message(self, chat_id: str, message_id: str) -> Dict[str, Any]:

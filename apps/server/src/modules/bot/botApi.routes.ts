@@ -30,12 +30,18 @@ export async function botApiRoutes(app: FastifyInstance) {
     };
   });
 
-  // POST /sendMessage — with optional inline buttons
-  app.post<{ Body: { chatId: string; text: string; replyToId?: string; buttons?: { text: string; callbackData: string }[][] } }>(
+  // POST /sendMessage — with optional inline buttons + persistent reply keyboard
+  app.post<{ Body: {
+    chatId: string;
+    text: string;
+    replyToId?: string;
+    buttons?: { text: string; callbackData: string }[][];
+    replyKeyboard?: string[][] | null;
+  } }>(
     '/sendMessage',
     async (request, reply) => {
       const { userId } = request.user as any;
-      const { chatId, text, replyToId, buttons } = request.body;
+      const { chatId, text, replyToId, buttons, replyKeyboard } = request.body;
 
       if (!chatId || !text?.trim()) {
         return reply.status(400).send({ error: 'INVALID_INPUT' });
@@ -49,7 +55,11 @@ export async function botApiRoutes(app: FastifyInstance) {
         return reply.status(403).send({ error: 'BOT_NOT_IN_CHAT' });
       }
 
-      const metadata = buttons?.length ? { buttons } : null;
+      // metadata can hold inline buttons AND/OR replyKeyboard (latter is persistent UI)
+      const metadata: Record<string, unknown> = {};
+      if (buttons?.length) metadata.buttons = buttons;
+      if (replyKeyboard !== undefined) metadata.replyKeyboard = replyKeyboard;
+      const metaToStore = Object.keys(metadata).length ? metadata : null;
 
       const message = await prisma.message.create({
         data: {
@@ -58,7 +68,7 @@ export async function botApiRoutes(app: FastifyInstance) {
           content: text.trim(),
           type: 'TEXT',
           replyToId: replyToId || null,
-          metadata: metadata as any,
+          metadata: metaToStore as any,
         },
         include: {
           sender: {
@@ -213,12 +223,18 @@ export async function botApiRoutes(app: FastifyInstance) {
     return { ok: true, message: payload };
   });
 
-  // POST /editMessage — bot edits its own message (replace text + buttons)
+  // POST /editMessage — bot edits its own message (replace text + buttons + reply keyboard)
   app.post<{
-    Body: { chatId: string; messageId: string; text?: string; buttons?: { text: string; callbackData: string }[][] };
+    Body: {
+      chatId: string;
+      messageId: string;
+      text?: string;
+      buttons?: { text: string; callbackData: string }[][];
+      replyKeyboard?: string[][] | null;
+    };
   }>('/editMessage', async (request, reply) => {
     const { userId } = request.user as any;
-    const { chatId, messageId, text, buttons } = request.body;
+    const { chatId, messageId, text, buttons, replyKeyboard } = request.body;
 
     if (!chatId || !messageId) {
       return reply.status(400).send({ error: 'INVALID_INPUT' });
@@ -236,7 +252,10 @@ export async function botApiRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'NOT_OWN_MESSAGE' });
     }
 
-    const metadata = buttons?.length ? { buttons } : null;
+    const meta: Record<string, unknown> = {};
+    if (buttons?.length) meta.buttons = buttons;
+    if (replyKeyboard !== undefined) meta.replyKeyboard = replyKeyboard;
+    const metadata = Object.keys(meta).length ? meta : null;
 
     const updated = await prisma.message.update({
       where: { id: messageId },
