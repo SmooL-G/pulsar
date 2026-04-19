@@ -213,6 +213,80 @@ export async function botApiRoutes(app: FastifyInstance) {
     return { ok: true, message: payload };
   });
 
+  // POST /editMessage — bot edits its own message (replace text + buttons)
+  app.post<{
+    Body: { chatId: string; messageId: string; text?: string; buttons?: { text: string; callbackData: string }[][] };
+  }>('/editMessage', async (request, reply) => {
+    const { userId } = request.user as any;
+    const { chatId, messageId, text, buttons } = request.body;
+
+    if (!chatId || !messageId) {
+      return reply.status(400).send({ error: 'INVALID_INPUT' });
+    }
+
+    // Make sure the message belongs to this bot
+    const existing = await prisma.message.findUnique({
+      where: { id: messageId },
+      select: { id: true, senderId: true, chatId: true },
+    });
+    if (!existing || existing.chatId !== chatId) {
+      return reply.status(404).send({ error: 'MESSAGE_NOT_FOUND' });
+    }
+    if (existing.senderId !== userId) {
+      return reply.status(403).send({ error: 'NOT_OWN_MESSAGE' });
+    }
+
+    const metadata = buttons?.length ? { buttons } : null;
+
+    const updated = await prisma.message.update({
+      where: { id: messageId },
+      data: {
+        ...(text !== undefined ? { content: text.trim() || null } : {}),
+        metadata: metadata as any,
+        isEdited: true,
+      },
+      include: {
+        sender: {
+          select: { id: true, username: true, displayName: true, avatarUrl: true, isBot: true },
+        },
+        attachments: {
+          select: { id: true, fileName: true, fileSize: true, mimeType: true, s3Key: true },
+        },
+      },
+    });
+
+    const payload = {
+      id: updated.id,
+      chatId: updated.chatId,
+      senderId: updated.senderId,
+      content: updated.content,
+      type: updated.type,
+      replyToId: updated.replyToId,
+      isEdited: true,
+      isDeleted: false,
+      metadata: updated.metadata as any,
+      signature: null,
+      signerWallet: null,
+      encryptedContent: null,
+      encryptionType: null,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+      sender: updated.sender,
+      attachments: updated.attachments.map((a: any) => ({
+        id: a.id,
+        fileName: a.fileName,
+        fileSize: Number(a.fileSize),
+        mimeType: a.mimeType,
+        url: a.s3Key,
+      })),
+    };
+
+    const io = getIO();
+    if (io) io.to(`chat:${chatId}`).emit('message:updated', payload as any);
+
+    return { ok: true, message: payload };
+  });
+
   // POST /deleteMessage — moderate: delete a message
   app.post<{ Body: { chatId: string; messageId: string } }>('/deleteMessage', async (request, reply) => {
     const { userId } = request.user as any;

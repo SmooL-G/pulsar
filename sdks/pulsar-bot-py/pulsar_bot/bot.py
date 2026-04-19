@@ -167,6 +167,20 @@ class Bot:
             body["replyToId"] = reply_to_id
         return await self._post("/sendMessage", body)
 
+    async def edit_message(
+        self,
+        chat_id: str,
+        message_id: str,
+        text: Optional[str] = None,
+        buttons: Optional[List[List[Dict[str, str]]]] = None,
+    ) -> Dict[str, Any]:
+        body: Dict[str, Any] = {"chatId": chat_id, "messageId": message_id}
+        if text is not None:
+            body["text"] = text
+        if buttons is not None:
+            body["buttons"] = buttons
+        return await self._post("/editMessage", body)
+
     async def delete_message(self, chat_id: str, message_id: str) -> Dict[str, Any]:
         return await self._post("/deleteMessage", {"chatId": chat_id, "messageId": message_id})
 
