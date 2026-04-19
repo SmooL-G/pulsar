@@ -18,6 +18,8 @@ import { InfoPage } from './pages/InfoPage';
 import { DonatePage } from './pages/DonatePage';
 import { TermsPage } from './pages/TermsPage';
 import { CookiesPage } from './pages/CookiesPage';
+import { MusicBotInstructionsPage } from './pages/MusicBotInstructionsPage';
+import { MusicBotPrivacyPage } from './pages/MusicBotPrivacyPage';
 import { InstallPrompt } from './components/pwa/InstallPrompt';
 
 // Import wallet adapter CSS
@@ -73,6 +75,8 @@ export function App() {
               <Route path="/donate" element={<DonatePage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/cookies" element={<CookiesPage />} />
+              <Route path="/bots/music/instructions" element={<MusicBotInstructionsPage />} />
+              <Route path="/bots/music/privacy" element={<MusicBotPrivacyPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
