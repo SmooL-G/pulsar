@@ -69,8 +69,12 @@ services:
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: postgresql://pulsar:${DB_PASSWORD}@postgres:5432/pulsar
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      # Production uses external managed DB + Redis at 10.100.16.177
+      # (set via DATABASE_URL / REDIS_URL in .env).
+      # The postgres/redis compose services stay defined for local dev,
+      # but server picks up the URLs from the host .env.
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       S3_ENDPOINT: http://minio:9000
