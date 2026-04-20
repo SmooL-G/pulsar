@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, User, Globe, Palette, Bell, Wallet, LogOut, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2 } from 'lucide-react';
+import { X, User, Globe, Palette, Bell, Wallet, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2 } from 'lucide-react';
 
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -24,7 +24,7 @@ type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'admin';
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { t, locale, setLocale } = useI18n();
-  const { user, setUser, logout } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const { enabled: notificationsEnabled, soundEnabled, toggle, toggleSound } = useNotificationStore();
   const [tab, setTab] = useState<Tab>('profile');
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -125,15 +125,6 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
               </button>
             ))}
 
-            <div className="pt-2 mt-2 border-t border-gray-200 dark:border-dark-500">
-              <button
-                onClick={() => { logout(); onClose(); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-              >
-                <LogOut size={18} />
-                {t('settings.logout')}
-              </button>
-            </div>
           </div>
 
           {/* Content */}
