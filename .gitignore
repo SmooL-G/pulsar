@@ -30,3 +30,7 @@ minio-data/
 *.egg-info/
 build/
 __pycache__/
+
+# Android signing — NEVER commit keystores
+*.keystore
+*.jks
