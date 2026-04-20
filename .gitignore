@@ -25,3 +25,8 @@ apps/server/src/db/migrations/
 
 # MinIO data
 minio-data/
+
+# Python build artifacts
+*.egg-info/
+build/
+__pycache__/
