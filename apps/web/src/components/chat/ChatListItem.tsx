@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { Chat } from '@pulsar/shared';
 import { formatDistanceToNow } from 'date-fns';
 import { ru as ruLocale } from 'date-fns/locale/ru';
-import { Trash2, LogOut, Eraser, Bot } from 'lucide-react';
+import { Trash2, LogOut, Eraser, Bot, Bookmark } from 'lucide-react';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
@@ -25,8 +25,10 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const name =
-    chat.type === 'DIRECT'
+  const isSaved = chat.type === 'SAVED';
+  const name = isSaved
+    ? t('chat.savedMessages')
+    : chat.type === 'DIRECT'
       ? chat.otherUser?.displayName || chat.otherUser?.username || t('common.unknown')
       : chat.name || t('common.group');
 
@@ -114,6 +116,11 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
       >
         {/* Avatar */}
         <div className="relative shrink-0">
+          {isSaved ? (
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white">
+              <Bookmark size={22} fill="currentColor" />
+            </div>
+          ) : (
           <NftAvatarBorder isNft={!!(chat.otherUser?.nftAvatarMint)} size={48}>
             <div className="w-12 h-12 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium overflow-hidden">
               {chat.otherUser?.avatarUrl || chat.avatarUrl ? (
@@ -123,6 +130,7 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
               )}
             </div>
           </NftAvatarBorder>
+          )}
           {chat.type === 'DIRECT' && chat.otherUser?.isOnline && !(chat.unreadCount && chat.unreadCount > 0) && !chat.otherUser?.isBot && (
             <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-dark-700" />
           )}
@@ -184,23 +192,27 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
             <Eraser size={16} className="text-gray-400" />
             {t('chat.clearHistory')}
           </button>
-          <div className="h-px bg-dark-500 mx-2 my-1" />
-          <button
-            onClick={handleDelete}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-dark-600 transition-colors"
-          >
-            {chat.type === 'GROUP' && !isOwner ? (
-              <>
-                <LogOut size={16} />
-                {t('chat.leaveGroup')}
-              </>
-            ) : (
-              <>
-                <Trash2 size={16} />
-                {chat.type === 'GROUP' ? t('chat.deleteGroup') : t('chat.deleteChat')}
-              </>
-            )}
-          </button>
+          {!isSaved && (
+            <>
+              <div className="h-px bg-dark-500 mx-2 my-1" />
+              <button
+                onClick={handleDelete}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-dark-600 transition-colors"
+              >
+                {chat.type === 'GROUP' && !isOwner ? (
+                  <>
+                    <LogOut size={16} />
+                    {t('chat.leaveGroup')}
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    {chat.type === 'GROUP' ? t('chat.deleteGroup') : t('chat.deleteChat')}
+                  </>
+                )}
+              </button>
+            </>
+          )}
         </div>
       )}
     </>

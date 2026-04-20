@@ -122,6 +122,7 @@ enum ChatType {
   DIRECT
   GROUP
   CHANNEL
+  SAVED
 }
 
 model ChatMember {

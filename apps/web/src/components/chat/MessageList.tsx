@@ -7,7 +7,7 @@ import { getSocket } from '../../hooks/useSocket';
 
 interface MessageListProps {
   chatId: string;
-  chatType?: 'DIRECT' | 'GROUP' | 'CHANNEL';
+  chatType?: 'DIRECT' | 'GROUP' | 'CHANNEL' | 'SAVED';
   otherUserId?: string;
   otherUserIsBot?: boolean;
   onOpenComments?: (commentChatId: string) => void;

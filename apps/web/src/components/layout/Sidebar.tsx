@@ -59,7 +59,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const filteredChats = searchQuery
+  const filteredChats = (searchQuery
     ? chats.filter(
         (chat) =>
           chat.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -67,7 +67,13 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
             ?.toLowerCase()
             .includes(searchQuery.toLowerCase())
       )
-    : chats;
+    : chats
+  ).slice().sort((a, b) => {
+    // Saved Messages is always pinned to the top.
+    if (a.type === 'SAVED' && b.type !== 'SAVED') return -1;
+    if (b.type === 'SAVED' && a.type !== 'SAVED') return 1;
+    return 0;
+  });
 
   const handleSearchUserClick = async (userId: string) => {
     try {

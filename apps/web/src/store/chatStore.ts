@@ -6,8 +6,10 @@ interface ChatState {
   chats: Chat[];
   activeChat: Chat | null;
   isLoading: boolean;
+  savedChatId: string | null;
   setActiveChat: (chat: Chat | null) => void;
   fetchChats: () => Promise<void>;
+  openSavedChat: () => Promise<void>;
   addChat: (chat: Chat) => void;
   updateChat: (chatId: string, updates: Partial<Chat>) => void;
   removeChat: (chatId: string) => void;
@@ -18,6 +20,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   chats: [],
   activeChat: null,
   isLoading: false,
+  savedChatId: null,
 
   setActiveChat: (chat) => {
     // Reset unread count when opening a chat
@@ -34,11 +37,51 @@ export const useChatStore = create<ChatState>((set, get) => ({
   fetchChats: async () => {
     set({ isLoading: true });
     try {
-      const { data } = await api.get('/chats');
-      set({ chats: data.chats, isLoading: false });
+      // Ensure Saved chat exists (lazy-created server-side).
+      const [savedRes, chatsRes] = await Promise.all([
+        api.get('/chats/saved').catch(() => null),
+        api.get('/chats'),
+      ]);
+      const savedChatId = savedRes?.data?.chat?.id || null;
+      const chats: Chat[] = chatsRes.data.chats;
+      // If the Saved chat was just created and isn't in the list yet, append a stub.
+      if (savedChatId && !chats.find((c) => c.id === savedChatId)) {
+        chats.push({
+          id: savedChatId,
+          type: 'SAVED',
+          name: null,
+          memberCount: 1,
+          updatedAt: new Date().toISOString(),
+        } as any);
+      }
+      set({ chats, savedChatId, isLoading: false });
     } catch {
       set({ isLoading: false });
     }
+  },
+
+  openSavedChat: async () => {
+    const id = get().savedChatId;
+    const chat = id ? get().chats.find((c) => c.id === id) : null;
+    if (chat) {
+      get().setActiveChat(chat);
+      return;
+    }
+    try {
+      const { data } = await api.get('/chats/saved');
+      const saved: Chat = {
+        id: data.chat.id,
+        type: 'SAVED',
+        name: null,
+        memberCount: 1,
+        updatedAt: new Date().toISOString(),
+      } as any;
+      set((state) => ({
+        savedChatId: data.chat.id,
+        chats: state.chats.find((c) => c.id === data.chat.id) ? state.chats : [saved, ...state.chats],
+      }));
+      get().setActiveChat(saved);
+    } catch { /* noop */ }
   },
 
   addChat: (chat) => {

@@ -14,7 +14,7 @@ import { encryptMessage } from '../../crypto/e2eEncrypt';
 
 interface MessageInputProps {
   chatId: string;
-  chatType?: 'DIRECT' | 'GROUP' | 'CHANNEL';
+  chatType?: 'DIRECT' | 'GROUP' | 'CHANNEL' | 'SAVED';
   recipientUserId?: string;
   recipientIsBot?: boolean;
 }

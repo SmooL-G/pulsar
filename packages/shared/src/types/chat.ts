@@ -2,6 +2,7 @@ export enum ChatType {
   DIRECT = 'DIRECT',
   GROUP = 'GROUP',
   CHANNEL = 'CHANNEL',
+  SAVED = 'SAVED',
 }
 
 export enum MemberRole {

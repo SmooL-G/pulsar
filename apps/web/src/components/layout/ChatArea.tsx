@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Info, Phone, Video, Send } from 'lucide-react';
+import { ArrowLeft, Info, Phone, Video, Send, Bookmark } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { MessageList } from '../chat/MessageList';
 import { MessageInput } from '../chat/MessageInput';
@@ -28,8 +28,10 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
     return <NewsFeed />;
   }
 
-  const chatName =
-    activeChat.type === 'DIRECT'
+  const isSaved = activeChat.type === 'SAVED';
+  const chatName = isSaved
+    ? t('chat.savedMessages')
+    : activeChat.type === 'DIRECT'
       ? (activeChat as any).otherUser?.displayName ||
         (activeChat as any).otherUser?.username ||
         t('chat.directMessage')
@@ -46,6 +48,11 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
           <ArrowLeft size={20} />
         </button>
 
+        {isSaved ? (
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white shrink-0">
+            <Bookmark size={20} fill="currentColor" />
+          </div>
+        ) : (
         <NftAvatarBorder isNft={!!(activeChat as any).otherUser?.nftAvatarMint} size={40}>
           <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium overflow-hidden">
             {(activeChat as any).otherUser?.avatarUrl || (activeChat as any).avatarUrl ? (
@@ -55,6 +62,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
             )}
           </div>
         </NftAvatarBorder>
+        )}
 
         <div className="flex-1 min-w-0">
           <h2
@@ -73,12 +81,14 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
               </>
             )}
           </h2>
-          <p className="text-xs text-gray-400">
-            {activeChat.type === 'DIRECT'
-              ? ((activeChat as any).otherUser?.isOnline ? t('chat.online') : t('chat.offline'))
-              : activeChat.type === 'CHANNEL'
-                ? `${(activeChat as any).memberCount || 0} ${t('chat.subscribers')}`
-                : `${(activeChat as any).memberCount || 0} ${t('chat.members')}`}
+          <p className="text-xs text-gray-400 truncate">
+            {isSaved
+              ? t('chat.savedMessagesHint')
+              : activeChat.type === 'DIRECT'
+                ? ((activeChat as any).otherUser?.isOnline ? t('chat.online') : t('chat.offline'))
+                : activeChat.type === 'CHANNEL'
+                  ? `${(activeChat as any).memberCount || 0} ${t('chat.subscribers')}`
+                  : `${(activeChat as any).memberCount || 0} ${t('chat.members')}`}
           </p>
         </div>
 
@@ -92,12 +102,16 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
               <Send size={18} />
             </button>
           )}
-          <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500">
-            <Phone size={18} />
-          </button>
-          <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500">
-            <Video size={18} />
-          </button>
+          {!isSaved && (
+            <>
+              <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500">
+                <Phone size={18} />
+              </button>
+              <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500">
+                <Video size={18} />
+              </button>
+            </>
+          )}
           <button
             onClick={onToggleInfo}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500"
@@ -109,7 +123,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
 
       <MessageList
         chatId={activeChat.id}
-        chatType={activeChat.type as 'DIRECT' | 'GROUP' | 'CHANNEL'}
+        chatType={activeChat.type as 'DIRECT' | 'GROUP' | 'CHANNEL' | 'SAVED'}
         otherUserId={(activeChat as any).otherUser?.id}
         otherUserIsBot={!!(activeChat as any).otherUser?.isBot}
         onOpenComments={async (commentChatId) => {
@@ -132,7 +146,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
       )}
       <MessageInput
         chatId={activeChat.id}
-        chatType={activeChat.type as 'DIRECT' | 'GROUP'}
+        chatType={activeChat.type as 'DIRECT' | 'GROUP' | 'SAVED'}
         recipientUserId={(activeChat as any).otherUser?.id}
         recipientIsBot={!!(activeChat as any).otherUser?.isBot}
       />

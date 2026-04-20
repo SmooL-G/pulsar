@@ -241,6 +241,30 @@ export async function chatRoutes(app: FastifyInstance) {
     return reply.status(201).send({ chat: { ...chat, otherUser } });
   });
 
+  // Get or lazy-create the user's Saved Messages chat
+  app.get('/saved', async (request) => {
+    const userId = request.user!.userId;
+
+    let chat = await prisma.chat.findFirst({
+      where: {
+        type: 'SAVED',
+        members: { some: { userId, leftAt: null } },
+      },
+    });
+
+    if (!chat) {
+      chat = await prisma.chat.create({
+        data: {
+          type: 'SAVED',
+          ownerId: userId,
+          members: { create: [{ userId, role: 'OWNER' }] },
+        },
+      });
+    }
+
+    return { chat };
+  });
+
   // Mute / unmute chat
   app.patch<{ Params: { chatId: string }; Body: { muted: boolean } }>(
     '/:chatId/mute',

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
-import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck, Lock, MessageCircle } from 'lucide-react';
+import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck, Lock, MessageCircle, Bookmark } from 'lucide-react';
 import { InlineBotButtons } from './InlineBotButtons';
 import { AudioAttachment } from './AudioAttachment';
 import { useI18n } from '../../i18n';
@@ -156,6 +156,34 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
   const handleForward = () => {
     setContextMenu(null);
     setShowForward(true);
+  };
+
+  const handleSaveToFavorites = async () => {
+    setContextMenu(null);
+    let savedId = useChatStore.getState().savedChatId;
+    if (!savedId) {
+      try {
+        const { data } = await api.get('/chats/saved');
+        savedId = data.chat.id;
+        useChatStore.setState({ savedChatId: savedId });
+      } catch {
+        toast.error(t('common.error'));
+        return;
+      }
+    }
+    const socket = getSocket();
+    if (!socket?.connected || !savedId) {
+      toast.error(t('common.error'));
+      return;
+    }
+    const senderName = message.sender?.displayName || message.sender?.username || '';
+    const prefix = senderName ? `⤴ ${senderName}\n` : '';
+    socket.emit('message:send', {
+      chatId: savedId,
+      content: prefix + (message.content || ''),
+      type: message.type,
+    });
+    toast.success(t('chat.savedToFavorites'));
   };
 
   return (
@@ -347,6 +375,15 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
             >
               <Copy size={16} className="text-gray-400" />
               {t('chat.copy')}
+            </button>
+          )}
+          {message.chatId !== useChatStore.getState().savedChatId && (
+            <button
+              onClick={handleSaveToFavorites}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-600 transition-colors"
+            >
+              <Bookmark size={16} className="text-amber-400" />
+              {t('chat.saveToFavorites')}
             </button>
           )}
           <button
