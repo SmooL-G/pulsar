@@ -2,6 +2,20 @@ import type { FastifyInstance } from 'fastify';
 import { authMiddleware } from '../../middleware/auth.js';
 import { prisma } from '../../config/database.js';
 import { LIMITS } from '@pulsar/shared';
+import { getIO } from '../../socket/index.js';
+
+interface RawReaction { emoji: string; userId: string }
+
+function groupReactions(rows: RawReaction[]) {
+  const map = new Map<string, { emoji: string; count: number; userIds: string[] }>();
+  for (const r of rows) {
+    let entry = map.get(r.emoji);
+    if (!entry) { entry = { emoji: r.emoji, count: 0, userIds: [] }; map.set(r.emoji, entry); }
+    entry.count++;
+    entry.userIds.push(r.userId);
+  }
+  return Array.from(map.values());
+}
 
 export async function messageRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authMiddleware);
@@ -68,6 +82,7 @@ export async function messageRoutes(app: FastifyInstance) {
             },
           },
         },
+        reactions: { select: { emoji: true, userId: true } },
       },
     });
 
@@ -114,6 +129,7 @@ export async function messageRoutes(app: FastifyInstance) {
           height: a.height,
           duration: a.duration,
         })),
+        reactions: groupReactions(m.reactions),
         createdAt: m.createdAt.toISOString(),
         updatedAt: m.updatedAt.toISOString(),
         commentsEnabled: m.commentsEnabled,
@@ -326,4 +342,60 @@ export async function messageRoutes(app: FastifyInstance) {
       })),
     };
   });
+
+  // Toggle a reaction on a message. If the user already reacted with the same
+  // emoji, that reaction is removed; otherwise it's added.
+  app.post<{ Params: { messageId: string }; Body: { emoji: string } }>(
+    '/:messageId/react',
+    async (request, reply) => {
+      const userId = request.user!.userId;
+      const { messageId } = request.params;
+      const { emoji } = request.body;
+
+      if (!emoji || typeof emoji !== 'string' || emoji.length > 8) {
+        return reply.status(400).send({ error: 'INVALID_EMOJI' });
+      }
+
+      const message = await prisma.message.findUnique({
+        where: { id: messageId },
+        select: { id: true, chatId: true, isDeleted: true },
+      });
+      if (!message || message.isDeleted) {
+        return reply.status(404).send({ error: 'MESSAGE_NOT_FOUND' });
+      }
+
+      const member = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId: message.chatId, userId } },
+      });
+      if (!member || member.leftAt) {
+        return reply.status(403).send({ error: 'NOT_CHAT_MEMBER' });
+      }
+
+      const existing = await prisma.reaction.findUnique({
+        where: { messageId_userId_emoji: { messageId, userId, emoji } },
+      });
+      if (existing) {
+        await prisma.reaction.delete({ where: { id: existing.id } });
+      } else {
+        await prisma.reaction.create({ data: { messageId, userId, emoji } });
+      }
+
+      const all = await prisma.reaction.findMany({
+        where: { messageId },
+        select: { emoji: true, userId: true },
+      });
+      const reactions = groupReactions(all);
+
+      const io = getIO();
+      if (io) {
+        io.to(`chat:${message.chatId}`).emit('message:reaction', {
+          messageId,
+          chatId: message.chatId,
+          reactions,
+        });
+      }
+
+      return { reactions };
+    },
+  );
 }

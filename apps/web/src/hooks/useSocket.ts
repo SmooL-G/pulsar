@@ -109,6 +109,10 @@ export function useSocket() {
       deleteMessage(chatId, messageId);
     });
 
+    socket.on('message:reaction', ({ chatId, messageId, reactions }: { chatId: string; messageId: string; reactions: { emoji: string; count: number; userIds: string[] }[] }) => {
+      useMessageStore.getState().updateReactions(chatId, messageId, reactions as any);
+    });
+
     socket.on('message:read', ({ chatId, userId: readerId }: { chatId: string; messageId: string; userId: string }) => {
       // The reader read our messages — mark all our messages in that chat as read
       const currentUserId = useAuthStore.getState().user?.id;

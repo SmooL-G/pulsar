@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck, Lock, MessageCircle, Bookmark } from 'lucide-react';
 import { InlineBotButtons } from './InlineBotButtons';
 import { AudioAttachment } from './AudioAttachment';
+import { ReactionsBar } from './ReactionsBar';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -356,6 +357,17 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
             <CommentLink
               message={message}
               onOpenComments={onOpenComments}
+            />
+          )}
+
+          {/* Emoji reactions (always rendered so the picker button is reachable) */}
+          {!message.isDeleted && (
+            <ReactionsBar
+              reactions={(message.reactions as any[]) || []}
+              messageId={message.id}
+              chatId={message.chatId}
+              isOwn={isOwn}
+              currentUserId={currentUser?.id}
             />
           )}
         </div>

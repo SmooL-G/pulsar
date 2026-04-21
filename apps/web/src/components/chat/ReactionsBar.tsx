@@ -71,7 +71,7 @@ export function ReactionsBar({ reactions, messageId, chatId, isOwn, currentUserI
         <div className="relative" ref={pickerRef}>
           <button
             onClick={() => setShowPicker((v) => !v)}
-            className={`flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200 transition-all ${hasAny ? 'opacity-60 hover:opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+            className={`flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200 transition-all ${hasAny ? 'opacity-70 hover:opacity-100' : 'opacity-40 hover:opacity-100'}`}
             title="Добавить реакцию"
           >
             <Smile size={12} />

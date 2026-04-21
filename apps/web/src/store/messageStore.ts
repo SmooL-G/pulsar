@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Message, MessageStatus } from '@pulsar/shared';
+import type { Message, MessageStatus, ReactionGroup } from '@pulsar/shared';
 import { api } from '../services/api';
 
 interface MessageState {
@@ -17,6 +17,7 @@ interface MessageState {
   setMessageStatus: (chatId: string, messageId: string, status: MessageStatus) => void;
   markChatRead: (chatId: string, readerId: string, senderId: string) => void;
   setHighlightMessage: (messageId: string | null) => void;
+  updateReactions: (chatId: string, messageId: string, reactions: ReactionGroup[]) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -115,6 +116,17 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         ...state.messages,
         [chatId]: (state.messages[chatId] || []).map((m) =>
           m.id === messageId ? { ...m, status } : m
+        ),
+      },
+    }));
+  },
+
+  updateReactions: (chatId, messageId, reactions) => {
+    set((state) => ({
+      messages: {
+        ...state.messages,
+        [chatId]: (state.messages[chatId] || []).map((m) =>
+          m.id === messageId ? { ...m, reactions } : m
         ),
       },
     }));
