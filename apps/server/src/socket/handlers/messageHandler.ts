@@ -69,11 +69,15 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
     try {
       // Determine message type based on attachments
       const hasAttachments = data.attachments && data.attachments.length > 0;
-      let msgType = (data.type as 'TEXT' | 'FILE' | 'IMAGE' | 'SYSTEM') || 'TEXT';
+      let msgType = (data.type as 'TEXT' | 'FILE' | 'IMAGE' | 'SYSTEM' | 'VOICE' | 'VIDEO' | 'CHECKLIST') || 'TEXT';
       if (hasAttachments && msgType === 'TEXT') {
         const firstMime = data.attachments[0]?.mimeType || '';
         msgType = firstMime.startsWith('image/') ? 'IMAGE' : 'FILE';
       }
+
+      // Checklists never use E2E — their state must be readable server-side
+      // so toggles can be persisted and broadcast.
+      const metadata = data.metadata || null;
 
       const message = await prisma.message.create({
         data: {
@@ -81,11 +85,12 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
           senderId: userId,
           content: data.content,
           type: msgType,
+          metadata,
           replyToId: data.replyToId,
           signature: data.signature || null,
           signerWallet: data.signerWallet || null,
-          encryptedContent: data.encryptedContent || null,
-          encryptionType: data.encryptedContent ? 'nacl-box' : null,
+          encryptedContent: msgType === 'CHECKLIST' ? null : (data.encryptedContent || null),
+          encryptionType: msgType === 'CHECKLIST' ? null : (data.encryptedContent ? 'nacl-box' : null),
           commentsEnabled: data.commentsEnabled || false,
           // Create file attachments if provided
           ...(hasAttachments && {

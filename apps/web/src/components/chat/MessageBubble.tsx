@@ -5,6 +5,7 @@ import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, Chec
 import { InlineBotButtons } from './InlineBotButtons';
 import { AudioAttachment } from './AudioAttachment';
 import { ReactionsBar } from './ReactionsBar';
+import { ChecklistMessage } from './ChecklistMessage';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -242,7 +243,10 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
             </div>
           )}
 
-          {/* Bubble */}
+          {/* Checklist messages render their own styled container instead of the bubble. */}
+          {message.type === 'CHECKLIST' ? (
+            <ChecklistMessage message={message} isOwn={isOwn} />
+          ) : (
           <div
             className={`
               ${isEmojiOnly ? 'px-1 py-0.5 inline-block' : 'px-3 py-2 rounded-2xl text-sm leading-relaxed inline-block'}
@@ -351,6 +355,7 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
               {isOwn && <MessageStatusIcon status={message.status} />}
             </div>
           </div>
+          )}
 
           {/* Comments link for channel posts */}
           {message.commentsEnabled && chatType === 'CHANNEL' && (

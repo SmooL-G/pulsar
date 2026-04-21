@@ -17,6 +17,18 @@ function groupReactions(rows: RawReaction[]) {
   return Array.from(map.values());
 }
 
+interface RawCheck { itemId: string; userId: string }
+
+function groupChecks(rows: RawCheck[]) {
+  const map = new Map<string, string[]>();
+  for (const r of rows) {
+    const list = map.get(r.itemId) || [];
+    list.push(r.userId);
+    map.set(r.itemId, list);
+  }
+  return Array.from(map.entries()).map(([itemId, userIds]) => ({ itemId, userIds }));
+}
+
 export async function messageRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authMiddleware);
 
@@ -83,6 +95,7 @@ export async function messageRoutes(app: FastifyInstance) {
           },
         },
         reactions: { select: { emoji: true, userId: true } },
+        checklistChecks: { select: { itemId: true, userId: true } },
       },
     });
 
@@ -130,6 +143,7 @@ export async function messageRoutes(app: FastifyInstance) {
           duration: a.duration,
         })),
         reactions: groupReactions(m.reactions),
+        checklistChecks: groupChecks(m.checklistChecks),
         createdAt: m.createdAt.toISOString(),
         updatedAt: m.updatedAt.toISOString(),
         commentsEnabled: m.commentsEnabled,
@@ -396,6 +410,72 @@ export async function messageRoutes(app: FastifyInstance) {
       }
 
       return { reactions };
+    },
+  );
+
+  // Toggle a checkbox on a CHECKLIST message. Same semantics as reactions:
+  // second call from the same user on the same item removes the check.
+  app.post<{ Params: { messageId: string }; Body: { itemId: string } }>(
+    '/:messageId/checklist-toggle',
+    async (request, reply) => {
+      const userId = request.user!.userId;
+      const { messageId } = request.params;
+      const { itemId } = request.body;
+
+      if (!itemId || typeof itemId !== 'string' || itemId.length > 64) {
+        return reply.status(400).send({ error: 'INVALID_ITEM_ID' });
+      }
+
+      const message = await prisma.message.findUnique({
+        where: { id: messageId },
+        select: { id: true, chatId: true, type: true, isDeleted: true, metadata: true },
+      });
+      if (!message || message.isDeleted) {
+        return reply.status(404).send({ error: 'MESSAGE_NOT_FOUND' });
+      }
+      if (message.type !== 'CHECKLIST') {
+        return reply.status(400).send({ error: 'NOT_A_CHECKLIST' });
+      }
+
+      // Guard: itemId must belong to this checklist (prevents arbitrary keys).
+      const checklist = (message.metadata as any)?.checklist;
+      const items: { id: string }[] = Array.isArray(checklist?.items) ? checklist.items : [];
+      if (!items.some((it) => it.id === itemId)) {
+        return reply.status(400).send({ error: 'UNKNOWN_ITEM' });
+      }
+
+      const member = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId: message.chatId, userId } },
+      });
+      if (!member || member.leftAt) {
+        return reply.status(403).send({ error: 'NOT_CHAT_MEMBER' });
+      }
+
+      const existing = await prisma.checklistCheck.findUnique({
+        where: { messageId_itemId_userId: { messageId, itemId, userId } },
+      });
+      if (existing) {
+        await prisma.checklistCheck.delete({ where: { id: existing.id } });
+      } else {
+        await prisma.checklistCheck.create({ data: { messageId, itemId, userId } });
+      }
+
+      const all = await prisma.checklistCheck.findMany({
+        where: { messageId },
+        select: { itemId: true, userId: true },
+      });
+      const checks = groupChecks(all);
+
+      const io = getIO();
+      if (io) {
+        io.to(`chat:${message.chatId}`).emit('checklist:update', {
+          messageId,
+          chatId: message.chatId,
+          checks,
+        });
+      }
+
+      return { checks };
     },
   );
 }

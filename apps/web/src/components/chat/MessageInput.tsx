@@ -1,7 +1,8 @@
-import { useState, useRef, useCallback } from 'react';
-import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon, ListChecks } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { BotChatBar } from './BotChatBar';
+import { ChecklistComposer } from './ChecklistComposer';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
 import { useMessageStore } from '../../store/messageStore';
@@ -43,7 +44,10 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   const [showSuperChat, setShowSuperChat] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; preview?: string }[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
   const [superChatAmount, setSuperChatAmount] = useState(0);
   const [superChatSending, setSuperChatSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -64,6 +68,18 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
       return next;
     });
   }, []);
+
+  // Close attach menu on outside click.
+  useEffect(() => {
+    if (!showAttachMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(e.target as Node)) {
+        setShowAttachMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showAttachMenu]);
 
   const handleSend = async () => {
     const content = text.trim();
@@ -257,12 +273,34 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
       )}
 
       <div className="flex items-end gap-2">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-400 shrink-0"
-        >
-          <Paperclip size={20} />
-        </button>
+        <div className="relative shrink-0" ref={attachMenuRef}>
+          <button
+            onClick={() => setShowAttachMenu((v) => !v)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-400"
+          >
+            <Paperclip size={20} />
+          </button>
+          {showAttachMenu && (
+            <div className="absolute bottom-11 left-0 bg-dark-700 border border-dark-500 rounded-xl shadow-2xl py-1.5 min-w-[180px] z-20 animate-fade-in">
+              <button
+                onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-600 transition-colors"
+              >
+                <Paperclip size={16} className="text-gray-400" />
+                {t('chat.attachFile')}
+              </button>
+              {chatType !== 'SAVED' && chatType !== 'CHANNEL' && !recipientIsBot && (
+                <button
+                  onClick={() => { setShowAttachMenu(false); setShowChecklist(true); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-600 transition-colors"
+                >
+                  <ListChecks size={16} className="text-primary-400" />
+                  {t('checklist.menuItem')}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -333,6 +371,23 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
           <Send size={18} />
         </button>
       </div>
+
+      {/* Checklist composer */}
+      {showChecklist && (
+        <ChecklistComposer
+          onClose={() => setShowChecklist(false)}
+          onSend={(data) => {
+            const socket = getSocket();
+            if (!socket?.connected) return;
+            socket.emit('message:send', {
+              chatId,
+              type: 'CHECKLIST',
+              content: null,
+              metadata: { checklist: data },
+            });
+          }}
+        />
+      )}
 
       {/* SuperChat panel */}
       {showSuperChat && (

@@ -113,6 +113,10 @@ export function useSocket() {
       useMessageStore.getState().updateReactions(chatId, messageId, reactions as any);
     });
 
+    socket.on('checklist:update', ({ chatId, messageId, checks }: { chatId: string; messageId: string; checks: { itemId: string; userIds: string[] }[] }) => {
+      useMessageStore.getState().updateChecklistChecks(chatId, messageId, checks);
+    });
+
     socket.on('message:read', ({ chatId, userId: readerId }: { chatId: string; messageId: string; userId: string }) => {
       // The reader read our messages — mark all our messages in that chat as read
       const currentUserId = useAuthStore.getState().user?.id;

@@ -18,6 +18,7 @@ interface MessageState {
   markChatRead: (chatId: string, readerId: string, senderId: string) => void;
   setHighlightMessage: (messageId: string | null) => void;
   updateReactions: (chatId: string, messageId: string, reactions: ReactionGroup[]) => void;
+  updateChecklistChecks: (chatId: string, messageId: string, checks: { itemId: string; userIds: string[] }[]) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -127,6 +128,17 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         ...state.messages,
         [chatId]: (state.messages[chatId] || []).map((m) =>
           m.id === messageId ? { ...m, reactions } : m
+        ),
+      },
+    }));
+  },
+
+  updateChecklistChecks: (chatId, messageId, checks) => {
+    set((state) => ({
+      messages: {
+        ...state.messages,
+        [chatId]: (state.messages[chatId] || []).map((m) =>
+          m.id === messageId ? ({ ...m, checklistChecks: checks } as any) : m
         ),
       },
     }));

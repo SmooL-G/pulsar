@@ -5,6 +5,7 @@ export enum MessageType {
   SYSTEM = 'SYSTEM',
   VOICE = 'VOICE',
   VIDEO = 'VIDEO',
+  CHECKLIST = 'CHECKLIST',
 }
 
 export type MessageStatus = 'sent' | 'delivered' | 'read';
@@ -55,5 +56,17 @@ export interface FileAttachment {
 export interface ReactionGroup {
   emoji: string;
   count: number;
+  userIds: string[];
+}
+
+/** Static structure of a checklist message, stored in message.metadata.checklist. */
+export interface ChecklistMeta {
+  title?: string;
+  items: { id: string; text: string }[];
+}
+
+/** Per-item check state, computed server-side from the checklist_checks table. */
+export interface ChecklistCheckState {
+  itemId: string;
   userIds: string[];
 }
