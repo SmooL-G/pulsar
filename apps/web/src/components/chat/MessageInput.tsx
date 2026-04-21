@@ -281,7 +281,7 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
             <Paperclip size={20} />
           </button>
           {showAttachMenu && (
-            <div className="absolute bottom-11 left-0 bg-dark-700 border border-dark-500 rounded-xl shadow-2xl py-1.5 min-w-[180px] z-20 animate-fade-in">
+            <div className="absolute bottom-full left-0 mb-2 bg-dark-700 border border-dark-500 rounded-xl shadow-2xl py-1.5 min-w-[180px] z-40 animate-fade-in">
               <button
                 onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-600 transition-colors"
