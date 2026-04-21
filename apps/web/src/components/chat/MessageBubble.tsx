@@ -292,6 +292,7 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
                         fileName={file.fileName}
                         sizeStr={sizeStr}
                         isOwn={isOwn}
+                        isVoice={message.type === 'VOICE'}
                       />
                     );
                   }

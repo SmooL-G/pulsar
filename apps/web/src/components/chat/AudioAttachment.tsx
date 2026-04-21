@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Download, Music } from 'lucide-react';
+import { Play, Pause, Download, Music, Mic } from 'lucide-react';
+import { useI18n } from '../../i18n';
 
 interface AudioAttachmentProps {
   url: string;
   fileName: string;
   sizeStr: string;
   isOwn: boolean;
+  /** When true, shows "Voice message" label + mic icon instead of the raw file name. */
+  isVoice?: boolean;
 }
 
 function fmt(sec: number): string {
@@ -15,7 +18,8 @@ function fmt(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export function AudioAttachment({ url, fileName, sizeStr, isOwn }: AudioAttachmentProps) {
+export function AudioAttachment({ url, fileName, sizeStr, isOwn, isVoice }: AudioAttachmentProps) {
+  const { t } = useI18n();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -103,8 +107,8 @@ export function AudioAttachment({ url, fileName, sizeStr, isOwn }: AudioAttachme
       {/* Title + progress */}
       <div className="flex-1 min-w-0">
         <p className={`text-xs font-medium truncate flex items-center gap-1 ${isOwn ? 'text-white' : 'text-gray-200'}`}>
-          <Music size={11} className={subtle} />
-          {fileName}
+          {isVoice ? <Mic size={11} className={subtle} /> : <Music size={11} className={subtle} />}
+          {isVoice ? t('voice.message') : fileName}
         </p>
         <div
           onClick={seek}

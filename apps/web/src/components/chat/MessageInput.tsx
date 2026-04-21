@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon, ListChecks, BarChart3 } from 'lucide-react';
+import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon, ListChecks, BarChart3, Mic, Trash2 } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { BotChatBar } from './BotChatBar';
 import { ChecklistComposer } from './ChecklistComposer';
 import { PollComposer } from './PollComposer';
+import { useVoiceRecorder, extensionForMime } from '../../hooks/useVoiceRecorder';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
 import { useMessageStore } from '../../store/messageStore';
@@ -48,6 +49,7 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   const [showPoll, setShowPoll] = useState(false);
+  const voice = useVoiceRecorder();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const [superChatAmount, setSuperChatAmount] = useState(0);
@@ -82,6 +84,54 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showAttachMenu]);
+
+  const handleStartVoice = async () => {
+    const ok = await voice.start();
+    if (!ok) {
+      if (voice.permissionError === 'DENIED') {
+        toast.error(t('voice.permissionDenied'));
+      } else if (voice.permissionError === 'UNSUPPORTED') {
+        toast.error(t('voice.unsupported'));
+      } else {
+        toast.error(t('voice.recordFailed'));
+      }
+    }
+  };
+
+  const handleSendVoice = async () => {
+    const blob = await voice.stop();
+    if (!blob || blob.size < 800) {
+      // Less than ~100ms of silence; almost certainly an accidental tap.
+      return;
+    }
+    const socket = getSocket();
+    if (!socket?.connected) return;
+
+    setUploading(true);
+    try {
+      const ext = extensionForMime(blob.type);
+      const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: blob.type });
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await api.post('/upload/file', formData);
+
+      socket.emit('message:send', {
+        chatId,
+        content: null,
+        type: 'VOICE',
+        attachments: [{
+          fileName: data.fileName,
+          fileSize: data.fileSize,
+          mimeType: data.mimeType,
+          url: data.url,
+        }],
+      });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t('voice.uploadFailed'));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSend = async () => {
     const content = text.trim();
@@ -274,6 +324,34 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
         </div>
       )}
 
+      {/* Recording overlay replaces the normal input row. */}
+      {voice.recording ? (
+        <div className="flex items-center gap-3 py-2 px-2">
+          <button
+            onClick={() => voice.cancel()}
+            title={t('voice.cancel')}
+            className="p-2.5 rounded-full bg-red-500 hover:bg-red-600 text-white shrink-0 transition-colors"
+          >
+            <Trash2 size={18} />
+          </button>
+          <div className="flex-1 flex items-center gap-2 bg-gray-100 dark:bg-dark-600 rounded-full px-4 py-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+            <span className="text-sm text-gray-700 dark:text-gray-200 font-mono tabular-nums">
+              {Math.floor(voice.duration / 60)}:{String(voice.duration % 60).padStart(2, '0')}
+            </span>
+            <span className="text-xs text-gray-500 ml-auto">{t('voice.recording')}</span>
+          </div>
+          <button
+            onClick={handleSendVoice}
+            disabled={uploading}
+            title={t('voice.send')}
+            className="p-2.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white
+              disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+          >
+            <Send size={18} />
+          </button>
+        </div>
+      ) : (
       <div className="flex items-end gap-2">
         <div className="relative shrink-0" ref={attachMenuRef}>
           <button
@@ -373,15 +451,28 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
           </button>
         )}
 
-        <button
-          onClick={handleSend}
-          disabled={(!text.trim() && pendingFiles.length === 0) || uploading}
-          className="p-2.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white
-            disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
-        >
-          <Send size={18} />
-        </button>
+        {text.trim() || pendingFiles.length > 0 ? (
+          <button
+            onClick={handleSend}
+            disabled={uploading}
+            className="p-2.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white
+              disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+          >
+            <Send size={18} />
+          </button>
+        ) : (
+          <button
+            onClick={handleStartVoice}
+            disabled={uploading}
+            title={t('voice.record')}
+            className="p-2.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white
+              disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+          >
+            <Mic size={18} />
+          </button>
+        )}
       </div>
+      )}
 
       {/* Checklist composer */}
       {showChecklist && (
