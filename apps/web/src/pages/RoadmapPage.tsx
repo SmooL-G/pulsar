@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Loader2, Clock, Sparkles, Shield, Gem, Crown, Search, MessageCircle, Globe, Megaphone, Bot, Zap, Home } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Clock, Sparkles, Shield, Gem, Crown, Search, MessageCircle, Globe, Megaphone, Bot, Zap, Home, Bookmark, Smartphone } from 'lucide-react';
 import { useI18n } from '../i18n';
 
 type Status = 'done' | 'active' | 'planned';
@@ -46,6 +46,7 @@ const PHASES: Phase[] = [
     features: [
       { text: { en: 'Emoji reactions on messages', ru: 'Реакции эмодзи на сообщения' }, status: 'done' },
       { text: { en: 'Pinned messages', ru: 'Закреплённые сообщения' }, status: 'done' },
+      { text: { en: 'Saved Messages (personal pinned chat for notes & forwards)', ru: 'Избранное (личный чат для заметок и пересылок)' }, status: 'done', icon: <Bookmark size={14} /> },
       { text: { en: 'Channels with comments system', ru: 'Каналы с системой комментариев' }, status: 'done', icon: <Megaphone size={14} /> },
       { text: { en: 'Universal search (users, groups, channels, messages)', ru: 'Универсальный поиск (пользователи, группы, каналы, сообщения)' }, status: 'done', icon: <Search size={14} /> },
       { text: { en: 'Message search with highlight & scroll-to', ru: 'Поиск по сообщениям с подсветкой' }, status: 'done' },
@@ -101,8 +102,11 @@ const PHASES: Phase[] = [
       { text: { en: 'Moderator voting on reports', ru: 'Голосование модераторов по жалобам' }, status: 'done' },
       { text: { en: 'Punishments (warn, mute, ban)', ru: 'Наказания (предупреждение, мут, бан)' }, status: 'done' },
       { text: { en: 'Bot system (PulsarBot + webhook API)', ru: 'Система ботов (PulsarBot + webhook API)' }, status: 'done', icon: <Bot size={14} /> },
-      { text: { en: 'Official Bot SDKs (npm + PyPI)', ru: 'Официальные SDK для ботов (npm + PyPI)' }, status: 'done', icon: <Bot size={14} /> },
+      { text: { en: 'Official Bot SDKs v0.2 (npm + PyPI)', ru: 'Официальные SDK для ботов v0.2 (npm + PyPI)' }, status: 'done', icon: <Bot size={14} /> },
       { text: { en: 'Inline buttons + callback queries', ru: 'Inline-кнопки + callback queries' }, status: 'done', icon: <Bot size={14} /> },
+      { text: { en: 'Reply keyboard (pinned bot buttons, Telegram-style)', ru: 'Reply keyboard (приклеенные кнопки бота, как в Telegram)' }, status: 'done', icon: <Bot size={14} /> },
+      { text: { en: 'Edit messages in-place (wizard flows)', ru: 'Редактирование сообщений на месте (wizard-флоу)' }, status: 'done', icon: <Bot size={14} /> },
+      { text: { en: 'Send audio files with inline player', ru: 'Отправка аудио со встроенным плеером' }, status: 'done', icon: <Bot size={14} /> },
       { text: { en: 'Auto-moderator role (earn by contribution)', ru: 'Авто-модератор (заслуги за активность)' }, status: 'done', icon: <Shield size={14} /> },
       { text: { en: 'Moderator progress tracker (5 requirements)', ru: 'Трекер прогресса модератора (5 условий)' }, status: 'done' },
       { text: { en: 'AI-powered content moderation', ru: 'ИИ-модерация контента' }, status: 'planned' },
@@ -138,7 +142,11 @@ const PHASES: Phase[] = [
       { text: { en: 'iOS safe-area + Dynamic Island support', ru: 'Поддержка safe-area и Dynamic Island на iOS' }, status: 'done' },
       { text: { en: 'Auto-reconnect on tab resume (iOS-friendly)', ru: 'Авто-реконнект при возврате из бэкграунда (iOS)' }, status: 'done' },
       { text: { en: 'Info Center & Developer Docs pages (11 langs)', ru: 'Info Center и страница для разработчиков (11 языков)' }, status: 'done' },
-      { text: { en: 'React Native mobile app (iOS & Android)', ru: 'Мобильное приложение (iOS и Android)' }, status: 'planned' },
+      { text: { en: 'Android APK beta (Trusted Web Activity)', ru: 'Android APK бета (Trusted Web Activity)' }, status: 'done', icon: <Smartphone size={14} /> },
+      { text: { en: 'Digital Asset Links (chromeless TWA)', ru: 'Digital Asset Links (TWA без URL-бара)' }, status: 'done', icon: <Smartphone size={14} /> },
+      { text: { en: 'Native Android app with Solana Mobile Wallet Adapter', ru: 'Нативное Android приложение с Solana Mobile Wallet Adapter' }, status: 'planned', icon: <Smartphone size={14} /> },
+      { text: { en: 'Google Play + RuStore listings', ru: 'Публикация в Google Play и RuStore' }, status: 'planned', icon: <Smartphone size={14} /> },
+      { text: { en: 'iOS app', ru: 'Приложение для iOS' }, status: 'planned' },
       { text: { en: 'Desktop client (Electron/Tauri)', ru: 'Десктоп-клиент (Electron/Tauri)' }, status: 'planned' },
       { text: { en: 'Voice & video calls (WebRTC)', ru: 'Голосовые и видеозвонки (WebRTC)' }, status: 'planned' },
     ],
