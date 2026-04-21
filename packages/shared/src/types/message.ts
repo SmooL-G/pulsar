@@ -6,6 +6,7 @@ export enum MessageType {
   VOICE = 'VOICE',
   VIDEO = 'VIDEO',
   CHECKLIST = 'CHECKLIST',
+  POLL = 'POLL',
 }
 
 export type MessageStatus = 'sent' | 'delivered' | 'read';
@@ -68,5 +69,19 @@ export interface ChecklistMeta {
 /** Per-item check state, computed server-side from the checklist_checks table. */
 export interface ChecklistCheckState {
   itemId: string;
+  userIds: string[];
+}
+
+/** Static structure of a poll message, stored in message.metadata.poll. */
+export interface PollMeta {
+  question: string;
+  options: { id: string; text: string }[];
+  allowMultiple?: boolean;
+  anonymous?: boolean;
+}
+
+/** Per-option vote state, computed server-side from the poll_votes table. */
+export interface PollVoteState {
+  optionId: string;
   userIds: string[];
 }

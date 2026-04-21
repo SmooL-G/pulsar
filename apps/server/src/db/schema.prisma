@@ -179,6 +179,7 @@ model Message {
   readReceipts    ReadReceipt[]
   reactions       Reaction[]
   checklistChecks ChecklistCheck[]
+  pollVotes       PollVote[]
   pinned       PinnedMessage?
   reports      Report[]
   commentChat  Chat?             @relation("commentChat", fields: [commentChatId], references: [id], onDelete: SetNull)
@@ -196,6 +197,7 @@ enum MessageType {
   VOICE
   VIDEO
   CHECKLIST
+  POLL
 }
 
 // ─── FILES ───────────────────────────────────────────────
@@ -269,6 +271,24 @@ model ChecklistCheck {
   @@unique([messageId, itemId, userId])
   @@index([messageId])
   @@map("checklist_checks")
+}
+
+// ─── POLLS ────────────────────────────────────────────────
+// Every vote is one row. Single-choice polls delete the previous vote on
+// new selection; multi-choice polls toggle per-option (same user can
+// have many rows on the same message).
+model PollVote {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  optionId  String   @map("option_id") @db.VarChar(64)
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, optionId, userId])
+  @@index([messageId])
+  @@map("poll_votes")
 }
 
 // ─── PINNED MESSAGES ─────────────────────────────────────

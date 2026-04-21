@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon, ListChecks } from 'lucide-react';
+import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon, ListChecks, BarChart3 } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { BotChatBar } from './BotChatBar';
 import { ChecklistComposer } from './ChecklistComposer';
+import { PollComposer } from './PollComposer';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
 import { useMessageStore } from '../../store/messageStore';
@@ -46,6 +47,7 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   const [uploading, setUploading] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
+  const [showPoll, setShowPoll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const [superChatAmount, setSuperChatAmount] = useState(0);
@@ -289,13 +291,22 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
                 <Paperclip size={16} className="text-gray-400" />
                 {t('chat.attachFile')}
               </button>
-              {chatType !== 'SAVED' && chatType !== 'CHANNEL' && !recipientIsBot && (
+              {chatType !== 'SAVED' && !recipientIsBot && (
                 <button
                   onClick={() => { setShowAttachMenu(false); setShowChecklist(true); }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-600 transition-colors"
                 >
                   <ListChecks size={16} className="text-primary-400" />
                   {t('checklist.menuItem')}
+                </button>
+              )}
+              {chatType !== 'SAVED' && !recipientIsBot && (
+                <button
+                  onClick={() => { setShowAttachMenu(false); setShowPoll(true); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-600 transition-colors"
+                >
+                  <BarChart3 size={16} className="text-primary-400" />
+                  {t('poll.menuItem')}
                 </button>
               )}
             </div>
@@ -384,6 +395,23 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
               type: 'CHECKLIST',
               content: null,
               metadata: { checklist: data },
+            });
+          }}
+        />
+      )}
+
+      {/* Poll composer */}
+      {showPoll && (
+        <PollComposer
+          onClose={() => setShowPoll(false)}
+          onSend={(data) => {
+            const socket = getSocket();
+            if (!socket?.connected) return;
+            socket.emit('message:send', {
+              chatId,
+              type: 'POLL',
+              content: null,
+              metadata: { poll: data },
             });
           }}
         />

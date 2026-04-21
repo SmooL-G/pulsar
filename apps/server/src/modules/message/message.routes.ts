@@ -29,6 +29,18 @@ function groupChecks(rows: RawCheck[]) {
   return Array.from(map.entries()).map(([itemId, userIds]) => ({ itemId, userIds }));
 }
 
+interface RawVote { optionId: string; userId: string }
+
+function groupVotes(rows: RawVote[]) {
+  const map = new Map<string, string[]>();
+  for (const r of rows) {
+    const list = map.get(r.optionId) || [];
+    list.push(r.userId);
+    map.set(r.optionId, list);
+  }
+  return Array.from(map.entries()).map(([optionId, userIds]) => ({ optionId, userIds }));
+}
+
 export async function messageRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authMiddleware);
 
@@ -96,6 +108,7 @@ export async function messageRoutes(app: FastifyInstance) {
         },
         reactions: { select: { emoji: true, userId: true } },
         checklistChecks: { select: { itemId: true, userId: true } },
+        pollVotes: { select: { optionId: true, userId: true } },
       },
     });
 
@@ -144,6 +157,7 @@ export async function messageRoutes(app: FastifyInstance) {
         })),
         reactions: groupReactions(m.reactions),
         checklistChecks: groupChecks(m.checklistChecks),
+        pollVotes: groupVotes(m.pollVotes),
         createdAt: m.createdAt.toISOString(),
         updatedAt: m.updatedAt.toISOString(),
         commentsEnabled: m.commentsEnabled,
@@ -476,6 +490,89 @@ export async function messageRoutes(app: FastifyInstance) {
       }
 
       return { checks };
+    },
+  );
+
+  // Cast (or switch / toggle) a vote on a POLL message. Single-choice polls
+  // replace any previous vote by the user; multi-choice polls toggle the
+  // selected option independently.
+  app.post<{ Params: { messageId: string }; Body: { optionId: string } }>(
+    '/:messageId/poll-vote',
+    async (request, reply) => {
+      const userId = request.user!.userId;
+      const { messageId } = request.params;
+      const { optionId } = request.body;
+
+      if (!optionId || typeof optionId !== 'string' || optionId.length > 64) {
+        return reply.status(400).send({ error: 'INVALID_OPTION_ID' });
+      }
+
+      const message = await prisma.message.findUnique({
+        where: { id: messageId },
+        select: { id: true, chatId: true, type: true, isDeleted: true, metadata: true },
+      });
+      if (!message || message.isDeleted) {
+        return reply.status(404).send({ error: 'MESSAGE_NOT_FOUND' });
+      }
+      if (message.type !== 'POLL') {
+        return reply.status(400).send({ error: 'NOT_A_POLL' });
+      }
+
+      const poll = (message.metadata as any)?.poll;
+      const options: { id: string }[] = Array.isArray(poll?.options) ? poll.options : [];
+      if (!options.some((op) => op.id === optionId)) {
+        return reply.status(400).send({ error: 'UNKNOWN_OPTION' });
+      }
+      const allowMultiple = !!poll.allowMultiple;
+
+      const member = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId: message.chatId, userId } },
+      });
+      if (!member || member.leftAt) {
+        return reply.status(403).send({ error: 'NOT_CHAT_MEMBER' });
+      }
+
+      if (allowMultiple) {
+        // Toggle just this option.
+        const existing = await prisma.pollVote.findUnique({
+          where: { messageId_optionId_userId: { messageId, optionId, userId } },
+        });
+        if (existing) {
+          await prisma.pollVote.delete({ where: { id: existing.id } });
+        } else {
+          await prisma.pollVote.create({ data: { messageId, optionId, userId } });
+        }
+      } else {
+        // Single-choice: clear any prior vote, then add new one — unless the
+        // user tapped the option they already had picked, in which case we
+        // treat it as a retraction.
+        const prior = await prisma.pollVote.findFirst({
+          where: { messageId, userId },
+        });
+        if (prior?.optionId === optionId) {
+          await prisma.pollVote.delete({ where: { id: prior.id } });
+        } else {
+          if (prior) await prisma.pollVote.delete({ where: { id: prior.id } });
+          await prisma.pollVote.create({ data: { messageId, optionId, userId } });
+        }
+      }
+
+      const all = await prisma.pollVote.findMany({
+        where: { messageId },
+        select: { optionId: true, userId: true },
+      });
+      const votes = groupVotes(all);
+
+      const io = getIO();
+      if (io) {
+        io.to(`chat:${message.chatId}`).emit('poll:update', {
+          messageId,
+          chatId: message.chatId,
+          votes,
+        });
+      }
+
+      return { votes };
     },
   );
 }

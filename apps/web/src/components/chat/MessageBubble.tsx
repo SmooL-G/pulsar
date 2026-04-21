@@ -6,6 +6,7 @@ import { InlineBotButtons } from './InlineBotButtons';
 import { AudioAttachment } from './AudioAttachment';
 import { ReactionsBar } from './ReactionsBar';
 import { ChecklistMessage } from './ChecklistMessage';
+import { PollMessage } from './PollMessage';
 import { useI18n } from '../../i18n';
 import { getSocket } from '../../hooks/useSocket';
 import { api } from '../../services/api';
@@ -243,9 +244,11 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
             </div>
           )}
 
-          {/* Checklist messages render their own styled container instead of the bubble. */}
+          {/* Checklist / poll messages render their own styled container instead of the bubble. */}
           {message.type === 'CHECKLIST' ? (
             <ChecklistMessage message={message} isOwn={isOwn} />
+          ) : message.type === 'POLL' ? (
+            <PollMessage message={message} isOwn={isOwn} />
           ) : (
           <div
             className={`

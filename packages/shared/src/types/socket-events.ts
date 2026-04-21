@@ -96,6 +96,12 @@ export interface ServerToClientEvents {
     checks: { itemId: string; userIds: string[] }[];
   }) => void;
 
+  'poll:update': (data: {
+    messageId: string;
+    chatId: string;
+    votes: { optionId: string; userIds: string[] }[];
+  }) => void;
+
   'message:pinned': (data: {
     chatId: string;
     messageId: string;

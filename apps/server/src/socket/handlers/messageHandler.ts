@@ -69,7 +69,7 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
     try {
       // Determine message type based on attachments
       const hasAttachments = data.attachments && data.attachments.length > 0;
-      let msgType = (data.type as 'TEXT' | 'FILE' | 'IMAGE' | 'SYSTEM' | 'VOICE' | 'VIDEO' | 'CHECKLIST') || 'TEXT';
+      let msgType = (data.type as 'TEXT' | 'FILE' | 'IMAGE' | 'SYSTEM' | 'VOICE' | 'VIDEO' | 'CHECKLIST' | 'POLL') || 'TEXT';
       if (hasAttachments && msgType === 'TEXT') {
         const firstMime = data.attachments[0]?.mimeType || '';
         msgType = firstMime.startsWith('image/') ? 'IMAGE' : 'FILE';
@@ -89,8 +89,8 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
           replyToId: data.replyToId,
           signature: data.signature || null,
           signerWallet: data.signerWallet || null,
-          encryptedContent: msgType === 'CHECKLIST' ? null : (data.encryptedContent || null),
-          encryptionType: msgType === 'CHECKLIST' ? null : (data.encryptedContent ? 'nacl-box' : null),
+          encryptedContent: (msgType === 'CHECKLIST' || msgType === 'POLL') ? null : (data.encryptedContent || null),
+          encryptionType: (msgType === 'CHECKLIST' || msgType === 'POLL') ? null : (data.encryptedContent ? 'nacl-box' : null),
           commentsEnabled: data.commentsEnabled || false,
           // Create file attachments if provided
           ...(hasAttachments && {
