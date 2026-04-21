@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Loader2, Clock, Sparkles, Shield, Gem, Crown, Search, MessageCircle, Globe, Megaphone, Bot, Zap, Home, Bookmark, Smartphone } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Clock, Sparkles, Shield, Gem, Crown, Search, MessageCircle, Globe, Megaphone, Bot, Zap, Home, Bookmark, Smartphone, ListChecks, BarChart3, Mic } from 'lucide-react';
 import { useI18n } from '../i18n';
 
 type Status = 'done' | 'active' | 'planned';
@@ -47,6 +47,9 @@ const PHASES: Phase[] = [
       { text: { en: 'Emoji reactions on messages', ru: 'Реакции эмодзи на сообщения' }, status: 'done' },
       { text: { en: 'Pinned messages', ru: 'Закреплённые сообщения' }, status: 'done' },
       { text: { en: 'Saved Messages (personal pinned chat for notes & forwards)', ru: 'Избранное (личный чат для заметок и пересылок)' }, status: 'done', icon: <Bookmark size={14} /> },
+      { text: { en: 'Shared checklists (collaborative to-do in chat)', ru: 'Совместные списки-чеклисты (общие дела в чате)' }, status: 'done', icon: <ListChecks size={14} /> },
+      { text: { en: 'Interactive polls (single & multiple choice)', ru: 'Интерактивные опросы (один или несколько ответов)' }, status: 'done', icon: <BarChart3 size={14} /> },
+      { text: { en: 'Voice messages (record & send)', ru: 'Голосовые сообщения (запись и отправка)' }, status: 'done', icon: <Mic size={14} /> },
       { text: { en: 'Channels with comments system', ru: 'Каналы с системой комментариев' }, status: 'done', icon: <Megaphone size={14} /> },
       { text: { en: 'Universal search (users, groups, channels, messages)', ru: 'Универсальный поиск (пользователи, группы, каналы, сообщения)' }, status: 'done', icon: <Search size={14} /> },
       { text: { en: 'Message search with highlight & scroll-to', ru: 'Поиск по сообщениям с подсветкой' }, status: 'done' },
