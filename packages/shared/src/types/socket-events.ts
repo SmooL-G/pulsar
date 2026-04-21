@@ -90,6 +90,12 @@ export interface ServerToClientEvents {
     reactions: { emoji: string; count: number; userIds: string[] }[];
   }) => void;
 
+  'checklist:update': (data: {
+    messageId: string;
+    chatId: string;
+    checks: { itemId: string; userIds: string[] }[];
+  }) => void;
+
   'message:pinned': (data: {
     chatId: string;
     messageId: string;
