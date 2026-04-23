@@ -776,6 +776,7 @@ function MessageStatusIcon({ status }: { status?: string }) {
 
 const INVITE_REGEX = /((https?:\/\/[^\s]+)?\/invite\/([a-zA-Z0-9_-]+))/;
 const URL_REGEX = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
+const MENTION_REGEX = /@([a-zA-Z0-9_]{2,32})/g;
 
 function MessageContent({ content, isOwn, metadata }: { content: string; isOwn: boolean; metadata?: any }) {
   const { t } = useI18n();
@@ -831,38 +832,65 @@ function MessageContent({ content, isOwn, metadata }: { content: string; isOwn: 
   );
 }
 
-// Render text with clickable links
+// Render text with clickable links AND @mentions. Mentions of the current
+// user are styled distinctively so they catch the eye.
 function renderTextWithLinks(text: string, isOwn: boolean): React.ReactNode {
+  const myUsername = useAuthStore.getState().user?.username?.toLowerCase();
+
+  // Collect all matches first (URLs + mentions), sort by position, render in order.
+  const tokens: { start: number; end: number; type: 'url' | 'mention'; value: string }[] = [];
+
+  for (const m of text.matchAll(new RegExp(URL_REGEX.source, 'g'))) {
+    if (m.index === undefined) continue;
+    tokens.push({ start: m.index, end: m.index + m[0].length, type: 'url', value: m[1] });
+  }
+  for (const m of text.matchAll(new RegExp(MENTION_REGEX.source, 'g'))) {
+    if (m.index === undefined) continue;
+    // Skip mentions that overlap a URL (e.g., the @ inside an email-like URL).
+    if (tokens.some((t) => t.type === 'url' && m.index! >= t.start && m.index! < t.end)) continue;
+    tokens.push({ start: m.index, end: m.index + m[0].length, type: 'mention', value: m[1] });
+  }
+  tokens.sort((a, b) => a.start - b.start);
+
+  if (tokens.length === 0) return text;
+
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
-
-  const regex = new RegExp(URL_REGEX.source, 'g');
-  let match: RegExpExecArray | null;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
+  for (const tok of tokens) {
+    if (tok.start > lastIndex) {
+      parts.push(text.slice(lastIndex, tok.start));
     }
-    const url = match[1];
-    parts.push(
-      <a
-        key={match.index}
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`underline break-all ${isOwn ? 'text-blue-200 hover:text-white' : 'text-primary-500 hover:text-primary-400'}`}
-      >
-        {url}
-      </a>
-    );
-    lastIndex = match.index + url.length;
+    if (tok.type === 'url') {
+      parts.push(
+        <a
+          key={`u${tok.start}`}
+          href={tok.value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`underline break-all ${isOwn ? 'text-blue-200 hover:text-white' : 'text-primary-500 hover:text-primary-400'}`}
+        >
+          {tok.value}
+        </a>
+      );
+    } else {
+      const isMe = myUsername && tok.value.toLowerCase() === myUsername;
+      parts.push(
+        <span
+          key={`m${tok.start}`}
+          className={`font-semibold ${
+            isMe
+              ? isOwn ? 'text-amber-200' : 'text-amber-500 bg-amber-500/15 px-1 rounded'
+              : isOwn ? 'text-blue-100' : 'text-primary-500'
+          }`}
+        >
+          @{tok.value}
+        </span>
+      );
+    }
+    lastIndex = tok.end;
   }
-
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts.length > 0 ? parts : text;
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts;
 }
 
 // Link preview card

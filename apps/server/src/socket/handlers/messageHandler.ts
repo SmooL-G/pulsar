@@ -173,6 +173,42 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
       // Broadcast to all members of the chat
       io.to(`chat:${data.chatId}`).emit('message:new', messagePayload);
 
+      // Parse @mentions from message content. Lookup matched chat members
+      // and create MENTION notifications + targeted push.
+      // (CHECKLIST/POLL messages have null content; metadata isn't scanned.)
+      const mentionedUserIds = new Set<string>();
+      if (data.content && typeof data.content === 'string') {
+        const matches = data.content.match(/@([a-zA-Z0-9_]{2,32})/g);
+        if (matches && matches.length > 0) {
+          const usernames = Array.from(new Set(matches.map((m) => m.slice(1).toLowerCase())));
+          // Limit lookup to actual chat members so @ doesn't notify random users.
+          const members = await prisma.chatMember.findMany({
+            where: {
+              chatId: data.chatId,
+              leftAt: null,
+              NOT: { userId },
+              user: {
+                username: { in: usernames, mode: 'insensitive' },
+                isBot: false,
+              },
+            },
+            select: { userId: true, user: { select: { username: true } } },
+          });
+          for (const m of members) {
+            mentionedUserIds.add(m.userId);
+            await prisma.notification.create({
+              data: {
+                userId: m.userId,
+                type: 'MENTION',
+                title: (message.sender as any)?.displayName || (message.sender as any)?.username || 'Someone',
+                body: `mentioned you: ${data.content.slice(0, 140)}`,
+                data: { chatId: data.chatId, messageId: message.id, fromUserId: userId },
+              },
+            }).catch(() => { /* don't block message send if notification create fails */ });
+          }
+        }
+      }
+
       // Push notifications to chat members who don't have the chat open right now
       (async () => {
         try {
@@ -205,12 +241,28 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
             (data.attachments?.length ? '📎 attachment' : '');
 
           const { sendPushToUsers } = await import('../../modules/push/push.service.js');
-          await sendPushToUsers(targets, {
-            title,
-            body: preview,
-            url: `/?chat=${data.chatId}`,
-            tag: `chat:${data.chatId}`,
-          });
+
+          // Mentioned users get a louder, distinct push so it stands out
+          // from regular group chatter; everyone else gets the normal one.
+          const mentionTargets = targets.filter((id) => mentionedUserIds.has(id));
+          const regularTargets = targets.filter((id) => !mentionedUserIds.has(id));
+
+          if (mentionTargets.length > 0) {
+            await sendPushToUsers(mentionTargets, {
+              title: isDM ? senderName : `${senderName} mentioned you`,
+              body: preview,
+              url: `/?chat=${data.chatId}&msg=${message.id}`,
+              tag: `mention:${message.id}`,
+            });
+          }
+          if (regularTargets.length > 0) {
+            await sendPushToUsers(regularTargets, {
+              title,
+              body: preview,
+              url: `/?chat=${data.chatId}`,
+              tag: `chat:${data.chatId}`,
+            });
+          }
         } catch (err) {
           console.error('[push] dispatch error:', err);
         }

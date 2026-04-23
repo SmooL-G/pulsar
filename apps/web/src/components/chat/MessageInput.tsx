@@ -5,6 +5,7 @@ import { BotChatBar } from './BotChatBar';
 import { ChecklistComposer } from './ChecklistComposer';
 import { PollComposer } from './PollComposer';
 import { useVoiceRecorder, extensionForMime } from '../../hooks/useVoiceRecorder';
+import { MentionPicker } from './MentionPicker';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
 import { useMessageStore } from '../../store/messageStore';
@@ -50,6 +51,8 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   const [showChecklist, setShowChecklist] = useState(false);
   const [showPoll, setShowPoll] = useState(false);
   const voice = useVoiceRecorder();
+  // Mention autocomplete state — populated when the user is mid-typing an `@`.
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const [superChatAmount, setSuperChatAmount] = useState(0);
@@ -84,6 +87,24 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showAttachMenu]);
+
+  // Replace the in-progress @word at the caret with the picked username.
+  const insertMention = (username: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const caret = ta.selectionStart;
+    const before = text.slice(0, caret);
+    const wordStart = Math.max(before.lastIndexOf(' '), before.lastIndexOf('\n')) + 1;
+    const inserted = `@${username} `;
+    const newText = text.slice(0, wordStart) + inserted + text.slice(caret);
+    setText(newText);
+    setMentionQuery(null);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = wordStart + inserted.length;
+      ta.setSelectionRange(pos, pos);
+    });
+  };
 
   const handleStartVoice = async () => {
     const ok = await voice.start();
@@ -242,10 +263,28 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
+    const value = e.target.value;
+    setText(value);
     const textarea = e.target;
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
+
+    // Mention detection: look at the word the caret is in. If it starts
+    // with `@` and we are not in a DM with a single bot, open the picker.
+    const caret = textarea.selectionStart;
+    const before = value.slice(0, caret);
+    const wordStart = Math.max(before.lastIndexOf(' '), before.lastIndexOf('\n')) + 1;
+    const word = before.slice(wordStart);
+    if (
+      word.startsWith('@') &&
+      !recipientIsBot &&
+      chatType !== 'SAVED' &&
+      /^@[a-zA-Z0-9_]{0,32}$/.test(word)
+    ) {
+      setMentionQuery(word.slice(1).toLowerCase());
+    } else {
+      setMentionQuery(null);
+    }
 
     // Typing indicator
     const socket = getSocket();
@@ -408,6 +447,14 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
         />
 
         <div className="flex-1 relative">
+          {mentionQuery !== null && (
+            <MentionPicker
+              query={mentionQuery}
+              chatId={chatId}
+              onPick={insertMention}
+              onClose={() => setMentionQuery(null)}
+            />
+          )}
           <textarea
             ref={textareaRef}
             value={text}
