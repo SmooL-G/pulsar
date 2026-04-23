@@ -94,7 +94,8 @@ const PHASES: Phase[] = [
       { text: { en: 'Premium subscription (PLS/month)', ru: 'Премиум подписка (PLS/мес)' }, status: 'planned' },
       { text: { en: 'Sticker marketplace (create & sell)', ru: 'Маркетплейс стикеров' }, status: 'planned' },
       { text: { en: 'Channel boost system', ru: 'Система бустов каналов' }, status: 'planned' },
-      { text: { en: 'Custom nick colors & profile frames', ru: 'Кастомные цвета ников и рамки' }, status: 'planned' },
+      { text: { en: 'Custom nick colors (free for Pro+, 2000 PLS for others)', ru: 'Кастомные цвета ников (бесплатно для Pro+, 2000 PLS для остальных)' }, status: 'done' },
+      { text: { en: 'Profile frames (animated avatars)', ru: 'Анимированные рамки аватаров' }, status: 'planned' },
     ],
   },
   {
