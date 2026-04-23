@@ -180,7 +180,7 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
       if (data.content && typeof data.content === 'string') {
         const matches = data.content.match(/@([a-zA-Z0-9_]{2,32})/g);
         if (matches && matches.length > 0) {
-          const usernames = Array.from(new Set(matches.map((m) => m.slice(1).toLowerCase())));
+          const usernames = Array.from(new Set(matches.map((m: string) => m.slice(1).toLowerCase()))) as string[];
           // Limit lookup to actual chat members so @ doesn't notify random users.
           const members = await prisma.chatMember.findMany({
             where: {
