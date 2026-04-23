@@ -50,6 +50,7 @@ const PHASES: Phase[] = [
       { text: { en: 'Shared checklists (collaborative to-do in chat)', ru: 'Совместные списки-чеклисты (общие дела в чате)' }, status: 'done', icon: <ListChecks size={14} /> },
       { text: { en: 'Interactive polls (single & multiple choice)', ru: 'Интерактивные опросы (один или несколько ответов)' }, status: 'done', icon: <BarChart3 size={14} /> },
       { text: { en: 'Voice messages (record & send)', ru: 'Голосовые сообщения (запись и отправка)' }, status: 'done', icon: <Mic size={14} /> },
+      { text: { en: '@username mentions with autocomplete & targeted notifications', ru: 'Упоминания @username с автодополнением и адресными уведомлениями' }, status: 'done' },
       { text: { en: 'Channels with comments system', ru: 'Каналы с системой комментариев' }, status: 'done', icon: <Megaphone size={14} /> },
       { text: { en: 'Universal search (users, groups, channels, messages)', ru: 'Универсальный поиск (пользователи, группы, каналы, сообщения)' }, status: 'done', icon: <Search size={14} /> },
       { text: { en: 'Message search with highlight & scroll-to', ru: 'Поиск по сообщениям с подсветкой' }, status: 'done' },
