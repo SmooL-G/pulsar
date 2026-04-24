@@ -85,7 +85,10 @@ export function useSocket() {
         const chatMsgs = useMessageStore.getState().messages[message.chatId] || [];
         const pending = chatMsgs.find((m) => m.id.startsWith('pending-') && m.senderId === currentUserId);
         if (pending) {
-          useMessageStore.getState().deleteMessage(message.chatId, pending.id);
+          // hideMessage drops the placeholder from the list. Using deleteMessage
+          // here would mark it isDeleted=true and render the gray
+          // "Message deleted" stub right next to the real one.
+          useMessageStore.getState().hideMessage(message.chatId, pending.id);
         }
       }
       addMessage(message);
