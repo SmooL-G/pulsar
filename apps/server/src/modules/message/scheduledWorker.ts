@@ -119,8 +119,7 @@ export function startScheduledMessagesWorker() {
                 height: a.height,
               })),
               status: 'sent',
-              wasScheduled: true,
-            });
+            } as any);
           }
         } catch (err) {
           console.error('[ScheduledWorker] failed to send', sched.id, err);
