@@ -273,6 +273,26 @@ model ChecklistCheck {
   @@map("checklist_checks")
 }
 
+// ─── SCHEDULED MESSAGES ───────────────────────────────────
+// Drafts that the scheduler worker materializes into real Message rows
+// at sendAt. attachments + metadata are stored as JSON so the worker
+// can replay the message:send logic without re-uploading anything.
+model ScheduledMessage {
+  id          String      @id @default(uuid()) @db.Uuid
+  chatId      String      @map("chat_id") @db.Uuid
+  senderId    String      @map("sender_id") @db.Uuid
+  content     String?     @db.Text
+  type        MessageType @default(TEXT)
+  metadata    Json?
+  attachments Json?       @db.JsonB
+  sendAt      DateTime    @map("send_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@index([sendAt])
+  @@index([senderId])
+  @@map("scheduled_messages")
+}
+
 // ─── POLLS ────────────────────────────────────────────────
 // Every vote is one row. Single-choice polls delete the previous vote on
 // new selection; multi-choice polls toggle per-option (same user can

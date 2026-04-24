@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon, ListChecks, BarChart3, Mic, Trash2 } from 'lucide-react';
+import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon, ListChecks, BarChart3, Mic, Trash2, Clock } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { BotChatBar } from './BotChatBar';
 import { ChecklistComposer } from './ChecklistComposer';
 import { PollComposer } from './PollComposer';
 import { useVoiceRecorder, extensionForMime } from '../../hooks/useVoiceRecorder';
 import { MentionPicker } from './MentionPicker';
+import { ScheduleModal } from './ScheduleModal';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSocket } from '../../hooks/useSocket';
 import { useMessageStore } from '../../store/messageStore';
@@ -53,6 +54,7 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   const voice = useVoiceRecorder();
   // Mention autocomplete state — populated when the user is mid-typing an `@`.
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [showSchedule, setShowSchedule] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const [superChatAmount, setSuperChatAmount] = useState(0);
@@ -104,6 +106,54 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
       const pos = wordStart + inserted.length;
       ta.setSelectionRange(pos, pos);
     });
+  };
+
+  const handleSchedule = async (sendAt: Date) => {
+    const content = text.trim();
+    if (!content && pendingFiles.length === 0) {
+      toast.error(t('schedule.emptyMessage'));
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Upload pending files now (so the worker doesn't have to deal with files later).
+      let attachments: { fileName: string; fileSize: number; mimeType: string; url: string }[] = [];
+      for (const pf of pendingFiles) {
+        const formData = new FormData();
+        formData.append('file', pf.file);
+        const { data } = await api.post('/upload/file', formData);
+        attachments.push({
+          fileName: data.fileName,
+          fileSize: data.fileSize,
+          mimeType: data.mimeType,
+          url: data.url,
+        });
+      }
+      const msgType = attachments.length > 0
+        ? (attachments[0].mimeType.startsWith('image/') ? 'IMAGE' : 'FILE')
+        : 'TEXT';
+
+      await api.post('/messages/scheduled', {
+        chatId,
+        content: content || null,
+        type: msgType,
+        sendAt: sendAt.toISOString(),
+        ...(attachments.length > 0 && { attachments }),
+      });
+
+      setText('');
+      setPendingFiles([]);
+      const ta = textareaRef.current;
+      if (ta) { ta.style.height = 'auto'; }
+
+      const when = sendAt.toLocaleString();
+      toast.success(`${t('schedule.scheduledFor')} ${when}`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t('schedule.failed'));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleStartVoice = async () => {
@@ -499,14 +549,25 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
         )}
 
         {text.trim() || pendingFiles.length > 0 ? (
-          <button
-            onClick={handleSend}
-            disabled={uploading}
-            className="p-2.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white
-              disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
-          >
-            <Send size={18} />
-          </button>
+          <>
+            <button
+              onClick={() => setShowSchedule(true)}
+              disabled={uploading}
+              title={t('schedule.title')}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-400 shrink-0
+                disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Clock size={18} />
+            </button>
+            <button
+              onClick={handleSend}
+              disabled={uploading}
+              className="p-2.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white
+                disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+            >
+              <Send size={18} />
+            </button>
+          </>
         ) : (
           <button
             onClick={handleStartVoice}
@@ -519,6 +580,14 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
           </button>
         )}
       </div>
+      )}
+
+      {/* Schedule modal */}
+      {showSchedule && (
+        <ScheduleModal
+          onClose={() => setShowSchedule(false)}
+          onSchedule={handleSchedule}
+        />
       )}
 
       {/* Checklist composer */}

@@ -3,6 +3,7 @@ import { ArrowLeft, Info, Phone, Video, Send, Bookmark } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { MessageList } from '../chat/MessageList';
 import { MessageInput } from '../chat/MessageInput';
+import { ScheduledMessagesBanner } from '../chat/ScheduledMessagesBanner';
 import { BotReplyKeyboard } from '../chat/BotReplyKeyboard';
 import { getSocket } from '../../hooks/useSocket';
 import { TransferModal } from '../wallet/TransferModal';
@@ -144,6 +145,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
           }}
         />
       )}
+      <ScheduledMessagesBanner chatId={activeChat.id} />
       <MessageInput
         chatId={activeChat.id}
         chatType={activeChat.type as 'DIRECT' | 'GROUP' | 'SAVED'}

@@ -575,4 +575,81 @@ export async function messageRoutes(app: FastifyInstance) {
       return { votes };
     },
   );
+
+  // ─── SCHEDULED MESSAGES ───────────────────────────────────────
+  // Stash a message draft for the worker to materialize at sendAt.
+  app.post<{
+    Body: {
+      chatId: string;
+      content?: string;
+      type?: 'TEXT' | 'IMAGE' | 'FILE' | 'VOICE' | 'CHECKLIST' | 'POLL';
+      metadata?: Record<string, unknown>;
+      attachments?: { fileName: string; fileSize: number; mimeType: string; url: string }[];
+      sendAt: string;
+    };
+  }>('/scheduled', async (request, reply) => {
+    const userId = request.user!.userId;
+    const { chatId, content, type, metadata, attachments, sendAt } = request.body;
+
+    if (!chatId || !sendAt) {
+      return reply.status(400).send({ error: 'INVALID_REQUEST' });
+    }
+    const sendAtDate = new Date(sendAt);
+    if (Number.isNaN(sendAtDate.getTime())) {
+      return reply.status(400).send({ error: 'INVALID_DATE' });
+    }
+    if (sendAtDate.getTime() < Date.now() + 30_000) {
+      return reply.status(400).send({ error: 'TOO_SOON', message: 'sendAt must be at least 30s in the future' });
+    }
+    // 30-day cap so the table doesn't accumulate forgotten drafts forever.
+    if (sendAtDate.getTime() > Date.now() + 30 * 24 * 3600 * 1000) {
+      return reply.status(400).send({ error: 'TOO_FAR', message: 'sendAt must be within 30 days' });
+    }
+
+    const member = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId, userId } },
+    });
+    if (!member || member.leftAt) {
+      return reply.status(403).send({ error: 'NOT_CHAT_MEMBER' });
+    }
+
+    if (!content && (!attachments || attachments.length === 0) && !metadata) {
+      return reply.status(400).send({ error: 'EMPTY_MESSAGE' });
+    }
+
+    const scheduled = await prisma.scheduledMessage.create({
+      data: {
+        chatId,
+        senderId: userId,
+        content: content || null,
+        type: (type as any) || 'TEXT',
+        metadata: metadata ? metadata : undefined,
+        attachments: attachments ? (attachments as any) : undefined,
+        sendAt: sendAtDate,
+      },
+    });
+    return { scheduled };
+  });
+
+  // List my scheduled messages, optionally filtered by chat.
+  app.get<{ Querystring: { chatId?: string } }>('/scheduled', async (request) => {
+    const userId = request.user!.userId;
+    const { chatId } = request.query;
+    const rows = await prisma.scheduledMessage.findMany({
+      where: { senderId: userId, ...(chatId ? { chatId } : {}) },
+      orderBy: { sendAt: 'asc' },
+    });
+    return { scheduled: rows };
+  });
+
+  app.delete<{ Params: { id: string } }>('/scheduled/:id', async (request, reply) => {
+    const userId = request.user!.userId;
+    const { id } = request.params;
+    const row = await prisma.scheduledMessage.findUnique({ where: { id } });
+    if (!row || row.senderId !== userId) {
+      return reply.status(404).send({ error: 'NOT_FOUND' });
+    }
+    await prisma.scheduledMessage.delete({ where: { id } });
+    return { ok: true };
+  });
 }
