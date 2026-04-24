@@ -95,7 +95,7 @@ export function startScheduledMessagesWorker() {
               chatId: message.chatId,
               senderId: message.senderId,
               content: message.content,
-              type: message.type,
+              type: message.type as any,
               replyToId: message.replyToId,
               isEdited: message.isEdited,
               isDeleted: message.isDeleted,

@@ -623,7 +623,7 @@ export async function messageRoutes(app: FastifyInstance) {
         senderId: userId,
         content: content || null,
         type: (type as any) || 'TEXT',
-        metadata: metadata ? metadata : undefined,
+        metadata: metadata ? (metadata as any) : undefined,
         attachments: attachments ? (attachments as any) : undefined,
         sendAt: sendAtDate,
       },
