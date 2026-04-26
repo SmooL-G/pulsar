@@ -6,12 +6,12 @@ import { prisma } from '../../config/database.js';
 import { env } from '../../config/env.js';
 import { nanoid } from 'nanoid';
 
-// File size limits by verification level (bytes)
-function getFileSizeLimit(verificationLevel: number, role: string): number {
-  if (role === 'SUPER_ADMIN' || role === 'ADMIN') return 100 * 1024 * 1024; // 100MB
-  if (verificationLevel >= 3) return 50 * 1024 * 1024; // 50MB Elite
-  if (verificationLevel >= 1) return 50 * 1024 * 1024; // 50MB Starter+
-  return 20 * 1024 * 1024; // 20MB free
+// File size limits by verification level + Premium (bytes)
+function getFileSizeLimit(verificationLevel: number, role: string, isPremium: boolean): number {
+  if (role === 'SUPER_ADMIN' || role === 'ADMIN') return 100 * 1024 * 1024;
+  if (isPremium || verificationLevel >= 3) return 100 * 1024 * 1024;
+  if (verificationLevel >= 1) return 50 * 1024 * 1024;
+  return 20 * 1024 * 1024;
 }
 
 export async function uploadRoutes(app: FastifyInstance) {
@@ -57,13 +57,17 @@ export async function uploadRoutes(app: FastifyInstance) {
   app.post('/file', async (request, reply) => {
     const userId = request.user!.userId;
 
-    // Get user verification level
+    // Get user verification level + Premium status
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { verificationLevel: true, role: true },
+      select: {
+        verificationLevel: true,
+        role: true,
+        subscription: { select: { expiresAt: true } },
+      },
     });
-
-    const maxSize = getFileSizeLimit(user?.verificationLevel || 0, user?.role || 'USER');
+    const isPremium = !!user?.subscription && user.subscription.expiresAt.getTime() > Date.now();
+    const maxSize = getFileSizeLimit(user?.verificationLevel || 0, user?.role || 'USER', isPremium);
     const maxSizeMB = Math.round(maxSize / 1024 / 1024);
 
     const data = await request.file();

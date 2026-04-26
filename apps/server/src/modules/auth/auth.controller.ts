@@ -151,6 +151,7 @@ export async function handleGetMe(request: FastifyRequest, reply: FastifyReply) 
       pushMuteFrom: true,
       pushMuteTo: true,
       pushMuteTimezone: true,
+      subscription: { select: { expiresAt: true, autoRenew: true, isTrial: true } },
     },
   });
 
@@ -164,9 +165,11 @@ export async function handleGetMe(request: FastifyRequest, reply: FastifyReply) 
     select: { balance: true },
   });
 
+  const isPremium = !!user.subscription && user.subscription.expiresAt.getTime() > Date.now();
   return reply.send({
     ...user,
     plsBalance: (plsWallet?.balance ?? BigInt(0)).toString(),
+    isPremium,
   });
 }
 

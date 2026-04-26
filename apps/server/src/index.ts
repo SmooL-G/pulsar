@@ -6,6 +6,7 @@ import { initSocketServer } from './socket/index.js';
 import { seedPulsarBot } from './modules/bot/pulsarBot.seed.js';
 import { startWebhookWorker } from './modules/bot/webhookWorker.js';
 import { startScheduledMessagesWorker } from './modules/message/scheduledWorker.js';
+import { startSubscriptionWorker } from './modules/subscription/renewWorker.js';
 
 async function main() {
   const app = await buildApp();
@@ -36,6 +37,9 @@ async function main() {
 
   // Start scheduled messages worker (delivers messages at their sendAt)
   startScheduledMessagesWorker();
+
+  // Start premium subscription worker (auto-renew + expiry notifications)
+  startSubscriptionWorker();
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

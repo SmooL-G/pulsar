@@ -56,6 +56,11 @@ model User {
   reports           Report[]
   punishments       UserPunishment[]
   pushSubscriptions PushSubscription[]
+  subscription      Subscription?
+
+  // Set to true the first time the user activates the Premium 7-day trial
+  // so they cannot start it again on a second account roundtrip.
+  premiumTrialUsed  Boolean @default(false) @map("premium_trial_used")
 
   @@map("users")
 }
@@ -277,6 +282,27 @@ model ChecklistCheck {
   @@unique([messageId, itemId, userId])
   @@index([messageId])
   @@map("checklist_checks")
+}
+
+// ─── PREMIUM SUBSCRIPTION ─────────────────────────────────
+// One row per user; absence == not subscribed. expiresAt is the source
+// of truth for "is currently premium". autoRenew controls whether the
+// daily worker tries to charge again before expiry. isTrial flags the
+// 7-day free trial so we can distinguish trial vs paid in analytics.
+model Subscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  plan      String   @default("premium") @db.VarChar(20)
+  expiresAt DateTime @map("expires_at")
+  autoRenew Boolean  @default(true) @map("auto_renew")
+  isTrial   Boolean  @default(false) @map("is_trial")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("subscriptions")
 }
 
 // ─── SCHEDULED MESSAGES ───────────────────────────────────

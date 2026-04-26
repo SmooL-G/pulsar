@@ -646,4 +646,122 @@ export async function walletRoutes(app: FastifyInstance) {
       balance: updatedWallet.balance.toString(),
     };
   });
+
+  // ─── PREMIUM SUBSCRIPTION ───────────────────────────────────
+  // Status of the current user's subscription (or null).
+  app.get('/subscription', async (request) => {
+    const userId = request.user!.userId;
+    const sub = await prisma.subscription.findUnique({ where: { userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { premiumTrialUsed: true },
+    });
+    const active = !!sub && sub.expiresAt.getTime() > Date.now();
+    return {
+      subscription: sub,
+      active,
+      isPremium: active,
+      trialUsed: !!user?.premiumTrialUsed,
+      pricePls: '5000',
+      trialDays: 7,
+    };
+  });
+
+  // Subscribe (or renew) Premium for 30 days. Charges 5000 PLS.
+  app.post('/subscribe', async (request, reply) => {
+    const { PREMIUM_MONTH_PRICE_PLS, PREMIUM_PERIOD_DAYS } =
+      await import('../subscription/premium.service.js');
+    const userId = request.user!.userId;
+
+    const wallet = await prisma.plsWallet.findUnique({ where: { userId } });
+    if (!wallet) return reply.status(400).send({ error: 'NO_WALLET' });
+    if (wallet.balance < PREMIUM_MONTH_PRICE_PLS) {
+      return reply.status(402).send({
+        error: 'INSUFFICIENT_BALANCE',
+        message: `Need ${PREMIUM_MONTH_PRICE_PLS} PLS`,
+        balance: wallet.balance.toString(),
+      });
+    }
+
+    const existing = await prisma.subscription.findUnique({ where: { userId } });
+    // If still active, extend from current expiresAt; otherwise from now.
+    const baseTime = existing && existing.expiresAt.getTime() > Date.now()
+      ? existing.expiresAt.getTime()
+      : Date.now();
+    const newExpires = new Date(baseTime + PREMIUM_PERIOD_DAYS * 24 * 3600 * 1000);
+
+    const [updatedWallet, sub] = await prisma.$transaction([
+      prisma.plsWallet.update({
+        where: { userId },
+        data: { balance: { decrement: PREMIUM_MONTH_PRICE_PLS } },
+      }),
+      prisma.subscription.upsert({
+        where: { userId },
+        create: { userId, plan: 'premium', expiresAt: newExpires, autoRenew: true, isTrial: false },
+        update: { expiresAt: newExpires, autoRenew: true, isTrial: false },
+      }),
+    ]);
+
+    return { success: true, subscription: sub, balance: updatedWallet.balance.toString() };
+  });
+
+  // Activate the one-time 7-day free trial.
+  app.post('/subscribe/trial', async (request, reply) => {
+    const { PREMIUM_TRIAL_DAYS } = await import('../subscription/premium.service.js');
+    const userId = request.user!.userId;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { premiumTrialUsed: true },
+    });
+    if (user?.premiumTrialUsed) {
+      return reply.status(400).send({ error: 'TRIAL_ALREADY_USED' });
+    }
+
+    const existing = await prisma.subscription.findUnique({ where: { userId } });
+    if (existing && existing.expiresAt.getTime() > Date.now()) {
+      return reply.status(400).send({ error: 'ALREADY_SUBSCRIBED' });
+    }
+
+    const expires = new Date(Date.now() + PREMIUM_TRIAL_DAYS * 24 * 3600 * 1000);
+    const [, sub] = await prisma.$transaction([
+      prisma.user.update({ where: { id: userId }, data: { premiumTrialUsed: true } }),
+      prisma.subscription.upsert({
+        where: { userId },
+        // Trial defaults to autoRenew=false — at the end the user must
+        // actively subscribe; no surprise charges from a forgotten trial.
+        create: { userId, plan: 'premium', expiresAt: expires, autoRenew: false, isTrial: true },
+        update: { expiresAt: expires, autoRenew: false, isTrial: true },
+      }),
+    ]);
+
+    return { success: true, subscription: sub };
+  });
+
+  // Toggle auto-renew without ending the current paid period.
+  app.post('/subscribe/cancel', async (request, reply) => {
+    const userId = request.user!.userId;
+    const sub = await prisma.subscription.findUnique({ where: { userId } });
+    if (!sub) return reply.status(404).send({ error: 'NOT_SUBSCRIBED' });
+    const updated = await prisma.subscription.update({
+      where: { userId },
+      data: { autoRenew: false },
+    });
+    return { success: true, subscription: updated };
+  });
+
+  // Re-enable auto-renew on an active subscription.
+  app.post('/subscribe/resume', async (request, reply) => {
+    const userId = request.user!.userId;
+    const sub = await prisma.subscription.findUnique({ where: { userId } });
+    if (!sub) return reply.status(404).send({ error: 'NOT_SUBSCRIBED' });
+    if (sub.expiresAt.getTime() <= Date.now()) {
+      return reply.status(400).send({ error: 'EXPIRED', message: 'Subscribe again first' });
+    }
+    const updated = await prisma.subscription.update({
+      where: { userId },
+      data: { autoRenew: true },
+    });
+    return { success: true, subscription: updated };
+  });
 }

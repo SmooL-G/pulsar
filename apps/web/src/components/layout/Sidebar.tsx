@@ -11,6 +11,7 @@ import { FriendsPanel } from '../friends/FriendsPanel';
 import { WalletPanel } from '../wallet/WalletPanel';
 import { BotPanel } from '../bot/BotPanel';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { PremiumBadge } from '../ui/PremiumBadge';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { api } from '../../services/api';
 import { useMessageStore } from '../../store/messageStore';
@@ -365,6 +366,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
               <p className="text-sm font-medium truncate flex items-center gap-1">
                 {user.displayName || user.username}
                 <PulsarBadge level={(user as any).verificationLevel || 0} size={13} role={(user as any).role} />
+                <PremiumBadge isPremium={(user as any).isPremium} size={13} />
               </p>
               <p className="text-xs text-gray-400 truncate font-mono">
                 {user.walletAddress.slice(0, 4)}...{user.walletAddress.slice(-4)}

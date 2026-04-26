@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, User, Globe, Palette, Bell, Wallet, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2 } from 'lucide-react';
+import { X, User, Globe, Palette, Bell, Wallet, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2, Star } from 'lucide-react';
 
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -20,7 +20,7 @@ interface SettingsPanelProps {
   onClose: () => void;
 }
 
-type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'admin';
+type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'premium' | 'admin';
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { t, locale, setLocale } = useI18n();
@@ -94,6 +94,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     { id: 'appearance', icon: Palette, label: t('settings.appearance') },
     { id: 'notifications', icon: Bell, label: t('settings.notifications') },
     { id: 'wallet', icon: Wallet, label: t('profile.wallet') },
+    { id: 'premium', icon: Star, label: t('premium.title') },
     ...(isStaff ? [{ id: 'admin' as Tab, icon: Shield, label: t('admin.title') }] : []),
   ];
 
@@ -340,6 +341,8 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 <E2EKeysSection />
               </div>
             )}
+
+            {tab === 'premium' && <PremiumSection />}
 
             {/* Admin rendered as separate modal */}
           </div>
@@ -1007,6 +1010,183 @@ function hhmmToMinutes(s: string): number | null {
   const mm = Number(m[2]);
   if (h < 0 || h > 23 || mm < 0 || mm > 59) return null;
   return h * 60 + mm;
+}
+
+function PremiumSection() {
+  const { t, locale } = useI18n();
+  const { user, setUser } = useAuthStore();
+  const [status, setStatus] = useState<{
+    active: boolean;
+    isPremium: boolean;
+    trialUsed: boolean;
+    subscription: { expiresAt: string; autoRenew: boolean; isTrial: boolean } | null;
+  } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const reload = async () => {
+    try {
+      const { data } = await api.get('/wallet/subscription');
+      setStatus(data);
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => { reload(); }, []);
+
+  const refreshUser = async () => {
+    try {
+      const { data } = await api.get('/auth/me');
+      setUser(data);
+    } catch { /* silent */ }
+  };
+
+  const startTrial = async () => {
+    setBusy(true);
+    try {
+      await api.post('/wallet/subscribe/trial');
+      await Promise.all([reload(), refreshUser()]);
+      toast.success(t('premium.trialActivated'));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t('premium.failed'));
+    } finally { setBusy(false); }
+  };
+
+  const subscribe = async () => {
+    setBusy(true);
+    try {
+      await api.post('/wallet/subscribe');
+      await Promise.all([reload(), refreshUser()]);
+      toast.success(t('premium.subscribed'));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t('premium.failed'));
+    } finally { setBusy(false); }
+  };
+
+  const cancel = async () => {
+    setBusy(true);
+    try {
+      await api.post('/wallet/subscribe/cancel');
+      await reload();
+      toast.success(t('premium.cancelled'));
+    } catch { /* silent */ } finally { setBusy(false); }
+  };
+
+  const resume = async () => {
+    setBusy(true);
+    try {
+      await api.post('/wallet/subscribe/resume');
+      await reload();
+      toast.success(t('premium.resumed'));
+    } catch { /* silent */ } finally { setBusy(false); }
+  };
+
+  const perks: { ru: string; en: string }[] = [
+    { ru: '⭐ Бейдж Premium виден везде', en: '⭐ Premium badge visible everywhere' },
+    { ru: '📎 Файлы до 100 МБ (вместо 20)', en: '📎 100 MB files (vs 20)' },
+    { ru: '📤 До 20 файлов за раз', en: '📤 Up to 20 attachments per message' },
+    { ru: '📡 Создание до 10 каналов', en: '📡 Create up to 10 channels' },
+    { ru: '🎨 Кастомные темы чата', en: '🎨 Custom chat themes' },
+    { ru: '🌟 Анимированный аватар', en: '🌟 Animated avatar' },
+  ];
+
+  const balance = BigInt((user as any)?.plsBalance || '0');
+  const enoughForMonth = balance >= 5000n;
+  const expiresFmt = status?.subscription
+    ? new Date(status.subscription.expiresAt).toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-US')
+    : null;
+
+  return (
+    <div className="space-y-4">
+      {/* Hero card */}
+      <div className="rounded-2xl bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-primary-500/10 border border-amber-500/30 p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <Star size={20} className="text-amber-400" fill="currentColor" />
+          <h3 className="text-lg font-bold">Pulsar Premium</h3>
+          {status?.active && (
+            <span className="ml-auto text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+              {status.subscription?.isTrial ? t('premium.statusTrial') : t('premium.statusActive')}
+            </span>
+          )}
+        </div>
+        {status?.active ? (
+          <p className="text-sm text-gray-300">
+            {t('premium.activeUntil')} <span className="font-mono text-amber-400">{expiresFmt}</span>
+            {status.subscription?.autoRenew && !status.subscription?.isTrial && (
+              <span className="text-xs text-gray-400 block mt-1">{t('premium.willAutoRenew')}</span>
+            )}
+            {!status.subscription?.autoRenew && (
+              <span className="text-xs text-amber-300/80 block mt-1">{t('premium.willExpire')}</span>
+            )}
+          </p>
+        ) : (
+          <p className="text-sm text-gray-300">{t('premium.tagline')}</p>
+        )}
+      </div>
+
+      {/* Perks list */}
+      <div className="bg-dark-800/50 border border-dark-500 rounded-xl p-4 space-y-2">
+        <p className="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-1">
+          {t('premium.perks')}
+        </p>
+        {perks.map((p) => (
+          <p key={p.en} className="text-sm text-gray-300">{locale === 'ru' ? p.ru : p.en}</p>
+        ))}
+      </div>
+
+      {/* Action area */}
+      <div className="space-y-2">
+        {!status?.active && !status?.trialUsed && (
+          <button
+            onClick={startTrial}
+            disabled={busy}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold transition-all disabled:opacity-50"
+          >
+            {busy ? '…' : `🎁 ${t('premium.startTrial')}`}
+          </button>
+        )}
+        {!status?.active && (
+          <button
+            onClick={subscribe}
+            disabled={busy || !enoughForMonth}
+            className="w-full py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {busy ? '…' : `${t('premium.subscribeFor')} 5,000 PLS / ${t('premium.month')}`}
+          </button>
+        )}
+        {!enoughForMonth && !status?.active && (
+          <p className="text-xs text-amber-300/80 text-center">
+            {t('premium.notEnoughPls')} ({balance.toLocaleString()} / 5000 PLS)
+          </p>
+        )}
+        {status?.active && status.subscription?.autoRenew && !status.subscription?.isTrial && (
+          <button
+            onClick={cancel}
+            disabled={busy}
+            className="w-full py-2.5 rounded-xl bg-dark-600 hover:bg-dark-500 text-gray-300 transition-colors disabled:opacity-50"
+          >
+            {t('premium.cancelAutoRenew')}
+          </button>
+        )}
+        {status?.active && !status.subscription?.autoRenew && !status.subscription?.isTrial && (
+          <button
+            onClick={resume}
+            disabled={busy}
+            className="w-full py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white transition-colors disabled:opacity-50"
+          >
+            {t('premium.resumeAutoRenew')}
+          </button>
+        )}
+        {status?.active && status.subscription?.isTrial && (
+          <button
+            onClick={subscribe}
+            disabled={busy || !enoughForMonth}
+            className="w-full py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t('premium.upgradeFromTrial')} — 5,000 PLS
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function QuietHoursSection() {

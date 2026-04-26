@@ -8,6 +8,7 @@ import { BotReplyKeyboard } from '../chat/BotReplyKeyboard';
 import { getSocket } from '../../hooks/useSocket';
 import { TransferModal } from '../wallet/TransferModal';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { PremiumBadge } from '../ui/PremiumBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
@@ -78,6 +79,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
             {activeChat.type === 'DIRECT' && (
               <>
                 <PulsarBadge level={(activeChat as any).otherUser?.verificationLevel || 0} size={14} />
+                <PremiumBadge isPremium={(activeChat as any).otherUser?.isPremium} size={14} />
                 <ProfileBadgeIcon badge={(activeChat as any).otherUser?.profileBadge} size={14} />
               </>
             )}

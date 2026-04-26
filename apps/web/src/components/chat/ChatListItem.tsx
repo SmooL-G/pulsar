@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ru as ruLocale } from 'date-fns/locale/ru';
 import { Trash2, LogOut, Eraser, Bot, Bookmark } from 'lucide-react';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { PremiumBadge } from '../ui/PremiumBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
@@ -159,6 +160,7 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
             >
               {name}
               <PulsarBadge level={(chat.type === 'DIRECT' ? (chat.otherUser as any)?.verificationLevel : 0) || 0} size={13} />
+              {chat.type === 'DIRECT' && <PremiumBadge isPremium={(chat.otherUser as any)?.isPremium} size={13} />}
               {chat.type === 'DIRECT' && <ProfileBadgeIcon badge={(chat.otherUser as any)?.profileBadge} size={13} />}
             </span>
             {time && <span className="text-xs text-gray-400 shrink-0 ml-2">{time}</span>}

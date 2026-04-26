@@ -43,6 +43,7 @@ export async function chatRoutes(app: FastifyInstance) {
                     createdAt: true,
                     isBot: true,
                     role: true,
+                    subscription: { select: { expiresAt: true } },
                   },
                 },
               },
@@ -53,6 +54,13 @@ export async function chatRoutes(app: FastifyInstance) {
       },
       orderBy: { chat: { updatedAt: 'desc' } },
     });
+
+    const flattenPremium = (u: any) => {
+      if (!u) return u;
+      const isPremium = !!u.subscription && new Date(u.subscription.expiresAt).getTime() > Date.now();
+      const { subscription: _drop, ...rest } = u;
+      return { ...rest, isPremium };
+    };
 
     const chats = memberships.map((m) => {
       const lastMessage = m.chat.messages[0];
@@ -76,10 +84,10 @@ export async function chatRoutes(app: FastifyInstance) {
               sender: lastMessage.sender,
             }
           : null,
-        // For DMs, include the other user's info
+        members: m.chat.members.map((mem: any) => ({ ...mem, user: flattenPremium(mem.user) })),
         otherUser:
           m.chat.type === 'DIRECT'
-            ? m.chat.members.find((member) => member.userId !== userId)?.user
+            ? flattenPremium(m.chat.members.find((member) => member.userId !== userId)?.user)
             : null,
       };
     });
