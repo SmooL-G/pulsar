@@ -27,6 +27,10 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
   const activeChat = useChatStore((s) => s.activeChat);
   const [showTransfer, setShowTransfer] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  // All hooks must run on every render — call them BEFORE the activeChat
+  // null check, otherwise React throws "rendered more hooks than during
+  // the previous render" the moment a chat is selected.
+  const wallpaper = useChatTheme();
 
   if (!activeChat) {
     return <NewsFeed />;
@@ -40,8 +44,6 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         (activeChat as any).otherUser?.username ||
         t('chat.directMessage')
       : activeChat.name || t('common.group');
-
-  const wallpaper = useChatTheme();
 
   const onDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     if (Array.from(e.dataTransfer.types).includes('Files')) {
