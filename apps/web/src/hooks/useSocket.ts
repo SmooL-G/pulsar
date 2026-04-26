@@ -124,6 +124,17 @@ export function useSocket() {
       useMessageStore.getState().updatePollVotes(chatId, messageId, votes);
     });
 
+    socket.on('message:transcribed', ({ chatId, messageId, transcription }: { chatId: string; messageId: string; transcription: string }) => {
+      // Patch message.metadata.transcription in place so AudioAttachment renders it.
+      const store = useMessageStore.getState();
+      const msgs = store.messages[chatId] || [];
+      const target = msgs.find((m) => m.id === messageId);
+      if (target) {
+        const newMeta = { ...((target.metadata as any) || {}), transcription };
+        store.updateMessage({ ...target, metadata: newMeta });
+      }
+    });
+
     socket.on('message:read', ({ chatId, userId: readerId }: { chatId: string; messageId: string; userId: string }) => {
       // The reader read our messages — mark all our messages in that chat as read
       const currentUserId = useAuthStore.getState().user?.id;

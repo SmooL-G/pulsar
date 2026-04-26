@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Download, Music, Mic } from 'lucide-react';
+import { Play, Pause, Download, Music, Mic, Sparkles, Loader2 } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { useAuthStore } from '../../store/authStore';
+import { api } from '../../services/api';
+import toast from 'react-hot-toast';
 
 interface AudioAttachmentProps {
   url: string;
@@ -9,6 +12,10 @@ interface AudioAttachmentProps {
   isOwn: boolean;
   /** When true, shows "Voice message" label + mic icon instead of the raw file name. */
   isVoice?: boolean;
+  /** Voice messages can be transcribed via Whisper — caller supplies messageId
+   *  and any cached transcription text from the message metadata. */
+  messageId?: string;
+  initialTranscription?: string | null;
 }
 
 function fmt(sec: number): string {
@@ -18,8 +25,36 @@ function fmt(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export function AudioAttachment({ url, fileName, sizeStr, isOwn, isVoice }: AudioAttachmentProps) {
+export function AudioAttachment({ url, fileName, sizeStr, isOwn, isVoice, messageId, initialTranscription }: AudioAttachmentProps) {
   const { t } = useI18n();
+  const isPremium = useAuthStore((s) => (s.user as any)?.isPremium);
+  const [transcription, setTranscription] = useState<string | null>(initialTranscription || null);
+  const [transcribing, setTranscribing] = useState(false);
+
+  // Pull cached transcription if it arrives later via socket (other participant).
+  useEffect(() => {
+    if (initialTranscription && initialTranscription !== transcription) {
+      setTranscription(initialTranscription);
+    }
+  }, [initialTranscription]);
+
+  const handleTranscribe = async () => {
+    if (!messageId || transcribing || transcription) return;
+    setTranscribing(true);
+    try {
+      const { data } = await api.post(`/messages/${messageId}/transcribe`);
+      setTranscription(data.transcription);
+    } catch (err: any) {
+      const code = err.response?.data?.error;
+      if (code === 'PREMIUM_REQUIRED') {
+        toast.error(t('voice.transcribePremiumOnly'));
+      } else {
+        toast.error(err.response?.data?.message || t('voice.transcribeFailed'));
+      }
+    } finally {
+      setTranscribing(false);
+    }
+  };
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -84,6 +119,7 @@ export function AudioAttachment({ url, fileName, sizeStr, isOwn, isVoice }: Audi
   const fillCls = isOwn ? 'bg-white' : 'bg-primary-400';
 
   return (
+    <>
     <div className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl ${bg} min-w-[260px] max-w-[320px]`}>
       <audio ref={audioRef} src={url} preload="metadata" />
 
@@ -124,6 +160,22 @@ export function AudioAttachment({ url, fileName, sizeStr, isOwn, isVoice }: Audi
         </p>
       </div>
 
+      {/* Transcribe (Premium, voice only) */}
+      {isVoice && messageId && !transcription && (
+        <button
+          onClick={handleTranscribe}
+          disabled={transcribing || !isPremium}
+          title={isPremium ? t('voice.transcribe') : t('voice.transcribePremiumOnly')}
+          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+            isPremium
+              ? isOwn ? 'hover:bg-white/15 text-amber-200' : 'hover:bg-dark-500 text-amber-400'
+              : 'opacity-40 cursor-not-allowed text-gray-500'
+          }`}
+        >
+          {transcribing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+        </button>
+      )}
+
       {/* Download */}
       <a
         href={url}
@@ -138,5 +190,19 @@ export function AudioAttachment({ url, fileName, sizeStr, isOwn, isVoice }: Audi
         <Download size={14} />
       </a>
     </div>
+
+    {/* Transcription text appears below the player once available. */}
+    {transcription && (
+      <div className={`mt-1 px-3 py-2 rounded-2xl text-xs leading-relaxed ${
+        isOwn ? 'bg-white/10 text-white/90' : 'bg-dark-500/50 text-gray-200'
+      }`}>
+        <div className="flex items-center gap-1 mb-1 opacity-70">
+          <Sparkles size={10} />
+          <span className="text-[10px] uppercase tracking-wider">{t('voice.transcription')}</span>
+        </div>
+        {transcription}
+      </div>
+    )}
+  </>
   );
 }

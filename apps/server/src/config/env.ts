@@ -42,4 +42,7 @@ export const env = cleanEnv(process.env, {
   // YooKassa (RUB top-ups for PLS via card)
   YOOKASSA_SHOP_ID: str({ default: '' }),
   YOOKASSA_SECRET_KEY: str({ default: '' }),
+
+  // OpenAI (Whisper for voice message transcription — Premium feature)
+  OPENAI_API_KEY: str({ default: '' }),
 });

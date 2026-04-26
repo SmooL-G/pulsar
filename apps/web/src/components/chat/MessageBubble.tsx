@@ -293,6 +293,8 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
                         sizeStr={sizeStr}
                         isOwn={isOwn}
                         isVoice={message.type === 'VOICE'}
+                        messageId={message.id}
+                        initialTranscription={(message.metadata as any)?.transcription || null}
                       />
                     );
                   }

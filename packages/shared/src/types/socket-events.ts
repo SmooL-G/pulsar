@@ -102,6 +102,12 @@ export interface ServerToClientEvents {
     votes: { optionId: string; userIds: string[] }[];
   }) => void;
 
+  'message:transcribed': (data: {
+    chatId: string;
+    messageId: string;
+    transcription: string;
+  }) => void;
+
   'message:pinned': (data: {
     chatId: string;
     messageId: string;

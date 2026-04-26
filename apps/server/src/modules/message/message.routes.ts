@@ -652,4 +652,77 @@ export async function messageRoutes(app: FastifyInstance) {
     await prisma.scheduledMessage.delete({ where: { id } });
     return { ok: true };
   });
+
+  // Transcribe a VOICE message via Whisper. Premium-only. Result is cached
+  // in message.metadata.transcription so repeat calls are free.
+  app.post<{ Params: { messageId: string } }>(
+    '/:messageId/transcribe',
+    async (request, reply) => {
+      const userId = request.user!.userId;
+      const { messageId } = request.params;
+      const { isPremium } = await import('../subscription/premium.service.js');
+      const { transcribeAudio } = await import('./transcribe.service.js');
+
+      if (!(await isPremium(userId))) {
+        return reply.status(402).send({ error: 'PREMIUM_REQUIRED' });
+      }
+
+      const message = await prisma.message.findUnique({
+        where: { id: messageId },
+        select: {
+          id: true, type: true, chatId: true, isDeleted: true, metadata: true,
+          attachments: { select: { s3Key: true, fileName: true } },
+        },
+      });
+      if (!message || message.isDeleted) {
+        return reply.status(404).send({ error: 'MESSAGE_NOT_FOUND' });
+      }
+      if (message.type !== 'VOICE') {
+        return reply.status(400).send({ error: 'NOT_A_VOICE_MESSAGE' });
+      }
+
+      // Verify the requester is in the chat (so non-members can't snoop voice).
+      const member = await prisma.chatMember.findUnique({
+        where: { chatId_userId: { chatId: message.chatId, userId } },
+      });
+      if (!member || member.leftAt) {
+        return reply.status(403).send({ error: 'NOT_CHAT_MEMBER' });
+      }
+
+      // Cached?
+      const cached = (message.metadata as any)?.transcription;
+      if (typeof cached === 'string' && cached.length > 0) {
+        return { transcription: cached, cached: true };
+      }
+
+      const att = message.attachments[0];
+      if (!att?.s3Key) {
+        return reply.status(400).send({ error: 'NO_AUDIO' });
+      }
+
+      try {
+        const text = await transcribeAudio(att.s3Key, att.fileName);
+        const trimmed = text.trim().slice(0, 4000);
+
+        const newMeta = { ...(message.metadata as any || {}), transcription: trimmed };
+        await prisma.message.update({
+          where: { id: messageId },
+          data: { metadata: newMeta },
+        });
+
+        const io = getIO();
+        if (io) {
+          io.to(`chat:${message.chatId}`).emit('message:transcribed', {
+            chatId: message.chatId,
+            messageId,
+            transcription: trimmed,
+          });
+        }
+        return { transcription: trimmed, cached: false };
+      } catch (err: any) {
+        request.log.error({ err }, 'transcribe failed');
+        return reply.status(500).send({ error: 'TRANSCRIBE_FAILED', message: err.message });
+      }
+    },
+  );
 }
