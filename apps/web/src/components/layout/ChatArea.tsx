@@ -26,6 +26,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
   const setActiveChat = useChatStore((s) => s.setActiveChat);
   const activeChat = useChatStore((s) => s.activeChat);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   if (!activeChat) {
     return <NewsFeed />;
@@ -42,11 +43,45 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
 
   const wallpaper = useChatTheme();
 
+  const onDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    if (Array.from(e.dataTransfer.types).includes('Files')) {
+      e.preventDefault();
+      setDragOver(true);
+    }
+  };
+  const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // Only count leaves that exit the chat area entirely.
+    if (e.currentTarget === e.target) setDragOver(false);
+  };
+  const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (Array.from(e.dataTransfer.types).includes('Files')) e.preventDefault();
+  };
+  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length === 0) return;
+    window.dispatchEvent(
+      new CustomEvent('pulsar:files-drop', { detail: { files, chatId: activeChat.id } }),
+    );
+  };
+
   return (
     <div
-      className="flex flex-col h-full"
+      className="flex flex-col h-full relative"
       style={wallpaper.css ? { background: wallpaper.css } : undefined}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
     >
+      {dragOver && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary-500/30 backdrop-blur-sm pointer-events-none border-4 border-dashed border-primary-400">
+          <div className="bg-dark-700 border border-dark-500 rounded-2xl px-6 py-4 shadow-2xl">
+            <p className="text-white font-semibold text-lg">{t('chat.dropToAttach')}</p>
+          </div>
+        </div>
+      )}
       {/* Chat Header */}
       <div className="flex items-center gap-3 px-4 py-3 pt-3-safe pl-safe pr-safe border-b border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
         <button

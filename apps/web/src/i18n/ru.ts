@@ -43,6 +43,7 @@ export const ru = {
   'search.noResults': 'Ничего не найдено',
   'chat.writeMessage': 'Написать сообщение...',
   'chat.attachFile': 'Фото / Файл',
+  'chat.dropToAttach': 'Отпусти, чтобы прикрепить',
   'checklist.menuItem': 'Список',
   'checklist.composerTitle': 'Новый список',
   'checklist.titlePlaceholder': 'Название списка (необязательно)',

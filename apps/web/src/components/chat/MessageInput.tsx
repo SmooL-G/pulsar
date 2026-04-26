@@ -90,6 +90,58 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
     return () => document.removeEventListener('mousedown', handler);
   }, [showAttachMenu]);
 
+  // Helper for any path that wants to push a File into the pending list.
+  const addFiles = useCallback((files: File[]) => {
+    if (files.length === 0) return;
+    setPendingFiles((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        file,
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+      })),
+    ]);
+  }, []);
+
+  // Drag & drop anywhere on the page → add files to pending. ChatArea owns
+  // the visual hint overlay; here we just listen for the custom event it fires.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ files: File[]; chatId: string }>).detail;
+      if (detail?.chatId !== chatId) return;
+      addFiles(detail.files);
+    };
+    window.addEventListener('pulsar:files-drop', handler);
+    return () => window.removeEventListener('pulsar:files-drop', handler);
+  }, [chatId, addFiles]);
+
+  // Paste handler — Ctrl+V with an image in the clipboard attaches it.
+  // Skipped while typing in another input (e.g. modal forms) by checking
+  // the event target.
+  useEffect(() => {
+    const handler = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      // Only act when focus is on our textarea or nothing in particular.
+      if (target && target !== textareaRef.current && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        return;
+      }
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const files: File[] = [];
+      for (const it of Array.from(items)) {
+        if (it.kind === 'file') {
+          const f = it.getAsFile();
+          if (f) files.push(f);
+        }
+      }
+      if (files.length > 0) {
+        e.preventDefault();
+        addFiles(files);
+      }
+    };
+    document.addEventListener('paste', handler);
+    return () => document.removeEventListener('paste', handler);
+  }, [addFiles]);
+
   // Replace the in-progress @word at the caret with the picked username.
   const insertMention = (username: string) => {
     const ta = textareaRef.current;
@@ -428,7 +480,15 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
             <span className="text-sm text-gray-700 dark:text-gray-200 font-mono tabular-nums">
               {Math.floor(voice.duration / 60)}:{String(voice.duration % 60).padStart(2, '0')}
             </span>
-            <span className="text-xs text-gray-500 ml-auto">{t('voice.recording')}</span>
+            <div className="flex-1 flex items-center justify-end gap-[2px] h-5 overflow-hidden">
+              {voice.levels.slice(-24).map((lvl, i) => (
+                <span
+                  key={i}
+                  className="w-[2px] bg-red-500 rounded-full"
+                  style={{ height: `${Math.max(10, lvl * 100)}%` }}
+                />
+              ))}
+            </div>
           </div>
           <button
             onClick={handleSendVoice}

@@ -43,6 +43,7 @@ export const en = {
   'search.noResults': 'Nothing found',
   'chat.writeMessage': 'Write a message...',
   'chat.attachFile': 'Photo / File',
+  'chat.dropToAttach': 'Drop files to attach',
   'checklist.menuItem': 'Checklist',
   'checklist.composerTitle': 'New Checklist',
   'checklist.titlePlaceholder': 'List title (optional)',

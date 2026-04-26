@@ -17,6 +17,11 @@ export function useVoiceRecorder() {
   const chunksRef = useRef<Blob[]>([]);
   const startedAtRef = useRef(0);
   const timerRef = useRef<number | null>(null);
+  // Live amplitude levels (0..1) — most recent N samples for the bar viz.
+  const [levels, setLevels] = useState<number[]>([]);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   const cleanup = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -27,8 +32,18 @@ export function useVoiceRecorder() {
       window.clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
+    analyserRef.current = null;
     setRecording(false);
     setDuration(0);
+    setLevels([]);
   }, []);
 
   const start = useCallback(async (): Promise<boolean> => {
@@ -64,6 +79,42 @@ export function useVoiceRecorder() {
       timerRef.current = window.setInterval(() => {
         setDuration(Math.floor((Date.now() - startedAtRef.current) / 1000));
       }, 250);
+
+      // Set up an AnalyserNode to feed bar-graph levels for the UI.
+      try {
+        const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+        const ctx: AudioContext = new Ctx();
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 1024;
+        source.connect(analyser);
+        audioCtxRef.current = ctx;
+        analyserRef.current = analyser;
+        const data = new Uint8Array(analyser.fftSize);
+
+        const pump = () => {
+          if (!analyserRef.current) return;
+          analyserRef.current.getByteTimeDomainData(data);
+          // RMS amplitude → 0..1
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) {
+            const v = (data[i] - 128) / 128;
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / data.length);
+          // Push into rolling buffer of last 32 samples.
+          setLevels((prev) => {
+            const next = prev.length >= 32 ? prev.slice(-31) : prev.slice();
+            next.push(Math.min(1, rms * 4)); // amplify so soft speech is visible
+            return next;
+          });
+          rafRef.current = requestAnimationFrame(pump);
+        };
+        rafRef.current = requestAnimationFrame(pump);
+      } catch {
+        // Visualization is non-critical; recording still works without it.
+      }
+
       return true;
     } catch (err: any) {
       setPermissionError(err?.name === 'NotAllowedError' ? 'DENIED' : 'ERROR');
@@ -107,7 +158,7 @@ export function useVoiceRecorder() {
     };
   }, []);
 
-  return { recording, duration, start, stop, cancel, permissionError };
+  return { recording, duration, levels, start, stop, cancel, permissionError };
 }
 
 /** Pick a file extension that matches a MediaRecorder MIME type. */
