@@ -230,6 +230,7 @@ export const ru = {
   // Common
   'common.loading': 'Загрузка...',
   'common.error': 'Ошибка',
+  'common.cancel': 'Отмена',
   'common.save': 'Сохранить',
   'common.delete': 'Удалить',
   'common.edit': 'Редактировать',

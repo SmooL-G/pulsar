@@ -229,6 +229,7 @@ export const en = {
 
   // Common
   'common.loading': 'Loading...',
+  'common.cancel': 'Cancel',
   'common.error': 'Error',
   'common.save': 'Save',
   'common.delete': 'Delete',
