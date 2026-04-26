@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Copy, Check, ArrowRight, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { X, Copy, Check, ArrowRight, Loader2, CreditCard, Wallet as WalletIcon } from 'lucide-react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { api } from '../../services/api';
@@ -22,6 +22,7 @@ export function DepositModal({ onClose }: DepositModalProps) {
   const [amount, setAmount] = useState('');
   const [step, setStep] = useState<'input' | 'sending' | 'confirming' | 'crediting' | 'done'>('input');
   const [copied, setCopied] = useState(false);
+  const [method, setMethod] = useState<'sol' | 'card'>('card');
 
   const solAmount = parseFloat(amount) || 0;
   const plsAmount = Math.floor(solAmount * PLS_PER_SOL);
@@ -85,8 +86,32 @@ export function DepositModal({ onClose }: DepositModalProps) {
           </button>
         </div>
 
+        {/* Method tabs */}
+        {step === 'input' && (
+          <div className="flex gap-1 px-4 pt-3">
+            <button
+              onClick={() => setMethod('card')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-lg transition-colors ${
+                method === 'card' ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-dark-600 text-gray-400'
+              }`}
+            >
+              <CreditCard size={14} /> {t('wallet.payByCard')}
+            </button>
+            <button
+              onClick={() => setMethod('sol')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-lg transition-colors ${
+                method === 'sol' ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-dark-600 text-gray-400'
+              }`}
+            >
+              <WalletIcon size={14} /> SOL
+            </button>
+          </div>
+        )}
+
         <div className="p-5 space-y-4">
-          {step === 'done' ? (
+          {method === 'card' && step === 'input' ? (
+            <CardTopup onClose={onClose} />
+          ) : step === 'done' ? (
             <div className="text-center py-6">
               <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
                 <Check size={32} className="text-green-400" />
@@ -177,6 +202,75 @@ export function DepositModal({ onClose }: DepositModalProps) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+interface PlsPackage {
+  amountPls: number;
+  amountRub: number;
+  discountPct: number;
+}
+
+function CardTopup({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
+  const [packages, setPackages] = useState<PlsPackage[]>([]);
+  const [busy, setBusy] = useState<number | null>(null);
+
+  useEffect(() => {
+    api.get('/wallet/topup/packages')
+      .then(({ data }) => setPackages(data.packages || []))
+      .catch(() => {});
+  }, []);
+
+  const buy = async (amountPls: number) => {
+    setBusy(amountPls);
+    try {
+      const { data } = await api.post('/wallet/topup/create', {
+        amountPls,
+        returnPath: `/?topup=ok&pid={pid}`.replace('{pid}', ''),
+      });
+      // Stash the pending paymentId so the landing page can poll and credit.
+      try { localStorage.setItem('pulsar_pending_topup', data.paymentId); } catch {}
+      // Redirect to YooKassa.
+      window.location.href = data.confirmationUrl;
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t('wallet.topupFailed'));
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-gray-400">{t('wallet.cardHint')}</p>
+      <div className="space-y-2">
+        {packages.map((p) => (
+          <button
+            key={p.amountPls}
+            onClick={() => buy(p.amountPls)}
+            disabled={busy !== null}
+            className={`w-full p-3 rounded-xl border transition-all flex items-center gap-3 text-left disabled:opacity-50 ${
+              p.discountPct >= 30
+                ? 'border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-transparent hover:border-amber-500/60'
+                : 'border-dark-500 bg-dark-600/40 hover:border-primary-500/40'
+            }`}
+          >
+            <div className="flex-1">
+              <p className="text-sm font-bold">{p.amountPls.toLocaleString()} PLS</p>
+              <p className="text-xs text-gray-400">{p.amountRub.toLocaleString()} ₽</p>
+            </div>
+            {p.discountPct > 0 && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+                -{p.discountPct}%
+              </span>
+            )}
+            {busy === p.amountPls && <Loader2 size={14} className="animate-spin" />}
+          </button>
+        ))}
+      </div>
+      <p className="text-[10px] text-gray-500 text-center pt-2">
+        {t('wallet.cardProvider')}
+      </p>
     </div>
   );
 }

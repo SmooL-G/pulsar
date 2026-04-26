@@ -750,6 +750,64 @@ export async function walletRoutes(app: FastifyInstance) {
     return { success: true, subscription: updated };
   });
 
+  // ─── YOOKASSA TOP-UP ────────────────────────────────────────
+  // List of available packages (used by the deposit modal grid).
+  app.get('/topup/packages', async () => {
+    const { PLS_PACKAGES } = await import('./yookassa.service.js');
+    return { packages: PLS_PACKAGES };
+  });
+
+  // Create a YooKassa payment for a chosen package; returns redirect URL.
+  app.post<{ Body: { amountPls: number; returnPath?: string } }>(
+    '/topup/create',
+    async (request, reply) => {
+      const { findPackage, createPayment } = await import('./yookassa.service.js');
+      const { amountPls, returnPath } = request.body;
+      const pack = findPackage(amountPls);
+      if (!pack) return reply.status(400).send({ error: 'INVALID_PACKAGE' });
+
+      const userId = request.user!.userId;
+      const origin = (request.headers.origin as string) || 'https://pulsar-chat.fun';
+      const returnUrl = `${origin}${returnPath || '/?topup=ok'}`;
+      try {
+        const result = await createPayment({ userId, pack, returnUrl });
+        return result;
+      } catch (err: any) {
+        return reply.status(500).send({ error: 'YOOKASSA_ERROR', message: err.message });
+      }
+    },
+  );
+
+  // Polled by the frontend after YooKassa redirects the user back.
+  // Idempotent: credits PLS on the first call, returns the row on subsequent ones.
+  app.get<{ Params: { id: string } }>('/topup/check/:id', async (request, reply) => {
+    const { fetchPaymentStatus, markPaidAndCredit } = await import('./yookassa.service.js');
+    const userId = request.user!.userId;
+    const purchase = await prisma.plsPurchase.findUnique({
+      where: { yookassaPaymentId: request.params.id },
+    });
+    if (!purchase || purchase.userId !== userId) {
+      return reply.status(404).send({ error: 'NOT_FOUND' });
+    }
+    if (purchase.status !== 'PAID') {
+      try {
+        const yk = await fetchPaymentStatus(request.params.id);
+        if (yk.paid && yk.status === 'succeeded') {
+          await markPaidAndCredit(request.params.id);
+        } else if (yk.status === 'canceled') {
+          await prisma.plsPurchase.update({
+            where: { id: purchase.id },
+            data: { status: 'CANCELLED' },
+          });
+        }
+      } catch { /* keep PENDING; user can retry */ }
+    }
+    const fresh = await prisma.plsPurchase.findUnique({
+      where: { yookassaPaymentId: request.params.id },
+    });
+    return { purchase: fresh };
+  });
+
   // Re-enable auto-renew on an active subscription.
   app.post('/subscribe/resume', async (request, reply) => {
     const userId = request.user!.userId;

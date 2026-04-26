@@ -38,4 +38,8 @@ export const env = cleanEnv(process.env, {
   VAPID_PUBLIC_KEY: str({ default: '' }),
   VAPID_PRIVATE_KEY: str({ default: '' }),
   VAPID_SUBJECT: str({ default: 'mailto:support@pulsar-chat.fun' }),
+
+  // YooKassa (RUB top-ups for PLS via card)
+  YOOKASSA_SHOP_ID: str({ default: '' }),
+  YOOKASSA_SECRET_KEY: str({ default: '' }),
 });
