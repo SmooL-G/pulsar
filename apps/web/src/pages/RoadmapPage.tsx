@@ -52,6 +52,7 @@ const PHASES: Phase[] = [
       { text: { en: 'Voice messages (record & send)', ru: 'Голосовые сообщения (запись и отправка)' }, status: 'done', icon: <Mic size={14} /> },
       { text: { en: '@username mentions with autocomplete & targeted notifications', ru: 'Упоминания @username с автодополнением и адресными уведомлениями' }, status: 'done' },
       { text: { en: 'Scheduled messages (send later, up to 30 days ahead)', ru: 'Отложенная отправка (до 30 дней вперёд)' }, status: 'done', icon: <Clock size={14} /> },
+      { text: { en: 'Quiet hours for push notifications (per timezone)', ru: 'Тихие часы для push-уведомлений (по часовому поясу)' }, status: 'done' },
       { text: { en: 'Channels with comments system', ru: 'Каналы с системой комментариев' }, status: 'done', icon: <Megaphone size={14} /> },
       { text: { en: 'Universal search (users, groups, channels, messages)', ru: 'Универсальный поиск (пользователи, группы, каналы, сообщения)' }, status: 'done', icon: <Search size={14} /> },
       { text: { en: 'Message search with highlight & scroll-to', ru: 'Поиск по сообщениям с подсветкой' }, status: 'done' },
