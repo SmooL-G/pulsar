@@ -11,6 +11,7 @@ import { PulsarBadge } from '../ui/PulsarBadge';
 import { BADGE_CONFIG } from '../ui/ProfileBadgeIcon';
 import { AdminModal } from '../admin/AdminModal';
 import { DepositModal } from '../wallet/DepositModal';
+import { HistoryModal } from '../wallet/HistoryModal';
 import { TransferModal } from '../wallet/TransferModal';
 import { exportKeys, importKeys, hasLocalKeys } from '../../crypto/keyManager';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -34,6 +35,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [copied, setCopied] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showDeposit, setShowDeposit] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
@@ -295,6 +297,12 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                       {t('wallet.transfer')}
                     </button>
                   </div>
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className="mt-2 w-full py-2 bg-dark-600 hover:bg-dark-500 text-gray-300 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    {t('wallet.history')}
+                  </button>
                 </div>
 
                 {/* Solana Wallet */}
@@ -351,6 +359,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       </div>
       {showAdmin && <AdminModal onClose={() => setShowAdmin(false)} />}
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
+      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
       {showTransfer && <TransferModal onClose={() => setShowTransfer(false)} />}
       {showVerification && <VerificationModal onClose={() => setShowVerification(false)} />}
       {showBadges && <BadgesModal onClose={() => setShowBadges(false)} />}
