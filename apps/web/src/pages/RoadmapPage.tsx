@@ -93,7 +93,7 @@ const PHASES: Phase[] = [
       { text: { en: 'SuperChat — donate PLS with highlighted messages', ru: 'SuperChat — донат PLS с выделением сообщений' }, status: 'done', icon: <Gem size={14} /> },
       { text: { en: 'File size limits by verification level', ru: 'Лимиты файлов по уровню верификации' }, status: 'done' },
       { text: { en: 'Channel creation limits by level', ru: 'Лимиты каналов по уровню' }, status: 'done' },
-      { text: { en: 'Premium subscription (PLS/month)', ru: 'Премиум подписка (PLS/мес)' }, status: 'planned' },
+      { text: { en: 'Premium subscription (5,000 PLS/month, 7-day free trial, auto-renew)', ru: 'Premium подписка (5 000 PLS/мес, 7 дней бесплатно, авто-продление)' }, status: 'done', icon: <Crown size={14} /> },
       { text: { en: 'Sticker marketplace (create & sell)', ru: 'Маркетплейс стикеров' }, status: 'planned' },
       { text: { en: 'Channel boost system', ru: 'Система бустов каналов' }, status: 'planned' },
       { text: { en: 'Custom nick colors (free for Pro+, 2000 PLS for others)', ru: 'Кастомные цвета ников (бесплатно для Pro+, 2000 PLS для остальных)' }, status: 'done' },
