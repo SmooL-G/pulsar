@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useChatTheme } from '../../hooks/useChatTheme';
 import { ArrowLeft, Info, Phone, Video, Send, Bookmark } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { MessageList } from '../chat/MessageList';
@@ -39,8 +40,13 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         t('chat.directMessage')
       : activeChat.name || t('common.group');
 
+  const wallpaper = useChatTheme();
+
   return (
-    <div className="flex flex-col h-full">
+    <div
+      className="flex flex-col h-full"
+      style={wallpaper.css ? { background: wallpaper.css } : undefined}
+    >
       {/* Chat Header */}
       <div className="flex items-center gap-3 px-4 py-3 pt-3-safe pl-safe pr-safe border-b border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
         <button

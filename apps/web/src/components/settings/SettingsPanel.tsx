@@ -3,6 +3,7 @@ import { X, User, Globe, Palette, Bell, Wallet, Copy, Check, Sun, Moon, Monitor,
 
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
+import { CHAT_WALLPAPERS, getStoredWallpaperId, setStoredWallpaperId } from '../../hooks/useChatTheme';
 import { useNotificationStore } from '../../store/notificationStore';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -1012,6 +1013,48 @@ function hhmmToMinutes(s: string): number | null {
   return h * 60 + mm;
 }
 
+function ChatWallpaperPicker({ disabled }: { disabled: boolean }) {
+  const { t, locale } = useI18n();
+  const [selected, setSelected] = useState<string>(() => getStoredWallpaperId());
+
+  const pick = (id: string) => {
+    if (disabled) return;
+    setSelected(id);
+    setStoredWallpaperId(id);
+  };
+
+  return (
+    <div className="bg-dark-800/50 border border-dark-500 rounded-xl p-4">
+      <p className="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-3">
+        {t('premium.wallpapersTitle')}
+      </p>
+      <div className="grid grid-cols-3 gap-2">
+        {CHAT_WALLPAPERS.map((w) => (
+          <button
+            key={w.id}
+            onClick={() => pick(w.id)}
+            disabled={disabled}
+            className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${
+              selected === w.id ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-dark-500 hover:border-dark-400'
+            } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+            style={{ background: w.preview }}
+            title={w.name[locale === 'ru' ? 'ru' : 'en']}
+          >
+            {selected === w.id && (
+              <span className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <Check size={20} className="text-white drop-shadow-md" />
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+      {disabled && (
+        <p className="text-xs text-amber-300/80 mt-2">{t('premium.wallpapersLocked')}</p>
+      )}
+    </div>
+  );
+}
+
 function PremiumSection() {
   const { t, locale } = useI18n();
   const { user, setUser } = useAuthStore();
@@ -1131,6 +1174,9 @@ function PremiumSection() {
           <p key={p.en} className="text-sm text-gray-300">{locale === 'ru' ? p.ru : p.en}</p>
         ))}
       </div>
+
+      {/* Wallpaper picker — Premium-gated */}
+      <ChatWallpaperPicker disabled={!status?.active} />
 
       {/* Action area */}
       <div className="space-y-2">

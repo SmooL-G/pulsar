@@ -113,6 +113,8 @@ export const ru = {
   'premium.cancelled': 'Авто-продление отменено',
   'premium.resumed': 'Авто-продление возобновлено',
   'premium.failed': 'Не удалось обновить подписку',
+  'premium.wallpapersTitle': 'Обои чата',
+  'premium.wallpapersLocked': 'Выбери обои после оформления подписки — применятся ко всем чатам сразу.',
   'chat.online': 'в сети',
   'chat.offline': 'не в сети',
   'chat.status': 'Статус',

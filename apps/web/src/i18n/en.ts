@@ -113,6 +113,8 @@ export const en = {
   'premium.cancelled': 'Auto-renew cancelled',
   'premium.resumed': 'Auto-renew resumed',
   'premium.failed': 'Could not update subscription',
+  'premium.wallpapersTitle': 'Chat wallpaper',
+  'premium.wallpapersLocked': 'Pick a wallpaper after subscribing — applied instantly to all your chats.',
   'chat.online': 'online',
   'chat.offline': 'offline',
   'chat.status': 'Status',
