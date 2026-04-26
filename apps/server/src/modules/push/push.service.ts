@@ -25,8 +25,43 @@ export interface PushPayload {
  * Send a notification to all of a user's registered devices.
  * Stale subscriptions (404/410) are pruned automatically.
  */
+/** Returns true if the user is currently inside their configured quiet-hours window. */
+async function isUserInQuietHours(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { pushMuteFrom: true, pushMuteTo: true, pushMuteTimezone: true },
+  });
+  const from = user?.pushMuteFrom;
+  const to = user?.pushMuteTo;
+  const tz = user?.pushMuteTimezone;
+  if (from == null || to == null || !tz || from === to) return false;
+
+  let nowMin: number;
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+    }).formatToParts(new Date());
+    const h = Number(parts.find((p) => p.type === 'hour')?.value || 0);
+    const m = Number(parts.find((p) => p.type === 'minute')?.value || 0);
+    nowMin = (h % 24) * 60 + m;
+  } catch {
+    // Bad timezone string → treat as not muted rather than block notifications.
+    return false;
+  }
+
+  if (from < to) {
+    return nowMin >= from && nowMin < to;
+  }
+  // Window crosses midnight (e.g. 23:00 → 08:00).
+  return nowMin >= from || nowMin < to;
+}
+
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
   if (!ensureVapid()) return;
+  if (await isUserInQuietHours(userId)) return;
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
   if (subs.length === 0) return;
 

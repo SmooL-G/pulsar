@@ -78,12 +78,24 @@ export async function userRoutes(app: FastifyInstance) {
 
   // Update own profile
   app.patch('/me', async (request) => {
-    const { displayName, bio, avatarUrl, socialLinks, nickColor: _nickColor } = request.body as {
+    const {
+      displayName,
+      bio,
+      avatarUrl,
+      socialLinks,
+      nickColor: _nickColor,
+      pushMuteFrom,
+      pushMuteTo,
+      pushMuteTimezone,
+    } = request.body as {
       displayName?: string;
       bio?: string;
       avatarUrl?: string;
       socialLinks?: Record<string, string>;
       nickColor?: string;
+      pushMuteFrom?: number | null;
+      pushMuteTo?: number | null;
+      pushMuteTimezone?: string | null;
     };
     // nickColor is set only via /wallet/purchase-nick-color, not here
     void _nickColor;
@@ -100,6 +112,22 @@ export async function userRoutes(app: FastifyInstance) {
       }
     }
 
+    // Quiet hours validation: nullable to disable, otherwise minutes 0-1439
+    // and a non-empty IANA tz string. Anything else is rejected silently
+    // (left unchanged) so a bad client never bricks the user.
+    const validMinute = (v: unknown): v is number =>
+      typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 1439;
+    const muteFromUpdate =
+      pushMuteFrom === null ? null : validMinute(pushMuteFrom) ? pushMuteFrom : undefined;
+    const muteToUpdate =
+      pushMuteTo === null ? null : validMinute(pushMuteTo) ? pushMuteTo : undefined;
+    const muteTzUpdate =
+      pushMuteTimezone === null
+        ? null
+        : typeof pushMuteTimezone === 'string' && pushMuteTimezone.length > 0 && pushMuteTimezone.length <= 64
+          ? pushMuteTimezone
+          : undefined;
+
     const user = await prisma.user.update({
       where: { id: request.user!.userId },
       data: {
@@ -107,6 +135,9 @@ export async function userRoutes(app: FastifyInstance) {
         bio,
         avatarUrl,
         ...(cleanLinks !== undefined ? { socialLinks: cleanLinks } : {}),
+        ...(muteFromUpdate !== undefined ? { pushMuteFrom: muteFromUpdate } : {}),
+        ...(muteToUpdate !== undefined ? { pushMuteTo: muteToUpdate } : {}),
+        ...(muteTzUpdate !== undefined ? { pushMuteTimezone: muteTzUpdate } : {}),
       },
       select: {
         id: true,
@@ -119,6 +150,9 @@ export async function userRoutes(app: FastifyInstance) {
         socialLinks: true,
         profileBadge: true,
         nickColor: true,
+        pushMuteFrom: true,
+        pushMuteTo: true,
+        pushMuteTimezone: true,
       },
     });
 

@@ -263,6 +263,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   enabled={soundEnabled}
                   onToggle={toggleSound}
                 />
+                <QuietHoursSection />
               </div>
             )}
 
@@ -989,6 +990,105 @@ function ToggleSetting({ label, description, enabled, onToggle }: {
       >
         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : ''}`} />
       </button>
+    </div>
+  );
+}
+
+// Helpers for HH:MM <-> minutes-from-midnight conversion.
+function minutesToHHMM(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+function hhmmToMinutes(s: string): number | null {
+  const m = /^(\d{2}):(\d{2})$/.exec(s);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const mm = Number(m[2]);
+  if (h < 0 || h > 23 || mm < 0 || mm > 59) return null;
+  return h * 60 + mm;
+}
+
+function QuietHoursSection() {
+  const { t } = useI18n();
+  const { user, setUser } = useAuthStore();
+
+  const initialEnabled = user?.pushMuteFrom != null && user?.pushMuteTo != null && !!user?.pushMuteTimezone;
+  const [enabled, setEnabled] = useState(initialEnabled);
+  const [from, setFrom] = useState<string>(
+    user?.pushMuteFrom != null ? minutesToHHMM(user.pushMuteFrom) : '23:00',
+  );
+  const [to, setTo] = useState<string>(
+    user?.pushMuteTo != null ? minutesToHHMM(user.pushMuteTo) : '08:00',
+  );
+  const [saving, setSaving] = useState(false);
+  const tz = user?.pushMuteTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  const persist = async (next: { enabled: boolean; from: string; to: string }) => {
+    setSaving(true);
+    try {
+      const body = next.enabled
+        ? {
+            pushMuteFrom: hhmmToMinutes(next.from),
+            pushMuteTo: hhmmToMinutes(next.to),
+            pushMuteTimezone: tz,
+          }
+        : { pushMuteFrom: null, pushMuteTo: null, pushMuteTimezone: null };
+      const { data } = await api.patch('/users/me', body);
+      setUser({ ...(user as any), ...data });
+    } catch { /* keep local state */ }
+    setSaving(false);
+  };
+
+  return (
+    <div className="p-4 bg-gray-50 dark:bg-dark-600 rounded-xl space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">{t('settings.quietHours')}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{t('settings.quietHoursDescription')}</p>
+        </div>
+        <button
+          onClick={() => {
+            const next = !enabled;
+            setEnabled(next);
+            persist({ enabled: next, from, to });
+          }}
+          disabled={saving}
+          className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${enabled ? 'bg-primary-500' : 'bg-gray-300 dark:bg-dark-400'}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : ''}`} />
+        </button>
+      </div>
+
+      {enabled && (
+        <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-dark-500">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-xs text-gray-500 mb-1 block">{t('settings.quietHoursFrom')}</span>
+              <input
+                type="time"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                onBlur={() => persist({ enabled, from, to })}
+                className="w-full bg-white dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-gray-500 mb-1 block">{t('settings.quietHoursTo')}</span>
+              <input
+                type="time"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                onBlur={() => persist({ enabled, from, to })}
+                className="w-full bg-white dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500"
+              />
+            </label>
+          </div>
+          <p className="text-xs text-gray-400">
+            {t('settings.quietHoursTimezone')}: <span className="font-mono">{tz}</span>
+          </p>
+        </div>
+      )}
     </div>
   );
 }
