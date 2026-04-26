@@ -114,23 +114,23 @@ export async function markPaidAndCredit(paymentId: string): Promise<boolean> {
   if (!purchase) return false;
   if (purchase.status === 'PAID') return false;
 
+  // Upsert wallet first so we have a walletId for the transaction row.
+  const wallet = await prisma.plsWallet.upsert({
+    where: { userId: purchase.userId },
+    create: { userId: purchase.userId, balance: purchase.amountPls },
+    update: { balance: { increment: purchase.amountPls } },
+  });
   await prisma.$transaction([
     prisma.plsPurchase.update({
       where: { id: purchase.id },
       data: { status: 'PAID', paidAt: new Date() },
     }),
-    prisma.plsWallet.upsert({
-      where: { userId: purchase.userId },
-      create: { userId: purchase.userId, balance: purchase.amountPls },
-      update: { balance: { increment: purchase.amountPls } },
-    }),
     prisma.plsTransaction.create({
       data: {
-        fromUserId: null,
-        toUserId: purchase.userId,
+        walletId: wallet.id,
         amount: purchase.amountPls,
         type: 'DEPOSIT',
-        note: `YooKassa ${purchase.amountRub} RUB`,
+        description: `YooKassa ${purchase.amountRub} RUB`,
       },
     }),
   ]);
