@@ -7,6 +7,8 @@ import {
   MIN_COMMUNITY_SIZE,
   MIN_VERIFICATION_LEVEL,
   WIN_COOLDOWN_DAYS,
+  isLotteryEnabled,
+  setLotteryEnabled,
 } from './lottery.service.js';
 
 export async function lotteryRoutes(app: FastifyInstance) {
@@ -37,6 +39,7 @@ export async function lotteryRoutes(app: FastifyInstance) {
     const winnerMap = new Map(winners.map((w) => [w.id, w]));
 
     return {
+      enabled: await isLotteryEnabled(),
       mainPrize: MAIN_PRIZE.toString(),
       smallPrize: SMALL_PRIZE.toString(),
       minCommunitySize: MIN_COMMUNITY_SIZE,
@@ -51,5 +54,21 @@ export async function lotteryRoutes(app: FastifyInstance) {
         winner: winnerMap.get(d.winnerId) ?? null,
       })),
     };
+  });
+
+  // Admin-only: enable/disable the lottery worker. Disable stops new draws
+  // immediately; in-flight draws (already-credited) are not undone.
+  app.post<{ Body: { enabled: boolean } }>('/toggle', async (request, reply) => {
+    const userId = request.user!.userId;
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (me?.role !== 'ADMIN' && me?.role !== 'SUPER_ADMIN') {
+      return reply.status(403).send({ error: 'FORBIDDEN' });
+    }
+    const enabled = !!request.body?.enabled;
+    await setLotteryEnabled(enabled);
+    return { enabled };
   });
 }

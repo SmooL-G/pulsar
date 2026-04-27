@@ -1,4 +1,4 @@
-import { drawPool, alreadyDrawnToday } from './lottery.service.js';
+import { drawPool, alreadyDrawnToday, isLotteryEnabled } from './lottery.service.js';
 import { sendPushToUser } from '../push/push.service.js';
 
 const TICK_MS = 5 * 60 * 1000;       // wake every 5 minutes
@@ -17,6 +17,7 @@ export function startLotteryWorker() {
     try {
       const now = new Date();
       if (now.getUTCHours() !== DRAW_HOUR_UTC) return;
+      if (!(await isLotteryEnabled())) return;
       if (await alreadyDrawnToday()) return;
 
       console.log('[LotteryWorker] Drawing both pools...');

@@ -1,4 +1,17 @@
 import { prisma } from '../../config/database.js';
+import { redis } from '../../config/redis.js';
+
+const REDIS_ENABLED_KEY = 'setting:lottery.enabled';
+
+/** Lottery is enabled by default; admin can flip via /admin/lottery/toggle. */
+export async function isLotteryEnabled(): Promise<boolean> {
+  const v = await redis.get(REDIS_ENABLED_KEY);
+  return v !== 'false';
+}
+
+export async function setLotteryEnabled(enabled: boolean): Promise<void> {
+  await redis.set(REDIS_ENABLED_KEY, enabled ? 'true' : 'false');
+}
 
 export const MAIN_PRIZE = 10_000n;       // PLS
 export const SMALL_PRIZE = 1_000n;       // PLS
