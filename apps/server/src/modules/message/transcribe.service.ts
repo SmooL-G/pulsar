@@ -1,52 +1,42 @@
 import { env } from '../../config/env.js';
 
-const WHISPER_URL = 'https://api.openai.com/v1/audio/transcriptions';
-const MAX_BYTES = 25 * 1024 * 1024; // OpenAI Whisper hard limit
-
 /**
- * Download an audio file from our S3-compatible storage and send it to
- * OpenAI Whisper. Returns the recognised text. Whisper auto-detects
- * language, so Russian voice notes come back in Russian, English in
- * English, etc.
+ * Send an audio URL to our Whisper relay (deployed on a non-RU VPS so
+ * the OpenAI API call originates from an allowed geography). The relay
+ * downloads the audio itself and posts to /v1/audio/transcriptions.
  *
- * `s3Key` is the URL we stored when the user uploaded — for R2 it's
- * already a public URL. We just fetch it; no signing needed.
+ * Configure with WHISPER_RELAY_URL + WHISPER_RELAY_TOKEN.
  */
 export async function transcribeAudio(s3Key: string, fileName: string): Promise<string> {
-  if (!env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not configured');
+  if (!env.WHISPER_RELAY_URL || !env.WHISPER_RELAY_TOKEN) {
+    throw new Error('Whisper relay not configured');
   }
 
-  // Resolve the audio URL. R2: stored as full URL; MinIO: relative key.
-  const url = s3Key.startsWith('http')
+  // Resolve the audio URL. R2 stores full URLs; MinIO would store relative keys.
+  const audioUrl = s3Key.startsWith('http')
     ? s3Key
     : `${env.S3_PUBLIC_URL}/${s3Key.replace(/^\/+/, '')}`;
 
-  const audioRes = await fetch(url);
-  if (!audioRes.ok) {
-    throw new Error(`Failed to fetch audio: ${audioRes.status}`);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 90_000); // 90s — Whisper can be slow on long audio
+  try {
+    const res = await fetch(`${env.WHISPER_RELAY_URL.replace(/\/+$/, '')}/transcribe`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.WHISPER_RELAY_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ audioUrl, fileName: fileName || 'voice.webm' }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const err = await res.text().catch(() => '');
+      throw new Error(`Relay ${res.status}: ${err.slice(0, 200)}`);
+    }
+    const data = (await res.json()) as { text?: string; error?: string };
+    if (!data.text) throw new Error(data.error || 'Empty transcription');
+    return data.text;
+  } finally {
+    clearTimeout(timer);
   }
-  const buffer = Buffer.from(await audioRes.arrayBuffer());
-  if (buffer.length > MAX_BYTES) {
-    throw new Error('Audio too large for Whisper (>25 MB)');
-  }
-
-  // Whisper expects multipart/form-data with a file part.
-  const fd = new FormData();
-  // Node 20 has Blob globally.
-  fd.append('file', new Blob([buffer], { type: 'audio/webm' }), fileName || 'voice.webm');
-  fd.append('model', 'whisper-1');
-  fd.append('response_format', 'text');
-
-  const res = await fetch(WHISPER_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
-    body: fd,
-  });
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(`Whisper ${res.status}: ${err.slice(0, 200)}`);
-  }
-  // response_format=text → plain text body
-  return (await res.text()).trim();
 }

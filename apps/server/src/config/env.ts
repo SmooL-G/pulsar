@@ -44,5 +44,9 @@ export const env = cleanEnv(process.env, {
   YOOKASSA_SECRET_KEY: str({ default: '' }),
 
   // OpenAI (Whisper for voice message transcription — Premium feature)
+  // OPENAI_API_KEY is no longer used directly: jino is geo-blocked by
+  // OpenAI, so we proxy through a relay running on a non-RU VPS.
   OPENAI_API_KEY: str({ default: '' }),
+  WHISPER_RELAY_URL: str({ default: '' }),
+  WHISPER_RELAY_TOKEN: str({ default: '' }),
 });
