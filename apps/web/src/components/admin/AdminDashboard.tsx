@@ -152,21 +152,21 @@ export function AdminDashboard() {
             <p className="text-sm font-medium text-amber-400">{t('admin.plsBank')}</p>
           </div>
           <div className="grid grid-cols-3 gap-2 mb-3">
-            <div className="bg-amber-900/20 dark:bg-dark-700/60 rounded-lg p-2.5">
-              <span className="text-[10px] text-gray-400">{t('admin.bankBalance')}</span>
-              <p className="text-sm font-bold font-mono text-amber-400 mt-0.5">
+            <div className="bg-white/60 dark:bg-dark-700/60 rounded-lg p-2.5">
+              <span className="text-[10px] text-gray-600 dark:text-gray-400">{t('admin.bankBalance')}</span>
+              <p className="text-sm font-bold font-mono text-amber-600 dark:text-amber-400 mt-0.5">
                 {BigInt(bank.bankBalance).toLocaleString()}
               </p>
             </div>
-            <div className="bg-amber-900/20 dark:bg-dark-700/60 rounded-lg p-2.5">
-              <span className="text-[10px] text-gray-400">{t('admin.distributed')}</span>
-              <p className="text-sm font-bold font-mono text-green-400 mt-0.5">
+            <div className="bg-white/60 dark:bg-dark-700/60 rounded-lg p-2.5">
+              <span className="text-[10px] text-gray-600 dark:text-gray-400">{t('admin.distributed')}</span>
+              <p className="text-sm font-bold font-mono text-emerald-600 dark:text-green-400 mt-0.5">
                 {BigInt(bank.distributed).toLocaleString()}
               </p>
             </div>
-            <div className="bg-amber-900/20 dark:bg-dark-700/60 rounded-lg p-2.5">
-              <span className="text-[10px] text-gray-400">{t('admin.totalSupply')}</span>
-              <p className="text-sm font-bold font-mono text-gray-300 mt-0.5">
+            <div className="bg-white/60 dark:bg-dark-700/60 rounded-lg p-2.5">
+              <span className="text-[10px] text-gray-600 dark:text-gray-400">{t('admin.totalSupply')}</span>
+              <p className="text-sm font-bold font-mono text-gray-800 dark:text-gray-300 mt-0.5">
                 22Q
               </p>
             </div>
@@ -175,15 +175,15 @@ export function AdminDashboard() {
           {/* Recent rewards */}
           {bank.recentRewards.length > 0 && (
             <div>
-              <p className="text-xs text-gray-400 mb-2 flex items-center gap-1">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1">
                 <Gift size={12} />
                 {t('admin.recentRewards')}
               </p>
               <div className="space-y-1 max-h-32 overflow-y-auto scrollbar-hidden">
                 {bank.recentRewards.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between text-xs bg-amber-900/10 dark:bg-dark-700/40 rounded-lg px-2.5 py-1.5">
-                    <span className="text-gray-300 flex items-center gap-1">@{r.user.username}</span>
-                    <span className="text-amber-400 font-mono font-medium">+{BigInt(r.amount).toLocaleString()} PLS</span>
+                  <div key={r.id} className="flex items-center justify-between text-xs bg-white/60 dark:bg-dark-700/40 rounded-lg px-2.5 py-1.5">
+                    <span className="text-gray-800 dark:text-gray-300 flex items-center gap-1">@{r.user.username}</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-mono font-medium">+{BigInt(r.amount).toLocaleString()} PLS</span>
                   </div>
                 ))}
               </div>
