@@ -3,7 +3,7 @@
  * Strategy: network-first for API/socket, stale-while-revalidate for assets.
  * Update channel: bump CACHE_VERSION on each release.
  */
-const CACHE_VERSION = 'pulsar-v19';
+const CACHE_VERSION = 'pulsar-v20';
 const PRECACHE_URLS = [
   '/',
   '/manifest.webmanifest',

@@ -31,7 +31,10 @@ export default defineConfig({
         // upstream proxy.
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('@solana')) return 'vendor-solana';
+            // NOTE: do NOT split @solana out — it touches the Buffer global
+            // at module-eval time. With it in a separate chunk, the chunk
+            // loads before the node-polyfills shim runs and crashes. Bundling
+            // it with the rest of vendor keeps initialization order correct.
             if (id.includes('react-router')) return 'vendor-react';
             if (id.includes('react-dom')) return 'vendor-react';
             if (/[\\/]node_modules[\\/]react[\\/]/.test(id)) return 'vendor-react';
@@ -46,7 +49,6 @@ export default defineConfig({
           if (id.includes('/src/components/chat/')) return 'chat';
           if (id.includes('/src/pages/')) return 'pages';
           if (id.includes('/src/i18n/')) return 'i18n';
-          // App shell + everything else lands in default chunk.
         },
       },
     },
