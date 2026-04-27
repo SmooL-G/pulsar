@@ -16,17 +16,27 @@ export default defineConfig({
     // and also enable parallel download.
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'solana': [
-            '@solana/web3.js',
-            '@solana/wallet-adapter-react',
-            '@solana/wallet-adapter-react-ui',
-            '@solana/wallet-adapter-base',
-            '@solana/wallet-adapter-wallets',
-          ],
-          'icons': ['lucide-react'],
-          'ui-misc': ['date-fns', 'react-hot-toast', 'zustand'],
+        // Function form lets us also split app code by feature folder, not
+        // just node_modules. Single 800KB chunk was still tripping the
+        // upstream proxy.
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@solana')) return 'vendor-solana';
+            if (id.includes('react-router')) return 'vendor-react';
+            if (id.includes('react-dom')) return 'vendor-react';
+            if (/[\\/]node_modules[\\/]react[\\/]/.test(id)) return 'vendor-react';
+            if (id.includes('lucide-react')) return 'vendor-icons';
+            if (id.includes('date-fns')) return 'vendor-date';
+            if (id.includes('react-hot-toast') || id.includes('zustand')) return 'vendor-ui';
+            return 'vendor';
+          }
+          if (id.includes('/src/components/admin/')) return 'admin';
+          if (id.includes('/src/components/wallet/')) return 'wallet';
+          if (id.includes('/src/components/settings/')) return 'settings';
+          if (id.includes('/src/components/chat/')) return 'chat';
+          if (id.includes('/src/pages/')) return 'pages';
+          if (id.includes('/src/i18n/')) return 'i18n';
+          // App shell + everything else lands in default chunk.
         },
       },
     },
