@@ -440,6 +440,8 @@ export const en = {
   'admin.lotteryControlHint': 'When off, the worker skips its 12:00 MSK draw.',
   'admin.lotteryOn': 'Active',
   'admin.lotteryOff': 'Paused',
+  'admin.activityControl': 'Activity Rewards',
+  'admin.activityControlHint': 'Pays 1 PLS per long message + 1 PLS per received reaction in verified communities (50+ members), capped at 80 PLS/day per user.',
   'admin.searchUsers': 'Search users...',
   'admin.noResults': 'No users found',
   'admin.searchPrompt': 'Enter username, email or wallet to search',

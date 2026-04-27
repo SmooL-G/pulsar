@@ -71,4 +71,25 @@ export async function lotteryRoutes(app: FastifyInstance) {
     await setLotteryEnabled(enabled);
     return { enabled };
   });
+
+  // Activity rewards control (sits next to the lottery toggle in admin UI).
+  app.get('/activity/status', async () => {
+    const { isActivityEnabled } = await import('../activity/activity.service.js');
+    return { enabled: await isActivityEnabled() };
+  });
+
+  app.post<{ Body: { enabled: boolean } }>('/activity/toggle', async (request, reply) => {
+    const userId = request.user!.userId;
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (me?.role !== 'ADMIN' && me?.role !== 'SUPER_ADMIN') {
+      return reply.status(403).send({ error: 'FORBIDDEN' });
+    }
+    const { setActivityEnabled } = await import('../activity/activity.service.js');
+    const enabled = !!request.body?.enabled;
+    await setActivityEnabled(enabled);
+    return { enabled };
+  });
 }

@@ -173,6 +173,22 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
       // Broadcast to all members of the chat
       io.to(`chat:${data.chatId}`).emit('message:new', messagePayload);
 
+      // Activity reward — fire-and-forget, never blocks delivery.
+      (async () => {
+        try {
+          const { tryRewardForMessage } = await import('../../modules/activity/activity.service.js');
+          await tryRewardForMessage({
+            senderId: userId,
+            chatId: data.chatId,
+            contentLength: typeof data.content === 'string' ? data.content.trim().length : 0,
+            isDeleted: false,
+            type: msgType,
+          });
+        } catch (err) {
+          console.error('[activity] message reward error:', err);
+        }
+      })();
+
       // Parse @mentions from message content. Lookup matched chat members
       // and create MENTION notifications + targeted push.
       // (CHECKLIST/POLL messages have null content; metadata isn't scanned.)

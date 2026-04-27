@@ -386,7 +386,7 @@ export async function messageRoutes(app: FastifyInstance) {
 
       const message = await prisma.message.findUnique({
         where: { id: messageId },
-        select: { id: true, chatId: true, isDeleted: true },
+        select: { id: true, chatId: true, isDeleted: true, senderId: true },
       });
       if (!message || message.isDeleted) {
         return reply.status(404).send({ error: 'MESSAGE_NOT_FOUND' });
@@ -402,10 +402,28 @@ export async function messageRoutes(app: FastifyInstance) {
       const existing = await prisma.reaction.findUnique({
         where: { messageId_userId_emoji: { messageId, userId, emoji } },
       });
+      const isAdding = !existing;
       if (existing) {
         await prisma.reaction.delete({ where: { id: existing.id } });
       } else {
         await prisma.reaction.create({ data: { messageId, userId, emoji } });
+      }
+
+      // Activity reward to the message author when a NEW reaction is added.
+      if (isAdding) {
+        (async () => {
+          try {
+            const { tryRewardForReaction } = await import('../activity/activity.service.js');
+            await tryRewardForReaction({
+              authorId: message.senderId,
+              reactorId: userId,
+              chatId: message.chatId,
+              isDeleted: message.isDeleted,
+            });
+          } catch (err) {
+            console.error('[activity] reaction reward error:', err);
+          }
+        })();
       }
 
       const all = await prisma.reaction.findMany({

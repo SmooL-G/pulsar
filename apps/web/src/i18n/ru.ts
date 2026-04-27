@@ -440,6 +440,8 @@ export const ru = {
   'admin.lotteryControlHint': 'Когда выключена — worker пропускает розыгрыш в 12:00 МСК.',
   'admin.lotteryOn': 'Активна',
   'admin.lotteryOff': 'На паузе',
+  'admin.activityControl': 'Награды за активность',
+  'admin.activityControlHint': 'Выплачивает 1 PLS за длинное сообщение + 1 PLS за полученную реакцию в верифиц. сообществах (50+ членов), лимит 80 PLS/день на юзера.',
   'admin.searchUsers': 'Поиск пользователей...',
   'admin.noResults': 'Пользователи не найдены',
   'admin.searchPrompt': 'Введите имя, email или кошелёк для поиска',
