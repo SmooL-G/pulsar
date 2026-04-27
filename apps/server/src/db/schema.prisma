@@ -284,6 +284,22 @@ model ChecklistCheck {
   @@map("checklist_checks")
 }
 
+// ─── DAILY LOTTERY ────────────────────────────────────────
+// Two drawings per day (one per pool). winnerId references the user
+// that received `amount` PLS; candidatesCount is logged for transparency.
+model LotteryDraw {
+  id              String   @id @default(uuid()) @db.Uuid
+  pool            String   @db.VarChar(16) // 'main' | 'small'
+  winnerId        String   @map("winner_id") @db.Uuid
+  amount          BigInt
+  candidatesCount Int      @map("candidates_count")
+  drawnAt         DateTime @default(now()) @map("drawn_at")
+
+  @@index([drawnAt])
+  @@index([winnerId])
+  @@map("lottery_draws")
+}
+
 // ─── STAKING ──────────────────────────────────────────────
 // Locked PLS that earns yield from the bank's rewards pool. amount is
 // the principal; rewardEstimate is recorded at creation for the UI but

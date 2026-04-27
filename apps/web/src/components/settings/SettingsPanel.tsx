@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, User, Globe, Palette, Bell, Wallet, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2, Star, Coins } from 'lucide-react';
+import { X, User, Globe, Palette, Bell, Wallet, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2, Star, Coins, Trophy } from 'lucide-react';
 
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { CHAT_WALLPAPERS, getStoredWallpaperId, setStoredWallpaperId } from '../../hooks/useChatTheme';
 import { StakingSection } from './StakingSection';
+import { LotterySection } from './LotterySection';
 import { useNotificationStore } from '../../store/notificationStore';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -23,7 +24,7 @@ interface SettingsPanelProps {
   onClose: () => void;
 }
 
-type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'premium' | 'staking' | 'admin';
+type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'premium' | 'staking' | 'lottery' | 'admin';
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { t, locale, setLocale } = useI18n();
@@ -100,6 +101,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     { id: 'wallet', icon: Wallet, label: t('profile.wallet') },
     { id: 'premium', icon: Star, label: t('premium.title') },
     { id: 'staking', icon: Coins, label: t('staking.title') },
+    { id: 'lottery', icon: Trophy, label: t('lottery.title') },
     ...(isStaff ? [{ id: 'admin' as Tab, icon: Shield, label: t('admin.title') }] : []),
   ];
 
@@ -355,6 +357,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
 
             {tab === 'premium' && <PremiumSection />}
             {tab === 'staking' && <StakingSection />}
+            {tab === 'lottery' && <LotterySection />}
 
             {/* Admin rendered as separate modal */}
           </div>
