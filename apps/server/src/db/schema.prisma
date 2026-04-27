@@ -284,6 +284,35 @@ model ChecklistCheck {
   @@map("checklist_checks")
 }
 
+// ─── STAKING ──────────────────────────────────────────────
+// Locked PLS that earns yield from the bank's rewards pool. amount is
+// the principal; rewardEstimate is recorded at creation for the UI but
+// the authoritative reward is computed at withdraw time. Early
+// withdraw forfeits all reward AND 50% of principal.
+model Stake {
+  id              String       @id @default(uuid()) @db.Uuid
+  userId          String       @map("user_id") @db.Uuid
+  amount          BigInt       // principal locked, PLS
+  lockDays        Int          @map("lock_days") @db.SmallInt
+  apyBps          Int          @map("apy_bps") @db.SmallInt // basis points (200 = 2%)
+  startedAt       DateTime     @default(now()) @map("started_at")
+  maturesAt       DateTime     @map("matures_at")
+  status          StakeStatus  @default(ACTIVE)
+  withdrawnAt     DateTime?    @map("withdrawn_at")
+  withdrawnAmount BigInt?      @map("withdrawn_amount")
+  rewardPaid      BigInt?      @map("reward_paid")
+
+  @@index([userId, status])
+  @@index([status, maturesAt])
+  @@map("stakes")
+}
+
+enum StakeStatus {
+  ACTIVE
+  WITHDRAWN
+  EARLY_WITHDRAWN
+}
+
 // ─── PLS PURCHASES (YooKassa) ─────────────────────────────
 // One row per YooKassa payment. Created PENDING, transitioned to PAID
 // (and PLS credited) by webhook OR by an idempotent /check-payment
