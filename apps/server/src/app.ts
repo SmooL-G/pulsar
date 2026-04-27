@@ -22,6 +22,7 @@ import { walletRoutes } from './modules/wallet/wallet.routes.js';
 import { yookassaWebhookRoutes } from './modules/wallet/yookassa.webhook.js';
 import { stakingRoutes } from './modules/staking/staking.routes.js';
 import { lotteryRoutes } from './modules/lottery/lottery.routes.js';
+import { revenueRoutes } from './modules/revenue/revenue.routes.js';
 import { nftRoutes } from './modules/nft/nft.routes.js';
 import { keysRoutes } from './modules/keys/keys.routes.js';
 import { channelRoutes } from './modules/channel/channel.routes.js';
@@ -99,6 +100,7 @@ export async function buildApp() {
   await app.register(yookassaWebhookRoutes, { prefix: '/api/v1/yookassa' });
   await app.register(stakingRoutes, { prefix: '/api/v1/staking' });
   await app.register(lotteryRoutes, { prefix: '/api/v1/lottery' });
+  await app.register(revenueRoutes, { prefix: '/api/v1/revenue' });
   await app.register(nftRoutes, { prefix: '/api/v1/nft' });
   await app.register(keysRoutes, { prefix: '/api/v1/keys' });
   await app.register(channelRoutes, { prefix: '/api/v1/channels' });

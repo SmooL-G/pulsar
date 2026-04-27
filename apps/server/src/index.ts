@@ -8,6 +8,7 @@ import { startWebhookWorker } from './modules/bot/webhookWorker.js';
 import { startScheduledMessagesWorker } from './modules/message/scheduledWorker.js';
 import { startSubscriptionWorker } from './modules/subscription/renewWorker.js';
 import { startLotteryWorker } from './modules/lottery/lotteryWorker.js';
+import { startRevenueWorker } from './modules/revenue/revenueWorker.js';
 
 async function main() {
   const app = await buildApp();
@@ -44,6 +45,9 @@ async function main() {
 
   // Start lottery worker (daily draws at 09:00 UTC)
   startLotteryWorker();
+
+  // Start channel revenue worker (daily distributions at 10:00 UTC)
+  startRevenueWorker();
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

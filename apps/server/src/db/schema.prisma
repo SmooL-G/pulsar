@@ -284,6 +284,22 @@ model ChecklistCheck {
   @@map("checklist_checks")
 }
 
+// ─── CHANNEL/GROUP REVENUE SHARE ──────────────────────────
+// One row per chat per daily distribution. Lets us build a transparent
+// "your communities earned X PLS this week" report.
+model RevenueDistribution {
+  id              String   @id @default(uuid()) @db.Uuid
+  chatId          String   @map("chat_id") @db.Uuid
+  ownerId         String   @map("owner_id") @db.Uuid
+  amount          BigInt
+  activeCount     Int      @map("active_count")
+  distributedAt   DateTime @default(now()) @map("distributed_at")
+
+  @@index([chatId, distributedAt])
+  @@index([ownerId, distributedAt])
+  @@map("revenue_distributions")
+}
+
 // ─── DAILY LOTTERY ────────────────────────────────────────
 // Two drawings per day (one per pool). winnerId references the user
 // that received `amount` PLS; candidatesCount is logged for transparency.

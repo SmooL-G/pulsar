@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, MessageCircle, UserPlus, Wifi, MessagesSquare, UsersRound, Server, Banknote, Gift, Trophy, Zap } from 'lucide-react';
+import { Users, MessageCircle, UserPlus, Wifi, MessagesSquare, UsersRound, Server, Banknote, Gift, Trophy, Zap, Radio } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -192,9 +192,10 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {/* Lottery + Activity toggles (admin/super_admin) */}
+      {/* Bank distribution controls (admin/super_admin) */}
       <LotteryToggle />
       <ActivityToggle />
+      <RevenueToggle />
 
       {/* System info (SUPER_ADMIN) */}
       {isSuperAdmin && system && (
@@ -223,6 +224,51 @@ export function AdminDashboard() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function RevenueToggle() {
+  const { t } = useI18n();
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api.get('/revenue/status').then(({ data }) => setEnabled(!!data.enabled)).catch(() => {});
+  }, []);
+
+  const toggle = async () => {
+    if (enabled === null) return;
+    setBusy(true);
+    try {
+      const { data } = await api.post('/revenue/toggle', { enabled: !enabled });
+      setEnabled(!!data.enabled);
+    } catch { /* silent */ } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 border border-indigo-500/30 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Radio size={16} className="text-indigo-500" />
+        <p className="text-sm font-medium text-indigo-700 dark:text-indigo-400">{t('admin.revenueControl')}</p>
+      </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs text-gray-600 dark:text-gray-400">{t('admin.revenueControlHint')}</p>
+          <p className="text-[11px] mt-1">
+            {enabled === null ? '…' : enabled
+              ? <span className="text-emerald-500 font-semibold">● {t('admin.lotteryOn')}</span>
+              : <span className="text-gray-500 font-semibold">○ {t('admin.lotteryOff')}</span>}
+          </p>
+        </div>
+        <button
+          onClick={toggle}
+          disabled={busy || enabled === null}
+          className={`relative w-12 h-6 rounded-full transition-colors disabled:opacity-50 ${enabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-dark-500'}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-6' : ''}`} />
+        </button>
+      </div>
     </div>
   );
 }

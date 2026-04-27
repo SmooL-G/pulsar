@@ -442,6 +442,8 @@ export const en = {
   'admin.lotteryOff': 'Paused',
   'admin.activityControl': 'Activity Rewards',
   'admin.activityControlHint': 'Pays 1 PLS per long message + 1 PLS per received reaction in verified communities (50+ members), capped at 80 PLS/day per user.',
+  'admin.revenueControl': 'Channel Revenue Share',
+  'admin.revenueControlHint': 'Daily payout to community owners — 1 PLS per 10 active members. Premium owners only, 50+ verified members, top 3 chats per owner.',
   'admin.searchUsers': 'Search users...',
   'admin.noResults': 'No users found',
   'admin.searchPrompt': 'Enter username, email or wallet to search',
