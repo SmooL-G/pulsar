@@ -1,9 +1,19 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Solana SDKs depend on a Node-style Buffer global; without this the
+    // vendor-solana chunk crashes on load with "Cannot read properties of
+    // undefined (reading 'Buffer')".
+    nodePolyfills({
+      include: ['buffer', 'process'],
+      globals: { Buffer: true, global: true, process: true },
+    }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
