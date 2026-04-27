@@ -252,15 +252,15 @@ function CardTopup({ onClose }: { onClose: () => void }) {
             className={`w-full p-3 rounded-xl border transition-all flex items-center gap-3 text-left disabled:opacity-50 ${
               p.discountPct >= 30
                 ? 'border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-transparent hover:border-amber-500/60'
-                : 'border-dark-500 bg-dark-600/40 hover:border-primary-500/40'
+                : 'border-gray-200 dark:border-dark-500 bg-gray-50 dark:bg-dark-600/40 hover:border-primary-500/40 dark:hover:border-primary-500/40'
             }`}
           >
             <div className="flex-1">
-              <p className="text-sm font-bold">{p.amountPls.toLocaleString()} PLS</p>
-              <p className="text-xs text-gray-400">{p.amountRub.toLocaleString()} ₽</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{p.amountPls.toLocaleString()} PLS</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{p.amountRub.toLocaleString()} ₽</p>
             </div>
             {p.discountPct > 0 && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
                 -{p.discountPct}%
               </span>
             )}
