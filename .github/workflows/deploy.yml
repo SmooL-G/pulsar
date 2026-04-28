@@ -15,6 +15,7 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 30m
           script: |
             cd /home/pulsar/app
             eval "$(ssh-agent -s)"
