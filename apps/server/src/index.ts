@@ -9,6 +9,7 @@ import { startScheduledMessagesWorker } from './modules/message/scheduledWorker.
 import { startSubscriptionWorker } from './modules/subscription/renewWorker.js';
 import { startLotteryWorker } from './modules/lottery/lotteryWorker.js';
 import { startRevenueWorker } from './modules/revenue/revenueWorker.js';
+import { startTreasuryWorker } from './modules/treasury/treasuryWorker.js';
 
 async function main() {
   const app = await buildApp();
@@ -48,6 +49,9 @@ async function main() {
 
   // Start channel revenue worker (daily distributions at 10:00 UTC)
   startRevenueWorker();
+
+  // Start treasury worker (closes expired proposals hourly)
+  startTreasuryWorker();
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

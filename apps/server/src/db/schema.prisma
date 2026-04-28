@@ -423,6 +423,55 @@ model PollVote {
   @@map("poll_votes")
 }
 
+// ─── TREASURY VOTES ───────────────────────────────────────
+// Community proposals funded by a 1000 PLS deposit. Voting power is
+// quadratic (sqrt of voter's PLS balance) to dilute whales. Status
+// transitions: ACTIVE -> PASSED | FAILED | NO_QUORUM by the worker
+// after endsAt. yesPower/noPower track aggregate quadratic power.
+// voterCount is the unique-voter quorum threshold.
+model Proposal {
+  id          String         @id @default(uuid()) @db.Uuid
+  authorId    String         @map("author_id") @db.Uuid
+  title       String         @db.VarChar(120)
+  description String         @db.Text
+  status      ProposalStatus @default(ACTIVE)
+  deposit     BigInt
+  startedAt   DateTime       @default(now()) @map("started_at")
+  endsAt      DateTime       @map("ends_at")
+  resolvedAt  DateTime?      @map("resolved_at")
+  yesPower    BigInt         @default(0) @map("yes_power")
+  noPower     BigInt         @default(0) @map("no_power")
+  voterCount  Int            @default(0) @map("voter_count")
+
+  votes ProposalVote[]
+
+  @@index([status, endsAt])
+  @@index([authorId])
+  @@map("proposals")
+}
+
+enum ProposalStatus {
+  ACTIVE
+  PASSED
+  FAILED
+  NO_QUORUM
+}
+
+model ProposalVote {
+  id          String   @id @default(uuid()) @db.Uuid
+  proposalId  String   @map("proposal_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  choice      String   @db.VarChar(8) // 'yes' | 'no'
+  votingPower BigInt   @map("voting_power")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@unique([proposalId, userId])
+  @@index([proposalId])
+  @@map("proposal_votes")
+}
+
 // ─── PINNED MESSAGES ─────────────────────────────────────
 
 model PinnedMessage {
