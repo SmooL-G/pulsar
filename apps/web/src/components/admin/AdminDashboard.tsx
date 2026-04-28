@@ -151,16 +151,16 @@ export function AdminDashboard() {
             <Banknote size={16} className="text-amber-400" />
             <p className="text-sm font-medium text-amber-400">{t('admin.plsBank')}</p>
           </div>
-          <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
             <div className="bg-white/60 dark:bg-dark-700/60 rounded-lg p-2.5">
               <span className="text-[10px] text-gray-600 dark:text-gray-400">{t('admin.bankBalance')}</span>
-              <p className="text-sm font-bold font-mono text-amber-600 dark:text-amber-400 mt-0.5">
+              <p className="text-sm font-bold font-mono text-amber-600 dark:text-amber-400 mt-0.5 break-all">
                 {BigInt(bank.bankBalance).toLocaleString()}
               </p>
             </div>
             <div className="bg-white/60 dark:bg-dark-700/60 rounded-lg p-2.5">
               <span className="text-[10px] text-gray-600 dark:text-gray-400">{t('admin.distributed')}</span>
-              <p className="text-sm font-bold font-mono text-emerald-600 dark:text-green-400 mt-0.5">
+              <p className="text-sm font-bold font-mono text-emerald-600 dark:text-green-400 mt-0.5 break-all">
                 {BigInt(bank.distributed).toLocaleString()}
               </p>
             </div>

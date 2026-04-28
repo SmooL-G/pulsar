@@ -30,13 +30,13 @@ export function AdminPanel() {
 
   return (
     <div className="space-y-4">
-      {/* Sub-tabs */}
-      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-dark-600 rounded-lg">
+      {/* Sub-tabs: scroll horizontally on narrow screens */}
+      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-dark-600 rounded-lg overflow-x-auto scrollbar-hidden">
         {visibleTabs.map(({ id, icon: Icon, label }) => (
           <button
             key={id}
             onClick={() => setSubTab(id)}
-            className={`flex-1 py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-colors
+            className={`shrink-0 md:flex-1 py-2 px-3 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap
               ${subTab === id ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-gray-200'}`}
           >
             <Icon size={14} />
