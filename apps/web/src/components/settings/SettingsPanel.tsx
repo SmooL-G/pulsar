@@ -118,19 +118,21 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
           </button>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar tabs */}
-          <div className="w-44 border-r border-gray-200 dark:border-dark-500 p-2 space-y-1 shrink-0">
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+          {/* Tabs: horizontal scroll on mobile, vertical sidebar on md+ */}
+          <div className="shrink-0 border-b md:border-b-0 md:border-r border-gray-200 dark:border-dark-500
+                          flex md:block md:w-44 gap-1 md:gap-0 md:space-y-1 p-2
+                          overflow-x-auto md:overflow-x-visible scrollbar-hidden">
             {tabs.map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
                 onClick={() => id === 'admin' ? setShowAdmin(true) : setTab(id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                className={`shrink-0 md:w-full flex items-center gap-2 md:gap-2.5 px-3 py-2 md:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap
                   ${tab === id && id !== 'admin'
                     ? 'bg-primary-500/10 text-primary-500'
                     : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-600 hover:text-gray-700 dark:hover:text-gray-300'}`}
               >
-                <Icon size={18} />
+                <Icon size={18} className="shrink-0" />
                 {label}
               </button>
             ))}
