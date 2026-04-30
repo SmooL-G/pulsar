@@ -14,6 +14,7 @@ import { useChatStore } from '../../store/chatStore';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
+import { AvatarFrame } from '../ui/AvatarFrame';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
@@ -210,15 +211,17 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
         {/* Avatar for other users */}
         {!isOwn && showAvatar && (
           <div className="mr-2 mt-auto shrink-0">
-            <NftAvatarBorder isNft={!!(message.sender as any)?.nftAvatarMint} size={32}>
-              <div className="w-8 h-8 rounded-full bg-primary-400 flex items-center justify-center text-white text-xs font-medium overflow-hidden">
-                {message.sender?.avatarUrl ? (
-                  <img src={message.sender.avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <GenerativeAvatar seed={message.senderId} size={32} />
-                )}
-              </div>
-            </NftAvatarBorder>
+            <AvatarFrame frame={(message.sender as any)?.avatarFrame} size={32}>
+              <NftAvatarBorder isNft={!!(message.sender as any)?.nftAvatarMint} size={32}>
+                <div className="w-8 h-8 rounded-full bg-primary-400 flex items-center justify-center text-white text-xs font-medium overflow-hidden">
+                  {message.sender?.avatarUrl ? (
+                    <img src={message.sender.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <GenerativeAvatar seed={message.senderId} size={32} />
+                  )}
+                </div>
+              </NftAvatarBorder>
+            </AvatarFrame>
           </div>
         )}
         {!isOwn && !showAvatar && <div className="w-8 mr-2 shrink-0" />}
@@ -266,9 +269,14 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
               ${isEmojiOnly ? 'px-1 py-0.5 inline-block' : 'px-3 py-2 rounded-2xl text-sm leading-relaxed inline-block'}
               ${superchat ? `border-2 ${superChatColors[superchat.tier] || ''} ` : ''}
               ${!isEmojiOnly && (isOwn
-                ? 'bg-primary-500 text-white rounded-br-md'
+                ? ((message.sender as any)?.bubbleColor ? 'text-white rounded-br-md' : 'bg-primary-500 text-white rounded-br-md')
                 : 'bg-gray-100 dark:bg-dark-600 text-gray-900 dark:text-gray-100 rounded-bl-md')}
             `}
+            style={
+              isOwn && !isEmojiOnly && (message.sender as any)?.bubbleColor
+                ? { backgroundColor: (message.sender as any).bubbleColor }
+                : undefined
+            }
           >
             {/* File attachments */}
             {message.attachments && message.attachments.length > 0 && (

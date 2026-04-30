@@ -9,6 +9,8 @@ import { ProfileBadgeTag } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { BoostBlock } from '../chat/BoostBlock';
+import { AvatarFrame } from '../ui/AvatarFrame';
+import { profileBgStyle } from '../ui/profileBgs';
 
 interface InfoPanelProps {
   onClose: () => void;
@@ -247,6 +249,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
             <div className="space-y-4">
               <div className="flex flex-col items-center text-center">
                 <div className="relative mb-3">
+                  <AvatarFrame frame={(other as any).avatarFrame} size={80}>
                   <NftAvatarBorder isNft={!!other.nftAvatarMint} size={80}>
                   <button
                     onClick={() => other.avatarUrl && setPreviewAvatar(other.avatarUrl)}
@@ -259,6 +262,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                     )}
                   </button>
                   </NftAvatarBorder>
+                  </AvatarFrame>
                   {other.isOnline && (
                     <div className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-white dark:border-dark-700" />
                   )}

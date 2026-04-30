@@ -27,6 +27,8 @@ export async function publicProfileRoutes(app: FastifyInstance) {
         verificationLevel: true,
         profileBadge: true,
         nickColor: true,
+        avatarFrame: true,
+        bubbleColor: true,
         createdAt: true,
       },
     });

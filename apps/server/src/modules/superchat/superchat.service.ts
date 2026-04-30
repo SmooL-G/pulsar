@@ -145,6 +145,8 @@ export async function sendSuperchat(opts: {
             verificationLevel: true,
             profileBadge: true,
             nickColor: true,
+            avatarFrame: true,
+            bubbleColor: true,
             nftAvatarMint: true,
             role: true,
           },

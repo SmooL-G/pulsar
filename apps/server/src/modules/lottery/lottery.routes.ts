@@ -33,7 +33,7 @@ export async function lotteryRoutes(app: FastifyInstance) {
     const winners = ids.length
       ? await prisma.user.findMany({
           where: { id: { in: ids } },
-          select: { id: true, username: true, displayName: true, avatarUrl: true, nickColor: true },
+          select: { id: true, username: true, displayName: true, avatarUrl: true, nickColor: true, avatarFrame: true, bubbleColor: true },
         })
       : [];
     const winnerMap = new Map(winners.map((w) => [w.id, w]));

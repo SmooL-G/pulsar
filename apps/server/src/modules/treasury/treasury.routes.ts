@@ -25,6 +25,8 @@ const userSelect = {
   displayName: true,
   avatarUrl: true,
   nickColor: true,
+  avatarFrame: true,
+  bubbleColor: true,
   verificationLevel: true,
 } as const;
 

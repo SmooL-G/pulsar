@@ -447,7 +447,7 @@ export async function walletRoutes(app: FastifyInstance) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { nickColor: true, verificationLevel: true },
+      select: { nickColor: true, avatarFrame: true, bubbleColor: true, verificationLevel: true },
     });
     if (!user) return reply.status(404).send({ error: 'NOT_FOUND' });
 
@@ -456,7 +456,7 @@ export async function walletRoutes(app: FastifyInstance) {
       const updated = await prisma.user.update({
         where: { id: userId },
         data: { nickColor: color },
-        select: { id: true, nickColor: true },
+        select: { id: true, nickColor: true, avatarFrame: true, bubbleColor: true },
       });
       return { success: true, nickColor: updated.nickColor, charged: false };
     }
@@ -468,7 +468,7 @@ export async function walletRoutes(app: FastifyInstance) {
       const updated = await prisma.user.update({
         where: { id: userId },
         data: { nickColor: color },
-        select: { id: true, nickColor: true },
+        select: { id: true, nickColor: true, avatarFrame: true, bubbleColor: true },
       });
       return { success: true, nickColor: updated.nickColor, charged: false, reason: 'PRO_INCLUDED' };
     }
@@ -499,7 +499,7 @@ export async function walletRoutes(app: FastifyInstance) {
       prisma.user.update({
         where: { id: userId },
         data: { nickColor: color },
-        select: { id: true, nickColor: true },
+        select: { id: true, nickColor: true, avatarFrame: true, bubbleColor: true },
       }),
     ]);
 

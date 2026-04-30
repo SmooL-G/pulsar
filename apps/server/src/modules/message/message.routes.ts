@@ -79,6 +79,8 @@ export async function messageRoutes(app: FastifyInstance) {
             verificationLevel: true,
             profileBadge: true,
             nickColor: true,
+            avatarFrame: true,
+            bubbleColor: true,
             nftAvatarMint: true,
             role: true,
           },

@@ -205,6 +205,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 </div>
 
                 <NickColorSection />
+                <CustomizationSection />
               </div>
             )}
 
@@ -993,6 +994,207 @@ function NickColorSection() {
         {busy ? '…' : labelPrice}
       </button>
     </div>
+  );
+}
+
+// === Кастомизация: рамка аватара / фон профиля / цвет пузырей ===
+function CustomizationSection() {
+  const { user, setUser } = useAuthStore();
+  const { locale } = useI18n();
+  const ru = locale === 'ru';
+  const tx = (r: string, e: string) => (ru ? r : e);
+
+  const balance = BigInt((user as any)?.plsBalance || '0');
+  const ownsFrame = !!(user as any)?.avatarFrame;
+  const ownsBg = !!(user as any)?.profileBg;
+  const ownsBubble = !!(user as any)?.bubbleColor;
+
+  const FRAME_PRICE = 5000n;
+  const BG_PRICE = 3000n;
+  const BUBBLE_PRICE = 2000n;
+
+  const [busy, setBusy] = useState<'frame' | 'bg' | 'bubble' | null>(null);
+  const [bubblePick, setBubblePick] = useState<string>((user as any)?.bubbleColor || '#7c3aed');
+
+  const setSlot = async (slot: 'frame' | 'bg' | 'bubble', value: string | null) => {
+    if (busy) return;
+    setBusy(slot);
+    try {
+      const path = slot === 'frame' ? 'avatar-frame' : slot === 'bg' ? 'profile-bg' : 'bubble-color';
+      const body: any = slot === 'frame' ? { frame: value }
+        : slot === 'bg' ? { bg: value }
+        : { color: value };
+      const { data } = await api.post(`/customization/${path}`, body);
+      const fields = (data.user || {}) as { avatarFrame?: string; bubbleColor?: string; profileBg?: string };
+      if (user) setUser({ ...(user as any), ...fields, ...(data.balance ? { plsBalance: data.balance } : {}) });
+      toast.success(data.charged ? tx(`Применено! Списано ${value ? '' : ''}PLS`, 'Applied!') : tx('Применено', 'Applied'));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || tx('Ошибка', 'Error'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const FRAMES: { id: 'gold' | 'neon' | 'rainbow' | 'fire' | 'void' | 'aurora'; label: string }[] = [
+    { id: 'gold', label: tx('Золото', 'Gold') },
+    { id: 'neon', label: tx('Неон', 'Neon') },
+    { id: 'rainbow', label: tx('Радуга', 'Rainbow') },
+    { id: 'fire', label: tx('Огонь', 'Fire') },
+    { id: 'void', label: tx('Пустота', 'Void') },
+    { id: 'aurora', label: tx('Аврора', 'Aurora') },
+  ];
+
+  const BGS: { id: 'aurora' | 'sunset' | 'ocean' | 'midnight' | 'rose' | 'forest'; label: string; preview: string }[] = [
+    { id: 'aurora', label: 'Aurora', preview: 'linear-gradient(135deg,#34D399,#06B6D4,#8B5CF6)' },
+    { id: 'sunset', label: 'Sunset', preview: 'linear-gradient(135deg,#FBBF24,#F97316,#DC2626)' },
+    { id: 'ocean', label: 'Ocean', preview: 'linear-gradient(135deg,#0EA5E9,#1E40AF)' },
+    { id: 'midnight', label: 'Midnight', preview: 'linear-gradient(135deg,#1E1B4B,#581C87,#1E1B4B)' },
+    { id: 'rose', label: 'Rose', preview: 'linear-gradient(135deg,#F472B6,#DB2777,#831843)' },
+    { id: 'forest', label: 'Forest', preview: 'linear-gradient(135deg,#16A34A,#166534)' },
+  ];
+
+  const currentFrame = (user as any)?.avatarFrame as string | null;
+  const currentBg = (user as any)?.profileBg as string | null;
+
+  return (
+    <div className="space-y-3">
+      {/* Avatar frame */}
+      <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5 p-4 space-y-3">
+        <div className="flex items-baseline justify-between">
+          <p className="text-sm font-semibold flex items-center gap-2">✨ {tx('Рамка аватара', 'Avatar frame')}</p>
+          {!ownsFrame && <p className="text-xs text-gray-500">{fmtPls(FRAME_PRICE)} PLS</p>}
+        </div>
+        <div className="grid grid-cols-6 gap-2">
+          {FRAMES.map((f) => {
+            const selected = currentFrame === f.id;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setSlot('frame', selected ? null : f.id)}
+                disabled={busy !== null || (!ownsFrame && balance < FRAME_PRICE)}
+                title={f.label}
+                className={`relative aspect-square rounded-full transition-transform ${selected ? 'ring-2 ring-white scale-110' : 'hover:scale-105'} disabled:opacity-30`}
+              >
+                <FrameThumbInline id={f.id} />
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[10px] text-gray-500">
+          {ownsFrame
+            ? tx('Смена рамки бесплатна. Нажмите на текущую чтобы убрать.', 'Frame change is free. Click current to remove.')
+            : balance < FRAME_PRICE
+              ? tx(`Нужно ${fmtPls(FRAME_PRICE)} PLS на балансе`, `Need ${fmtPls(FRAME_PRICE)} PLS on balance`)
+              : tx('Анимированная рамка вокруг аватара во всех чатах', 'Animated border around your avatar across all chats')}
+        </p>
+      </div>
+
+      {/* Profile background */}
+      <div className="rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 p-4 space-y-3">
+        <div className="flex items-baseline justify-between">
+          <p className="text-sm font-semibold flex items-center gap-2">🌌 {tx('Фон профиля', 'Profile background')}</p>
+          {!ownsBg && <p className="text-xs text-gray-500">{fmtPls(BG_PRICE)} PLS</p>}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {BGS.map((b) => {
+            const selected = currentBg === b.id;
+            return (
+              <button
+                key={b.id}
+                onClick={() => setSlot('bg', selected ? null : b.id)}
+                disabled={busy !== null || (!ownsBg && balance < BG_PRICE)}
+                className={`relative h-14 rounded-lg transition-all ${selected ? 'ring-2 ring-white' : 'hover:opacity-90'} disabled:opacity-30`}
+                style={{ background: b.preview }}
+                title={b.label}
+              >
+                <span className="absolute bottom-1 left-1.5 text-[10px] text-white/90 font-medium">{b.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[10px] text-gray-500">
+          {ownsBg
+            ? tx('Смена фона бесплатна.', 'Background change is free.')
+            : balance < BG_PRICE
+              ? tx(`Нужно ${fmtPls(BG_PRICE)} PLS на балансе`, `Need ${fmtPls(BG_PRICE)} PLS on balance`)
+              : tx('Декоративный градиент в шапке вашего профиля', 'Decorative gradient at the top of your profile')}
+        </p>
+      </div>
+
+      {/* Bubble color */}
+      <div className="rounded-xl border border-cyan-500/30 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 p-4 space-y-3">
+        <div className="flex items-baseline justify-between">
+          <p className="text-sm font-semibold flex items-center gap-2">💬 {tx('Цвет пузырей', 'Bubble color')}</p>
+          {!ownsBubble && <p className="text-xs text-gray-500">{fmtPls(BUBBLE_PRICE)} PLS</p>}
+        </div>
+        <div className="px-3 py-2 bg-dark-700/30 rounded-lg flex items-center gap-2">
+          <span className="text-xs text-gray-500">{tx('Превью:', 'Preview:')}</span>
+          <span className="px-3 py-1.5 rounded-2xl text-white text-xs" style={{ backgroundColor: bubblePick }}>
+            {tx('Привет!', 'Hello!')}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          {['#7c3aed', '#ec4899', '#0ea5e9', '#10b981', '#f97316', '#dc2626', '#facc15'].map((c) => (
+            <button
+              key={c}
+              onClick={() => setBubblePick(c)}
+              className={`w-8 h-8 rounded-full border-2 ${bubblePick === c ? 'border-white scale-110' : 'border-transparent'}`}
+              style={{ backgroundColor: c }}
+            />
+          ))}
+          <input
+            type="color"
+            value={bubblePick}
+            onChange={(e) => setBubblePick(e.target.value)}
+            className="w-8 h-8 rounded-full bg-transparent cursor-pointer border-2 border-dashed border-gray-500"
+          />
+        </div>
+        <button
+          onClick={() => setSlot('bubble', bubblePick)}
+          disabled={busy !== null || (!ownsBubble && balance < BUBBLE_PRICE)}
+          className="w-full py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-semibold disabled:opacity-50"
+        >
+          {busy === 'bubble' ? '…'
+            : ownsBubble ? tx('Применить (бесплатно)', 'Apply (free)')
+            : tx(`Купить за ${fmtPls(BUBBLE_PRICE)} PLS`, `Buy for ${fmtPls(BUBBLE_PRICE)} PLS`)}
+        </button>
+        {ownsBubble && (
+          <button
+            onClick={() => setSlot('bubble', null)}
+            disabled={busy !== null}
+            className="w-full py-1.5 text-[11px] text-gray-500 hover:text-gray-300"
+          >
+            {tx('Убрать кастомный цвет', 'Remove custom color')}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function fmtPls(v: bigint): string {
+  return v.toLocaleString('ru-RU');
+}
+
+// Inline frame thumb so we don't need to import FrameThumb at top of file
+function FrameThumbInline({ id }: { id: 'gold' | 'neon' | 'rainbow' | 'fire' | 'void' | 'aurora' }) {
+  const grad: Record<string, string> = {
+    gold: 'linear-gradient(135deg, #FCD34D, #F59E0B, #B45309, #FCD34D)',
+    neon: 'linear-gradient(135deg, #EC4899, #06B6D4, #8B5CF6, #EC4899)',
+    rainbow: 'linear-gradient(135deg, #EF4444, #F59E0B, #84CC16, #06B6D4, #8B5CF6, #EF4444)',
+    fire: 'linear-gradient(135deg, #FBBF24, #F97316, #DC2626, #7F1D1D, #FBBF24)',
+    void: 'linear-gradient(135deg, #1E1B4B, #581C87, #1E1B4B, #4C1D95)',
+    aurora: 'linear-gradient(135deg, #34D399, #06B6D4, #8B5CF6, #34D399)',
+  };
+  return (
+    <div
+      className="absolute inset-0 rounded-full"
+      style={{
+        background: grad[id],
+        backgroundSize: '300% 300%',
+        animation: 'nft-border-spin 4s linear infinite',
+      }}
+    />
   );
 }
 

@@ -41,6 +41,8 @@ export async function userRoutes(app: FastifyInstance) {
         role: true,
         profileBadge: true,
         nickColor: true,
+        avatarFrame: true,
+        bubbleColor: true,
       },
       take: Math.min(Number(limit), 50),
       skip: Number(offset),
@@ -68,6 +70,8 @@ export async function userRoutes(app: FastifyInstance) {
         socialLinks: true,
         profileBadge: true,
         nickColor: true,
+        avatarFrame: true,
+        bubbleColor: true,
       },
     });
 
@@ -153,6 +157,8 @@ export async function userRoutes(app: FastifyInstance) {
         socialLinks: true,
         profileBadge: true,
         nickColor: true,
+        avatarFrame: true,
+        bubbleColor: true,
         pushMuteFrom: true,
         pushMuteTo: true,
         pushMuteTimezone: true,
@@ -232,6 +238,8 @@ export async function userRoutes(app: FastifyInstance) {
         role: true,
         profileBadge: true,
         nickColor: true,
+        avatarFrame: true,
+        bubbleColor: true,
       },
     });
 

@@ -38,6 +38,8 @@ export async function searchRoutes(app: FastifyInstance) {
         role: true,
           profileBadge: true,
           nickColor: true,
+          avatarFrame: true,
+          bubbleColor: true,
         },
         take,
       }),

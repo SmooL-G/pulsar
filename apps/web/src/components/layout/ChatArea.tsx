@@ -12,6 +12,7 @@ import { PulsarBadge } from '../ui/PulsarBadge';
 import { PremiumBadge } from '../ui/PremiumBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
+import { AvatarFrame } from '../ui/AvatarFrame';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { P2PIndicator } from '../chat/P2PIndicator';
 import { NewsFeed } from './NewsFeed';
@@ -99,15 +100,17 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
             <Bookmark size={20} fill="currentColor" />
           </div>
         ) : (
-        <NftAvatarBorder isNft={!!(activeChat as any).otherUser?.nftAvatarMint} size={40}>
-          <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium overflow-hidden">
-            {(activeChat as any).otherUser?.avatarUrl || (activeChat as any).avatarUrl ? (
-              <img src={(activeChat as any).otherUser?.avatarUrl || (activeChat as any).avatarUrl} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <GenerativeAvatar seed={(activeChat as any).otherUser?.id || activeChat.id} size={40} />
-            )}
-          </div>
-        </NftAvatarBorder>
+        <AvatarFrame frame={(activeChat as any).otherUser?.avatarFrame} size={40}>
+          <NftAvatarBorder isNft={!!(activeChat as any).otherUser?.nftAvatarMint} size={40}>
+            <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium overflow-hidden">
+              {(activeChat as any).otherUser?.avatarUrl || (activeChat as any).avatarUrl ? (
+                <img src={(activeChat as any).otherUser?.avatarUrl || (activeChat as any).avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <GenerativeAvatar seed={(activeChat as any).otherUser?.id || activeChat.id} size={40} />
+              )}
+            </div>
+          </NftAvatarBorder>
+        </AvatarFrame>
         )}
 
         <div className="flex-1 min-w-0">

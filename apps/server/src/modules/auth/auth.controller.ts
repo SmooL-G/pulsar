@@ -148,6 +148,8 @@ export async function handleGetMe(request: FastifyRequest, reply: FastifyReply) 
       socialLinks: true,
       profileBadge: true,
       nickColor: true,
+      avatarFrame: true,
+      bubbleColor: true,
       pushMuteFrom: true,
       pushMuteTo: true,
       pushMuteTimezone: true,

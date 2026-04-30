@@ -11,6 +11,8 @@ const SENDER_SELECT = {
   verificationLevel: true,
   profileBadge: true,
   nickColor: true,
+  avatarFrame: true,
+  bubbleColor: true,
   nftAvatarMint: true,
   role: true,
 } as const;

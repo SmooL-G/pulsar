@@ -25,6 +25,12 @@ model User {
   socialLinks         Json?      @map("social_links") @db.JsonB
   profileBadge        String?    @map("profile_badge") @db.VarChar(20)
   nickColor           String?    @map("nick_color") @db.VarChar(7)
+  // Profile cosmetics — purchased for PLS, see customization.routes.ts.
+  // Stored as preset IDs (avatarFrame, profileBg) or hex (bubbleColor)
+  // so the rendering layer can change visuals without DB migrations.
+  avatarFrame         String?    @map("avatar_frame") @db.VarChar(16)
+  bubbleColor         String?    @map("bubble_color") @db.VarChar(7)
+  profileBg           String?    @map("profile_bg") @db.VarChar(16)
   verificationLevel   Int        @default(0) @map("verification_level") @db.SmallInt
   role                UserRole   @default(USER)
   status              UserStatus @default(ACTIVE)

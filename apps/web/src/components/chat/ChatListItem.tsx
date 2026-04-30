@@ -8,6 +8,7 @@ import { PremiumBadge } from '../ui/PremiumBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
+import { AvatarFrame } from '../ui/AvatarFrame';
 import { useI18n } from '../../i18n';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
@@ -122,15 +123,17 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
               <Bookmark size={22} fill="currentColor" />
             </div>
           ) : (
-          <NftAvatarBorder isNft={!!(chat.otherUser?.nftAvatarMint)} size={48}>
-            <div className="w-12 h-12 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium overflow-hidden">
-              {chat.otherUser?.avatarUrl || chat.avatarUrl ? (
-                <img src={chat.otherUser?.avatarUrl || chat.avatarUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <GenerativeAvatar seed={chat.otherUser?.id || chat.id} size={48} />
-              )}
-            </div>
-          </NftAvatarBorder>
+          <AvatarFrame frame={(chat.otherUser as any)?.avatarFrame} size={48}>
+            <NftAvatarBorder isNft={!!(chat.otherUser?.nftAvatarMint)} size={48}>
+              <div className="w-12 h-12 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium overflow-hidden">
+                {chat.otherUser?.avatarUrl || chat.avatarUrl ? (
+                  <img src={chat.otherUser?.avatarUrl || chat.avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <GenerativeAvatar seed={chat.otherUser?.id || chat.id} size={48} />
+                )}
+              </div>
+            </NftAvatarBorder>
+          </AvatarFrame>
           )}
           {chat.type === 'DIRECT' && chat.otherUser?.isOnline && !(chat.unreadCount && chat.unreadCount > 0) && !chat.otherUser?.isBot && (
             <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-dark-700" />

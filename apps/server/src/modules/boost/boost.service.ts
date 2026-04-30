@@ -113,7 +113,7 @@ export async function getChatBoostInfo(chatId: string) {
   const users = topUserIds.length
     ? await prisma.user.findMany({
         where: { id: { in: topUserIds.map(([id]) => id) } },
-        select: { id: true, username: true, displayName: true, avatarUrl: true, nickColor: true, role: true, verificationLevel: true },
+        select: { id: true, username: true, displayName: true, avatarUrl: true, nickColor: true, avatarFrame: true, bubbleColor: true, role: true, verificationLevel: true },
       })
     : [];
   const userMap = new Map(users.map((u) => [u.id, u]));

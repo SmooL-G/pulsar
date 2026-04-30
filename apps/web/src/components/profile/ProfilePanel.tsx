@@ -6,6 +6,8 @@ import { api } from '../../services/api';
 import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeTag } from '../ui/ProfileBadgeIcon';
 import { AvatarGallery } from './AvatarGallery';
+import { AvatarFrame } from '../ui/AvatarFrame';
+import { profileBgStyle } from '../ui/profileBgs';
 import toast from 'react-hot-toast';
 
 interface ProfilePanelProps {
@@ -103,21 +105,31 @@ export function ProfilePanel({ onClose }: ProfilePanelProps) {
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 relative">
+          {/* Decorative profile background — purchased for PLS, applied
+              to the top of the panel. Sits behind everything else. */}
+          {(user as any).profileBg && (
+            <div
+              className="absolute top-0 left-0 right-0 h-32 -z-0 opacity-40 pointer-events-none rounded-t-2xl"
+              style={profileBgStyle((user as any).profileBg)}
+            />
+          )}
           {/* Avatar */}
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center relative z-10">
             <div className="relative">
-              {/* Avatar — click to preview */}
-              <button
-                onClick={() => user.avatarUrl && setShowAvatarPreview(true)}
-                className="w-24 h-24 rounded-full bg-primary-500 flex items-center justify-center text-white text-3xl font-bold overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all"
-              >
-                {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  user.username[0].toUpperCase()
-                )}
-              </button>
+              <AvatarFrame frame={(user as any).avatarFrame} size={96}>
+                {/* Avatar — click to preview */}
+                <button
+                  onClick={() => user.avatarUrl && setShowAvatarPreview(true)}
+                  className="w-24 h-24 rounded-full bg-primary-500 flex items-center justify-center text-white text-3xl font-bold overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all"
+                >
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    user.username[0].toUpperCase()
+                  )}
+                </button>
+              </AvatarFrame>
             </div>
             {/* Change avatar link */}
             <button
