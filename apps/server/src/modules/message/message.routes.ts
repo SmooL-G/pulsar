@@ -163,6 +163,10 @@ export async function messageRoutes(app: FastifyInstance) {
         commentsEnabled: m.commentsEnabled,
         commentChatId: m.commentChatId,
         commentCount: m.commentChatId ? (commentMap.get(m.commentChatId) || 0) : undefined,
+        // BigInt → string for JSON safety
+        superchatAmount: (m as any).superchatAmount?.toString() ?? null,
+        superchatTier: (m as any).superchatTier ?? null,
+        pinnedUntil: (m as any).pinnedUntil?.toISOString() ?? null,
         status: m.senderId === userId
           ? (readMap.get(m.id) ? 'read' : 'delivered')
           : undefined,

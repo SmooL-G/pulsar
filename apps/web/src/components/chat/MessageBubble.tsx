@@ -68,7 +68,18 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
   })();
   const emojiSize = !isEmojiOnly ? '' : (displayContent!.trim().length <= 2 ? 'text-5xl' : displayContent!.trim().length <= 4 ? 'text-4xl' : 'text-3xl');
 
-  const superchat = (message.metadata as any)?.superchat;
+  // Prefer typed columns (new SuperChat); fall back to legacy metadata.
+  const superchat = (message as any).superchatAmount
+    ? {
+        amount: BigInt((message as any).superchatAmount),
+        tier: (message as any).superchatTier as 'blue' | 'green' | 'yellow' | 'red',
+      }
+    : (message.metadata as any)?.superchat
+      ? {
+          amount: BigInt((message.metadata as any).superchat.amount),
+          tier: (message.metadata as any).superchat.tier as 'blue' | 'green' | 'yellow' | 'red',
+        }
+      : null;
   const superChatColors: Record<string, string> = {
     blue: 'border-blue-500 bg-blue-500/10',
     green: 'border-green-500 bg-green-500/10',

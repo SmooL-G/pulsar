@@ -179,6 +179,12 @@ model Message {
   encryptionType   String?  @map("encryption_type") @db.VarChar(32)
   commentsEnabled  Boolean  @default(false) @map("comments_enabled")
   commentChatId    String?  @unique @map("comment_chat_id") @db.Uuid
+  // SuperChat: paid highlighted message in groups/channels. amount > 0
+  // means this is a SuperChat; pinnedUntil drives the "pinned" state at
+  // render time (no separate row in pinned_messages — purely virtual).
+  superchatAmount  BigInt?  @map("superchat_amount")
+  superchatTier    String?  @map("superchat_tier") @db.VarChar(8) // blue|green|yellow|red
+  pinnedUntil      DateTime? @map("pinned_until")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -209,6 +215,7 @@ enum MessageType {
   VIDEO
   CHECKLIST
   POLL
+  SUPERCHAT
 }
 
 // ─── FILES ───────────────────────────────────────────────

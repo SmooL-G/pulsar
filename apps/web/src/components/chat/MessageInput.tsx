@@ -711,10 +711,10 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
               if (!superChatAmount || !text.trim()) return;
               setSuperChatSending(true);
               try {
-                await api.post('/wallet/superchat', {
+                await api.post('/superchat/send', {
                   chatId,
                   content: text.trim(),
-                  amount: superChatAmount,
+                  amount: String(superChatAmount),
                 });
                 setText('');
                 setSuperChatAmount(0);

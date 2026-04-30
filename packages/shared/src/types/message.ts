@@ -7,6 +7,7 @@ export enum MessageType {
   VIDEO = 'VIDEO',
   CHECKLIST = 'CHECKLIST',
   POLL = 'POLL',
+  SUPERCHAT = 'SUPERCHAT',
 }
 
 export type MessageStatus = 'sent' | 'delivered' | 'read';
@@ -28,6 +29,11 @@ export interface Message {
   commentsEnabled?: boolean;
   commentChatId?: string | null;
   commentCount?: number;
+  // SuperChat (paid highlighted message in groups/channels). Stored as
+  // BigInt server-side, serialized as string over the wire.
+  superchatAmount?: string | null;
+  superchatTier?: 'blue' | 'green' | 'yellow' | 'red' | null;
+  pinnedUntil?: string | null;
   createdAt: string;
   updatedAt: string;
   status?: MessageStatus;
