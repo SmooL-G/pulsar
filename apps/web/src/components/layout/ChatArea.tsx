@@ -13,6 +13,7 @@ import { PremiumBadge } from '../ui/PremiumBadge';
 import { ProfileBadgeIcon } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
+import { P2PIndicator } from '../chat/P2PIndicator';
 import { NewsFeed } from './NewsFeed';
 import { useI18n } from '../../i18n';
 
@@ -139,6 +140,12 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         </div>
 
         <div className="flex items-center gap-1">
+          {/* P2P toggle: DM with a real (non-bot) user only. */}
+          {activeChat.type === 'DIRECT'
+            && (activeChat as any).otherUser
+            && !(activeChat as any).otherUser.isBot && (
+            <P2PIndicator remoteUserId={(activeChat as any).otherUser.id} />
+          )}
           {activeChat.type === 'DIRECT' && (
             <button
               onClick={() => setShowTransfer(true)}

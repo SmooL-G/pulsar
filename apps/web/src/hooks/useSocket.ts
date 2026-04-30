@@ -167,6 +167,27 @@ export function useSocket() {
       useChatStore.getState().updateUserPresence(data.userId, data.isOnline);
     });
 
+    // ─── WebRTC signaling (P2P transport) ──────────────────────────
+    // Lazy import so the p2p code is tree-shaken away if never wired in.
+    const p2p = require('../p2p/PeerConnection');
+    p2p.setLocalUserId(useAuthStore.getState().user?.id ?? null);
+    socket.on('webrtc:offer', async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
+      try {
+        await p2p.ensurePeer(from).onRemoteOffer(sdp);
+      } catch (err) { console.warn('[p2p] offer handler failed:', err); }
+    });
+    socket.on('webrtc:answer', async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
+      const peer = p2p.getPeer(from);
+      if (peer) await peer.onRemoteAnswer(sdp);
+    });
+    socket.on('webrtc:ice', async ({ from, candidate }: { from: string; candidate: RTCIceCandidateInit }) => {
+      const peer = p2p.getPeer(from);
+      if (peer) await peer.onRemoteIce(candidate);
+    });
+    socket.on('webrtc:close', ({ from, reason }: { from: string; reason?: string }) => {
+      p2p.dropPeer(from, reason);
+    });
+
     // Heartbeat
     const heartbeatInterval = setInterval(() => {
       if (socket?.connected) {
@@ -179,6 +200,7 @@ export function useSocket() {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('focus', onVisibilityChange);
       window.removeEventListener('online', onVisibilityChange);
+      try { require('../p2p/PeerConnection').dropAllPeers(); } catch { /* ignore */ }
       if (socket) {
         socket.disconnect();
         socket = null;

@@ -39,6 +39,13 @@ export interface ClientToServerEvents {
   }) => void;
 
   'presence:heartbeat': () => void;
+
+  // ─── WebRTC signaling (P2P transport) ─────────────────────
+  // Server only relays these between users; never inspects payload.
+  'webrtc:offer': (data: { to: string; sdp: RTCSessionDescriptionInit }) => void;
+  'webrtc:answer': (data: { to: string; sdp: RTCSessionDescriptionInit }) => void;
+  'webrtc:ice': (data: { to: string; candidate: RTCIceCandidateInit }) => void;
+  'webrtc:close': (data: { to: string; reason?: string }) => void;
 }
 
 // Server → Client events
@@ -130,4 +137,10 @@ export interface ServerToClientEvents {
     code: string;
     message: string;
   }) => void;
+
+  // ─── WebRTC signaling (relayed to receiver) ───────────────
+  'webrtc:offer': (data: { from: string; sdp: RTCSessionDescriptionInit }) => void;
+  'webrtc:answer': (data: { from: string; sdp: RTCSessionDescriptionInit }) => void;
+  'webrtc:ice': (data: { from: string; candidate: RTCIceCandidateInit }) => void;
+  'webrtc:close': (data: { from: string; reason?: string }) => void;
 }

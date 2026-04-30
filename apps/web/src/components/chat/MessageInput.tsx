@@ -16,6 +16,7 @@ import { useI18n } from '../../i18n';
 import toast from 'react-hot-toast';
 import { signMessage } from '../../crypto/messageSigner';
 import { encryptMessage } from '../../crypto/e2eEncrypt';
+import { sendDmMessage } from '../../p2p/MessageTransport';
 
 interface MessageInputProps {
   chatId: string;
@@ -303,7 +304,7 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
 
       const msgType = attachments.length > 0 ? (attachments[0].mimeType.startsWith('image/') ? 'IMAGE' : 'FILE') : 'TEXT';
 
-      socket.emit('message:send', {
+      const socketPayload = {
         chatId,
         content: encryptedContent ? undefined : (content || undefined),
         type: msgType,
@@ -311,10 +312,56 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
         ...(encryptedContent && { encryptedContent }),
         ...(chatType === 'CHANNEL' && commentsOn && { commentsEnabled: true }),
         ...(attachments.length > 0 && { attachments }),
-      });
+      };
+
+      // Try P2P first for direct chats with real users; falls back to socket
+      // automatically. Group/channel/bot sends always take the socket path.
+      const currentUser = useAuthStore.getState().user;
+      if (chatType === 'DIRECT' && !recipientIsBot && recipientUserId && currentUser) {
+        const p2pPayload = {
+          // Real UUID so the receiver doesn't see our `pending-*` placeholder.
+          id: (typeof crypto !== 'undefined' && (crypto as any).randomUUID) ? crypto.randomUUID() : `p2p-${Date.now()}-${Math.random()}`,
+          chatId,
+          senderId: currentUser.id,
+          content: encryptedContent ? null : (content || null),
+          type: msgType as any,
+          replyToId: null,
+          isEdited: false,
+          isDeleted: false,
+          metadata: null,
+          signature: signed?.signature ?? null,
+          signerWallet: signed?.signerWallet ?? null,
+          encryptedContent: encryptedContent ?? null,
+          encryptionType: encryptedContent ? 'nacl-box' : null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          sender: {
+            id: currentUser.id,
+            username: currentUser.username,
+            displayName: currentUser.displayName,
+            avatarUrl: currentUser.avatarUrl,
+          },
+          attachments: attachments.map((a, i) => ({
+            id: `p2p-att-${i}`, fileName: a.fileName, fileSize: a.fileSize, mimeType: a.mimeType, url: a.url,
+          })),
+          status: 'sent' as const,
+        };
+        const result = sendDmMessage({ chatId, socketPayload, p2pPayload: p2pPayload as any });
+        if (result.transport === 'p2p') {
+          // P2P delivered. Also drop the message into our own list so we
+          // can render it immediately — the optimistic pending row added
+          // below will then be skipped via the early return.
+          useMessageStore.getState().addMessage(p2pPayload as any);
+          setText('');
+          setPendingFiles([]);
+          if (textareaRef.current) textareaRef.current.style.height = 'auto';
+          return;
+        }
+      } else {
+        socket.emit('message:send', socketPayload);
+      }
 
       // Optimistic render — show message immediately without waiting for server broadcast
-      const currentUser = useAuthStore.getState().user;
       if (currentUser) {
         useMessageStore.getState().addMessage({
           id: `pending-${Date.now()}`,
