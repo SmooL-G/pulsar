@@ -350,7 +350,10 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                     value={muted ? t('info.off') : t('info.on')}
                   />
                 </div>
-                <InfoAction icon={<Shield size={18} />} label={t('info.encryption')} value={t('info.planned')} />
+                {/* Шифрование актуально только для DM с людьми; боты не E2E. */}
+                {!other.isBot && (
+                  <InfoAction icon={<Shield size={18} />} label={t('info.encryption')} value={t('info.planned')} />
+                )}
               </div>
             </div>
           );
