@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { useMessageStore } from '../store/messageStore';
 import { useChatStore } from '../store/chatStore';
 import type { Message } from '@pulsar/shared';
+import * as p2p from '../p2p/PeerConnection';
 
 let socket: Socket | null = null;
 
@@ -168,8 +169,6 @@ export function useSocket() {
     });
 
     // ─── WebRTC signaling (P2P transport) ──────────────────────────
-    // Lazy import so the p2p code is tree-shaken away if never wired in.
-    const p2p = require('../p2p/PeerConnection');
     p2p.setLocalUserId(useAuthStore.getState().user?.id ?? null);
     socket.on('webrtc:offer', async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
       try {
@@ -200,7 +199,7 @@ export function useSocket() {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('focus', onVisibilityChange);
       window.removeEventListener('online', onVisibilityChange);
-      try { require('../p2p/PeerConnection').dropAllPeers(); } catch { /* ignore */ }
+      try { p2p.dropAllPeers(); } catch { /* ignore */ }
       if (socket) {
         socket.disconnect();
         socket = null;
