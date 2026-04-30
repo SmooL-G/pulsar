@@ -340,7 +340,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                 ) : other.lastSeenAt ? (
                   <InfoAction icon={<Calendar size={18} />} label={t('chat.lastSeen')} value={new Date(other.lastSeenAt).toLocaleDateString()} />
                 ) : null}
-                {other.walletAddress && (
+                {other.walletAddress && !other.isBot && (
                   <InfoAction icon={<Wallet size={18} />} label="Wallet" value={`${other.walletAddress.slice(0, 4)}...${other.walletAddress.slice(-4)}`} />
                 )}
                 <div onClick={toggleMute} className="cursor-pointer">
