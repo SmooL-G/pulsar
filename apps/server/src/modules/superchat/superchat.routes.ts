@@ -61,7 +61,7 @@ export async function superchatRoutes(app: FastifyInstance) {
             sender: m.sender,
             attachments: [],
             status: 'sent',
-          });
+          } as any);
 
           // Refresh balances for sender + owner.
           io.to(`user:${userId}`).emit('wallet:balance-updated', {
