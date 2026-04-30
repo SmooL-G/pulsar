@@ -716,7 +716,7 @@ function ForwardModal({ message, onClose }: { message: Message; onClose: () => v
                     </div>
                     <span className="text-xs text-gray-300 truncate w-full text-center flex items-center justify-center gap-0.5">
                       {user.displayName || user.username}
-                      <PulsarBadge level={user.verificationLevel || 0} size={10} />
+                      <PulsarBadge level={user.verificationLevel || 0} size={10} role={(user as any).role} />
                     </span>
                     {isSent && (
                       <span className="text-[10px] text-green-400 font-medium">{t('friends.sent')}</span>

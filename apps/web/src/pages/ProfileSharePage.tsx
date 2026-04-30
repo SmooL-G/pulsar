@@ -15,6 +15,7 @@ interface PublicProfile {
   avatarUrl: string | null;
   bio: string | null;
   isBot: boolean;
+  role: string;
   verificationLevel: number;
   profileBadge: string | null;
   nickColor: string | null;
@@ -131,7 +132,7 @@ export function ProfileSharePage() {
             <h1 className="text-xl font-bold text-white flex items-center justify-center gap-1.5"
               style={profile.nickColor ? { color: profile.nickColor } : undefined}>
               {displayName}
-              <PulsarBadge level={profile.verificationLevel} size={16} />
+              <PulsarBadge level={profile.verificationLevel} size={16} role={profile.role} />
               {isBot && (
                 <span className="ml-1 text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-300">
                   BOT

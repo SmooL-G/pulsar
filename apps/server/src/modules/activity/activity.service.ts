@@ -93,7 +93,8 @@ export async function tryRewardForMessage(opts: {
 
   const sender = await prisma.user.findUnique({
     where: { id: opts.senderId },
-    select: { verificationLevel: true, isBot: true },
+    select: { verificationLevel: true,
+        role: true, isBot: true },
   });
   if (!sender || sender.isBot) return { credited: false, reason: 'bot_or_missing' };
   if (sender.verificationLevel < MIN_VERIFICATION_LEVEL) return { credited: false, reason: 'unverified' };
@@ -123,8 +124,10 @@ export async function tryRewardForReaction(opts: {
   if (!eligible.has(opts.chatId)) return { credited: false, reason: 'chat_not_eligible' };
 
   const [author, reactor] = await Promise.all([
-    prisma.user.findUnique({ where: { id: opts.authorId }, select: { verificationLevel: true, isBot: true } }),
-    prisma.user.findUnique({ where: { id: opts.reactorId }, select: { verificationLevel: true, isBot: true } }),
+    prisma.user.findUnique({ where: { id: opts.authorId }, select: { verificationLevel: true,
+        role: true, isBot: true } }),
+    prisma.user.findUnique({ where: { id: opts.reactorId }, select: { verificationLevel: true,
+        role: true, isBot: true } }),
   ]);
   if (!author || author.isBot) return { credited: false, reason: 'author_bot' };
   if (!reactor || reactor.isBot) return { credited: false, reason: 'reactor_bot' };

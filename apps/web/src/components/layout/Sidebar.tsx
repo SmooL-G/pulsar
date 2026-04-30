@@ -240,7 +240,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
                       {u.avatarUrl ? <img src={u.avatarUrl} alt="" className="w-full h-full object-cover" /> : <GenerativeAvatar seed={u.id} size={36} />}
                     </div>
                     <div className="text-left min-w-0">
-                      <p className="text-sm font-medium truncate flex items-center gap-1">{u.displayName || u.username} <PulsarBadge level={u.verificationLevel || 0} size={10} /></p>
+                      <p className="text-sm font-medium truncate flex items-center gap-1">{u.displayName || u.username} <PulsarBadge level={u.verificationLevel || 0} size={10} role={(u as any).role} /></p>
                       <p className="text-[11px] text-gray-400">@{u.username}</p>
                     </div>
                     {u.isOnline && <div className="w-2 h-2 rounded-full bg-green-500 ml-auto shrink-0" />}

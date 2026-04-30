@@ -264,7 +264,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                 </div>
                 <h4 className="font-semibold text-lg flex items-center gap-1.5">
                   {other.displayName || other.username}
-                  <PulsarBadge level={other.verificationLevel || 0} size={16} />
+                  <PulsarBadge level={other.verificationLevel || 0} size={16} role={(other as any).role} />
                 </h4>
                 <p className="text-sm text-gray-400">@{other.username}</p>
                 {other.bio && (
@@ -444,7 +444,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium truncate flex items-center gap-0.5">
                           {u.displayName || u.username}
-                          <PulsarBadge level={u.verificationLevel || 0} size={11} />
+                          <PulsarBadge level={u.verificationLevel || 0} size={11} role={(u as any).role} />
                         </p>
                       </div>
                       {sharedTo.has(u.id) ? (
@@ -519,7 +519,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate flex items-center gap-1">
                           {m.user.displayName || m.user.username}
-                          <PulsarBadge level={m.user.verificationLevel || 0} size={13} />
+                          <PulsarBadge level={m.user.verificationLevel || 0} size={13} role={(m.user as any).role} />
                         </p>
                         {m.role !== 'MEMBER' && (
                           <p className="text-xs text-primary-400">

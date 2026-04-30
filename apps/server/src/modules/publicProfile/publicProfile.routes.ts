@@ -23,6 +23,7 @@ export async function publicProfileRoutes(app: FastifyInstance) {
         avatarUrl: true,
         bio: true,
         isBot: true,
+        role: true, // Needed so the founder badge renders for SUPER_ADMIN
         verificationLevel: true,
         profileBadge: true,
         nickColor: true,

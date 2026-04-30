@@ -159,7 +159,7 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
               }
             >
               {name}
-              <PulsarBadge level={(chat.type === 'DIRECT' ? (chat.otherUser as any)?.verificationLevel : 0) || 0} size={13} />
+              <PulsarBadge level={(chat.type === 'DIRECT' ? (chat.otherUser as any)?.verificationLevel : 0) || 0} size={13} role={chat.type === 'DIRECT' ? (chat.otherUser as any)?.role : undefined} />
               {chat.type === 'DIRECT' && <PremiumBadge isPremium={(chat.otherUser as any)?.isPremium} size={13} />}
               {chat.type === 'DIRECT' && <ProfileBadgeIcon badge={(chat.otherUser as any)?.profileBadge} size={13} />}
             </span>
@@ -169,7 +169,7 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
             {lastMsg?.sender && chat.type === 'GROUP' && (
               <span className="text-gray-600 dark:text-gray-300 inline-flex items-center gap-0.5">
                 {lastMsg.sender.displayName || lastMsg.sender.username}
-                <PulsarBadge level={(lastMsg.sender as any)?.verificationLevel || 0} size={10} />
+                <PulsarBadge level={(lastMsg.sender as any)?.verificationLevel || 0} size={10} role={(lastMsg.sender as any)?.role} />
                 <ProfileBadgeIcon badge={(lastMsg.sender as any)?.profileBadge} size={10} />
                 :{' '}
               </span>

@@ -220,7 +220,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
                       {(user.displayName || user.username)?.[0]?.toUpperCase() || '?'}
                     </div>
                     <div>
-                      <p className="text-sm font-medium flex items-center gap-1">{user.displayName || user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={12} /></p>
+                      <p className="text-sm font-medium flex items-center gap-1">{user.displayName || user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={12} role={(user as any).role} /></p>
                       <p className="text-xs text-gray-400 font-mono">
                         {user.walletAddress?.slice(0, 6)}...{user.walletAddress?.slice(-4)}
                       </p>
@@ -254,7 +254,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-500/20 text-primary-400 text-xs font-medium cursor-pointer hover:bg-primary-500/30 transition-colors"
                     >
                       {u.displayName || u.username}
-                      <PulsarBadge level={(u as any).verificationLevel || 0} size={10} />
+                      <PulsarBadge level={(u as any).verificationLevel || 0} size={10} role={(u as any).role} />
                       <X size={12} />
                     </span>
                   ))}
@@ -289,7 +289,7 @@ export function NewChatModal({ onClose }: NewChatModalProps) {
                         {(user.displayName || user.username)?.[0]?.toUpperCase() || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium flex items-center gap-1">{user.displayName || user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={12} /></p>
+                        <p className="text-sm font-medium flex items-center gap-1">{user.displayName || user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={12} role={(user as any).role} /></p>
                         <p className="text-xs text-gray-400 font-mono">
                           {user.walletAddress?.slice(0, 6)}...{user.walletAddress?.slice(-4)}
                         </p>

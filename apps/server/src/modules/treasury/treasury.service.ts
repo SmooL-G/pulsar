@@ -73,7 +73,8 @@ export async function createProposal(
 
   const author = await prisma.user.findUnique({
     where: { id: authorId },
-    select: { verificationLevel: true, isBot: true },
+    select: { verificationLevel: true,
+        role: true, isBot: true },
   });
   if (!author || author.isBot) throw new TreasuryError('FORBIDDEN', 'Not allowed');
   if (author.verificationLevel < MIN_VERIFICATION_LEVEL) {

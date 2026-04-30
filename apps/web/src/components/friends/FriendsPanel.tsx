@@ -218,7 +218,7 @@ export function FriendsPanel({ onClose }: FriendsPanelProps) {
                       <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-600">
                         <UserAvatar user={r.user} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate flex items-center gap-1">{r.user.displayName || r.user.username}<PulsarBadge level={(r.user as any).verificationLevel || 0} size={12} /></p>
+                          <p className="text-sm font-medium truncate flex items-center gap-1">{r.user.displayName || r.user.username}<PulsarBadge level={(r.user as any).verificationLevel || 0} size={12} role={(r.user as any).role} /></p>
                           <p className="text-xs text-gray-400">@{r.user.username}</p>
                         </div>
                         <button onClick={() => acceptRequest(r.id)} className="p-1.5 rounded-lg bg-primary-500 hover:bg-primary-600 text-white" title={t('friends.accept')}>
@@ -240,7 +240,7 @@ export function FriendsPanel({ onClose }: FriendsPanelProps) {
                       <div key={r.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-600">
                         <UserAvatar user={r.user} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate flex items-center gap-1">{r.user.displayName || r.user.username}<PulsarBadge level={(r.user as any).verificationLevel || 0} size={12} /></p>
+                          <p className="text-sm font-medium truncate flex items-center gap-1">{r.user.displayName || r.user.username}<PulsarBadge level={(r.user as any).verificationLevel || 0} size={12} role={(r.user as any).role} /></p>
                           <p className="text-xs text-gray-400">@{r.user.username}</p>
                         </div>
                         <span className="text-xs text-gray-500 px-2 py-1 bg-dark-600 rounded-full">{t('friends.pending')}</span>
@@ -279,7 +279,7 @@ export function FriendsPanel({ onClose }: FriendsPanelProps) {
                     <div key={user.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-600">
                       <UserAvatar user={user} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate flex items-center gap-1">{user.displayName || user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={12} /></p>
+                        <p className="text-sm font-medium truncate flex items-center gap-1">{user.displayName || user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={12} role={(user as any).role} /></p>
                         <p className="text-xs text-gray-400 font-mono">
                           {user.walletAddress?.slice(0, 6)}...{user.walletAddress?.slice(-4)}
                         </p>
@@ -358,7 +358,7 @@ function FriendItem({ user, onMessage, onRemove, loading, t }: {
     <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-600 group">
       <UserAvatar user={user} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate flex items-center gap-1">{user.displayName || user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={12} /></p>
+        <p className="text-sm font-medium truncate flex items-center gap-1">{user.displayName || user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={12} role={(user as any).role} /></p>
         <p className="text-xs text-gray-400">@{user.username}</p>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

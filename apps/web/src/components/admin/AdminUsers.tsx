@@ -166,7 +166,7 @@ export function AdminUsers() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-medium truncate">{u.displayName || u.username}</span>
-                        <PulsarBadge level={u.verificationLevel} size={12} />
+                        <PulsarBadge level={u.verificationLevel} size={12} role={u.role} />
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${roleColors[u.role]}`}>
                           {u.role}
                         </span>

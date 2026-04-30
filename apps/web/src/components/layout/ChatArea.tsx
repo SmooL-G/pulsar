@@ -122,7 +122,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
             {chatName}
             {activeChat.type === 'DIRECT' && (
               <>
-                <PulsarBadge level={(activeChat as any).otherUser?.verificationLevel || 0} size={14} />
+                <PulsarBadge level={(activeChat as any).otherUser?.verificationLevel || 0} size={14} role={(activeChat as any).otherUser?.role} />
                 <PremiumBadge isPremium={(activeChat as any).otherUser?.isPremium} size={14} />
                 <ProfileBadgeIcon badge={(activeChat as any).otherUser?.profileBadge} size={14} />
               </>

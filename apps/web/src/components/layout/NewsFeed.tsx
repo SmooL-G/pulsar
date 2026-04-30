@@ -65,7 +65,7 @@ export function NewsFeed() {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-base truncate flex items-center gap-1.5">
                   {user.displayName || user.username}
-                  <PulsarBadge level={verificationLevel} size={14} />
+                  <PulsarBadge level={verificationLevel} size={14} role={(user as any).role} />
                   <ProfileBadgeIcon badge={(user as any).profileBadge} size={14} />
                 </p>
                 <p className="text-xs text-gray-400">@{user.username}</p>

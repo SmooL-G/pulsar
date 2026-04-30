@@ -19,7 +19,7 @@ export async function chatRoutes(app: FastifyInstance) {
               take: 1,
               include: {
                 sender: {
-                  select: { username: true, displayName: true, verificationLevel: true, profileBadge: true, nickColor: true },
+                  select: { username: true, displayName: true, verificationLevel: true, profileBadge: true, nickColor: true, role: true },
                 },
               },
             },
