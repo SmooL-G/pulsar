@@ -25,6 +25,7 @@ import { lotteryRoutes } from './modules/lottery/lottery.routes.js';
 import { revenueRoutes } from './modules/revenue/revenue.routes.js';
 import { treasuryRoutes } from './modules/treasury/treasury.routes.js';
 import { superchatRoutes } from './modules/superchat/superchat.routes.js';
+import { publicProfileRoutes } from './modules/publicProfile/publicProfile.routes.js';
 import { nftRoutes } from './modules/nft/nft.routes.js';
 import { keysRoutes } from './modules/keys/keys.routes.js';
 import { channelRoutes } from './modules/channel/channel.routes.js';
@@ -105,6 +106,8 @@ export async function buildApp() {
   await app.register(revenueRoutes, { prefix: '/api/v1/revenue' });
   await app.register(treasuryRoutes, { prefix: '/api/v1/treasury' });
   await app.register(superchatRoutes, { prefix: '/api/v1/superchat' });
+  // Public — no auth, used by share-link landing pages.
+  await app.register(publicProfileRoutes, { prefix: '/api/v1/u' });
   await app.register(nftRoutes, { prefix: '/api/v1/nft' });
   await app.register(keysRoutes, { prefix: '/api/v1/keys' });
   await app.register(channelRoutes, { prefix: '/api/v1/channels' });

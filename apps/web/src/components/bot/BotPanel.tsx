@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Bot, Copy, RefreshCw, Trash2, Check, Globe, ChevronLeft, Eye, EyeOff, Camera, Loader2 } from 'lucide-react';
+import { X, Plus, Bot, Copy, RefreshCw, Trash2, Check, Globe, ChevronLeft, Eye, EyeOff, Camera, Loader2, Share2, Link2 } from 'lucide-react';
 import { useBotStore, type Bot, type BotCommand } from '../../store/botStore';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { api } from '../../services/api';
@@ -262,6 +262,9 @@ export function BotPanel({ onClose }: BotPanelProps) {
                 <p className="text-xs text-gray-500 mt-2">@{selectedBot.username}</p>
               </div>
 
+              {/* Share link */}
+              <ShareLinkBlock username={selectedBot.username} displayName={selectedBot.displayName || selectedBot.username} />
+
               {/* Token — always visible */}
               {token && (
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
@@ -405,6 +408,78 @@ export function BotPanel({ onClose }: BotPanelProps) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ShareLinkBlock({ username, displayName }: { username: string; displayName: string }) {
+  const [copied, setCopied] = useState(false);
+  const link = `${window.location.origin}/${username}`;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      toast.success('Ссылка скопирована');
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error('Не удалось скопировать');
+    }
+  };
+
+  const share = async () => {
+    const payload = {
+      title: displayName,
+      text: `Открой ${displayName} в Pulsar:`,
+      url: link,
+    };
+    // Native share sheet on mobile / supported browsers; fallback = copy.
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share(payload);
+      } catch {
+        // User dismissed or share failed; no-op.
+      }
+    } else {
+      copy();
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-primary-500/15 to-primary-600/5 border border-primary-500/30 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Link2 size={14} className="text-primary-400" />
+        <p className="text-xs font-semibold text-primary-300">Поделиться ботом</p>
+      </div>
+      <button
+        onClick={copy}
+        title="Скопировать"
+        className="w-full flex items-center gap-2 bg-dark-800/60 hover:bg-dark-800 border border-white/5 rounded-lg px-3 py-2 mb-2 transition-colors text-left group"
+      >
+        <span className="flex-1 text-xs font-mono text-gray-300 truncate">{link}</span>
+        {copied
+          ? <Check size={14} className="text-emerald-400 shrink-0" />
+          : <Copy size={14} className="text-gray-500 group-hover:text-gray-300 shrink-0" />}
+      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={share}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-xs font-medium transition-colors"
+        >
+          <Share2 size={14} />
+          Поделиться
+        </button>
+        <button
+          onClick={copy}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium transition-colors"
+        >
+          <Copy size={14} />
+          {copied ? 'Скопировано' : 'Скопировать'}
+        </button>
+      </div>
+      <p className="text-[10px] text-gray-500 mt-2">
+        Любой по ссылке откроет бота, после регистрации сразу попадёт в чат.
+      </p>
     </div>
   );
 }
