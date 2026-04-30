@@ -2,6 +2,7 @@ import { ICE_SERVERS } from './iceServers';
 import { usePeerStore } from './peerStore';
 import { getSocket } from '../hooks/useSocket';
 import { useMessageStore } from '../store/messageStore';
+import { useAuthStore } from '../store/authStore';
 import type { Message } from '@pulsar/shared';
 
 type DataChannelEnvelope =
@@ -184,8 +185,20 @@ export class PeerConnection {
 const peers = new Map<string, PeerConnection>();
 let myUserId: string | null = null;
 
+// Keep `myUserId` in sync with authStore. Boot-time `isAuthenticated` is
+// derived from localStorage *before* the /auth/me fetch resolves, so a
+// one-shot setLocalUserId() at socket-connect time would still see null.
+// The subscription means we get the id the moment user loads, regardless
+// of who reads it first (sender or receiver of an offer).
+useAuthStore.subscribe((s) => {
+  myUserId = s.user?.id ?? null;
+});
+// Initialize from current state in case user was already loaded.
+myUserId = useAuthStore.getState().user?.id ?? null;
+
 export function setLocalUserId(id: string | null) {
-  myUserId = id;
+  // Kept for back-compat with useSocket; no longer authoritative.
+  if (id) myUserId = id;
 }
 
 export function getPeer(userId: string): PeerConnection | undefined {
@@ -195,8 +208,10 @@ export function getPeer(userId: string): PeerConnection | undefined {
 export function ensurePeer(userId: string): PeerConnection {
   let p = peers.get(userId);
   if (p) return p;
+  // Last-ditch attempt to grab id (e.g. on first click before subscription fires).
+  if (!myUserId) myUserId = useAuthStore.getState().user?.id ?? null;
   if (!myUserId) {
-    console.error('[p2p] ensurePeer called before setLocalUserId');
+    console.error('[p2p] ensurePeer called before user is loaded');
     throw new Error('p2p: local user id not set');
   }
   console.log('[p2p] creating connection', { from: myUserId, to: userId });
