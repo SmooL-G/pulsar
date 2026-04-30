@@ -8,6 +8,7 @@ import { PulsarBadge } from '../ui/PulsarBadge';
 import { ProfileBadgeTag } from '../ui/ProfileBadgeIcon';
 import { NftAvatarBorder } from '../ui/NftAvatarBorder';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
+import { BoostBlock } from '../chat/BoostBlock';
 
 interface InfoPanelProps {
   onClose: () => void;
@@ -484,6 +485,9 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
             <InfoAction icon={<Shield size={18} />} label={t('info.encryption')} value={t('info.planned')} />
           </div>
         )}
+
+        {/* Channel/group boost — Discord-style perk unlock */}
+        {isGroup && <BoostBlock chatId={activeChat.id} />}
 
         {/* Members list */}
         {isGroup && members.length > 0 && (

@@ -120,6 +120,7 @@ model Chat {
   members        ChatMember[]
   messages       Message[]
   pinnedMessages PinnedMessage[]
+  boosts         ChannelBoost[]
   isModChannel   Boolean  @default(false) @map("is_mod_channel")
   allowComments  Boolean  @default(true) @map("allow_comments")
   sourceMessage  Message? @relation("commentChat")
@@ -477,6 +478,27 @@ model ProposalVote {
   @@unique([proposalId, userId])
   @@index([proposalId])
   @@map("proposal_votes")
+}
+
+// ─── CHANNEL/GROUP BOOSTS ─────────────────────────────────
+// Discord-style: members spend PLS to boost a channel/group, unlocking
+// perks for everyone. One row = one 30-day slot. Multiple slots per
+// user are allowed (no unique on (chatId,userId)). Expired rows stay
+// in the table for "this user has boosted N times historically" stats
+// but the level computation only counts rows with expiresAt > now().
+model ChannelBoost {
+  id        String   @id @default(uuid()) @db.Uuid
+  chatId    String   @map("chat_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  amount    BigInt   // PLS paid (snapshot in case price changes)
+  startedAt DateTime @default(now()) @map("started_at")
+  expiresAt DateTime @map("expires_at")
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, expiresAt])
+  @@index([userId, expiresAt])
+  @@map("channel_boosts")
 }
 
 // ─── PINNED MESSAGES ─────────────────────────────────────
