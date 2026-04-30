@@ -85,7 +85,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         </div>
       )}
       {/* Chat Header */}
-      <div className="flex items-center gap-3 px-4 py-3 pt-3-safe pl-safe pr-safe border-b border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
+      <div className="flex items-center gap-3 pl-5 pr-3 py-3 pt-3-safe pl-safe pr-safe border-b border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
         <button
           onClick={onBack}
           className="md:hidden p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500"
