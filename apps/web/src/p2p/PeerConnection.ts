@@ -195,7 +195,11 @@ export function getPeer(userId: string): PeerConnection | undefined {
 export function ensurePeer(userId: string): PeerConnection {
   let p = peers.get(userId);
   if (p) return p;
-  if (!myUserId) throw new Error('p2p: local user id not set');
+  if (!myUserId) {
+    console.error('[p2p] ensurePeer called before setLocalUserId');
+    throw new Error('p2p: local user id not set');
+  }
+  console.log('[p2p] creating connection', { from: myUserId, to: userId });
   p = new PeerConnection(myUserId, userId);
   peers.set(userId, p);
   return p;

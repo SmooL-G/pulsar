@@ -39,16 +39,22 @@ export function P2PIndicator({ remoteUserId }: Props) {
 
   return (
     <button
-      onClick={() => setEnabled(remoteUserId, !enabled)}
+      onClick={() => {
+        const next = !enabled;
+        console.log('[P2PIndicator] toggle', { remoteUserId, was: enabled, next, state });
+        setEnabled(remoteUserId, next);
+      }}
       title={tooltip}
-      className={`p-2 rounded-lg transition-colors ${
+      className={`relative p-2 rounded-lg transition-colors ${
         enabled && state === 'open'
           ? 'text-emerald-500 hover:bg-emerald-500/10'
           : enabled && state === 'connecting'
             ? 'text-amber-400 hover:bg-amber-500/10'
             : enabled && state === 'failed'
               ? 'text-rose-400 hover:bg-rose-500/10'
-              : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-500'
+              : enabled
+                ? 'text-primary-500 hover:bg-primary-500/10'
+                : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-500'
       }`}
     >
       {!enabled
@@ -56,6 +62,15 @@ export function P2PIndicator({ remoteUserId }: Props) {
         : state === 'connecting'
           ? <Loader2 size={18} className="animate-spin" />
           : <Zap size={18} fill={state === 'open' ? 'currentColor' : 'none'} />}
+      {/* Tiny dot to make state visible without hovering for a tooltip */}
+      {enabled && (
+        <span className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${
+          state === 'open' ? 'bg-emerald-500' :
+          state === 'connecting' ? 'bg-amber-400 animate-pulse' :
+          state === 'failed' ? 'bg-rose-500' :
+          'bg-primary-400'
+        }`} />
+      )}
     </button>
   );
 }
