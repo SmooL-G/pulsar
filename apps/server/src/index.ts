@@ -10,6 +10,7 @@ import { startSubscriptionWorker } from './modules/subscription/renewWorker.js';
 import { startLotteryWorker } from './modules/lottery/lotteryWorker.js';
 import { startRevenueWorker } from './modules/revenue/revenueWorker.js';
 import { startTreasuryWorker } from './modules/treasury/treasuryWorker.js';
+import { startNodesWorker } from './modules/nodes/nodesWorker.js';
 
 async function main() {
   const app = await buildApp();
@@ -52,6 +53,9 @@ async function main() {
 
   // Start treasury worker (closes expired proposals hourly)
   startTreasuryWorker();
+
+  // Start desktop-relay-node worker (stale + daily payout)
+  startNodesWorker();
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

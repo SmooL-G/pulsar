@@ -59,7 +59,9 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 41 | P2P WebRTC для DM (signaling через сервер) | ✅ Готово | 2026-04-30 |
 | 42 | IPFS/Arweave хранение | 🔲 Опционально | — |
 | 43 | Публичный signaling-relay протокол (Phase 2 P2P) | ✅ Готово | 2026-05-01 |
-| 44 | Windows-десктоп = relay-нода + PLS-награды (Phase 3 P2P) | 🔲 В очереди | — |
+| 44 | Relay-нода + PLS-награды (Phase 3 — slice A: backend готов) | 🔄 В работе | 2026-05-01 |
+| 45 | CLI-runner для нод (slice B Phase 3) | 🔲 В очереди | — |
+| 46 | Tauri Windows-десктоп (slice C Phase 3) | 🔲 В очереди | — |
 
 ---
 

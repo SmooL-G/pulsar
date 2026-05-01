@@ -28,6 +28,7 @@ import { superchatRoutes } from './modules/superchat/superchat.routes.js';
 import { publicProfileRoutes } from './modules/publicProfile/publicProfile.routes.js';
 import { boostRoutes } from './modules/boost/boost.routes.js';
 import { customizationRoutes } from './modules/customization/customization.routes.js';
+import { nodesRoutes } from './modules/nodes/nodes.routes.js';
 import { nftRoutes } from './modules/nft/nft.routes.js';
 import { keysRoutes } from './modules/keys/keys.routes.js';
 import { channelRoutes } from './modules/channel/channel.routes.js';
@@ -112,6 +113,7 @@ export async function buildApp() {
   await app.register(publicProfileRoutes, { prefix: '/api/v1/u' });
   await app.register(boostRoutes, { prefix: '/api/v1/boost' });
   await app.register(customizationRoutes, { prefix: '/api/v1/customization' });
+  await app.register(nodesRoutes, { prefix: '/api/v1/nodes' });
   await app.register(nftRoutes, { prefix: '/api/v1/nft' });
   await app.register(keysRoutes, { prefix: '/api/v1/keys' });
   await app.register(channelRoutes, { prefix: '/api/v1/channels' });

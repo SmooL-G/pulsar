@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, User, Globe, Palette, Bell, Wallet, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2, Star, Coins, Trophy, Vote } from 'lucide-react';
+import { X, User, Globe, Palette, Bell, Wallet, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2, Star, Coins, Trophy, Vote, Cpu } from 'lucide-react';
 
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -7,6 +7,7 @@ import { CHAT_WALLPAPERS, getStoredWallpaperId, setStoredWallpaperId } from '../
 import { StakingSection } from './StakingSection';
 import { LotterySection } from './LotterySection';
 import { TreasurySection } from './TreasurySection';
+import { NodesSection } from './NodesSection';
 import { useNotificationStore } from '../../store/notificationStore';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -25,7 +26,7 @@ interface SettingsPanelProps {
   onClose: () => void;
 }
 
-type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'premium' | 'staking' | 'lottery' | 'treasury' | 'admin';
+type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'premium' | 'staking' | 'lottery' | 'treasury' | 'nodes' | 'admin';
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { t, locale, setLocale } = useI18n();
@@ -104,6 +105,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     { id: 'staking', icon: Coins, label: t('staking.title') },
     { id: 'lottery', icon: Trophy, label: t('lottery.title') },
     { id: 'treasury', icon: Vote, label: locale === 'ru' ? 'Голосования' : 'Votes' },
+    { id: 'nodes', icon: Cpu, label: locale === 'ru' ? 'Ноды' : 'Nodes' },
     ...(isStaff ? [{ id: 'admin' as Tab, icon: Shield, label: t('admin.title') }] : []),
   ];
 
@@ -364,6 +366,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             {tab === 'staking' && <StakingSection />}
             {tab === 'lottery' && <LotterySection />}
             {tab === 'treasury' && <TreasurySection />}
+            {tab === 'nodes' && <NodesSection />}
 
             {/* Admin rendered as separate modal */}
           </div>

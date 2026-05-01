@@ -507,6 +507,69 @@ model ChannelBoost {
   @@map("channel_boosts")
 }
 
+// ─── DESKTOP RELAY NODES (P2P Phase 3) ────────────────────
+// A user-operated signaling relay registered with the platform. Owner
+// runs apps/relay (or the bundled runner) on their machine, submits
+// proof-of-uptime every few minutes; daily worker pays out PLS from
+// the Node Rewards Pool. token is the per-node bearer secret returned
+// at registration — proofs are authenticated with it (no Solana sig
+// required for MVP; token rotation handles compromise).
+model RelayNode {
+  id                  String   @id @default(uuid()) @db.Uuid
+  ownerId             String   @map("owner_id") @db.Uuid
+  // Public WebSocket endpoint, e.g. wss://my-house.example.com/ws.
+  // Optional: a user can run a private node and still earn rewards
+  // without exposing it (just relaying for friends doesn't count).
+  endpoint            String?  @db.VarChar(256)
+  label               String?  @db.VarChar(64)   // user's nickname for the node
+  token               String   @unique @db.VarChar(64)
+  status              String   @default("ACTIVE") @db.VarChar(16) // ACTIVE | BANNED | STALE
+  registeredAt        DateTime @default(now()) @map("registered_at")
+  lastSeenAt          DateTime @default(now()) @map("last_seen_at")
+  // Lifetime aggregates (incremented as proofs come in).
+  totalUptimeMinutes  Int      @default(0) @map("total_uptime_minutes")
+  totalBytesRelayed   BigInt   @default(0) @map("total_bytes_relayed")
+  totalRewardsPaid    BigInt   @default(0) @map("total_rewards_paid")
+
+  proofs  NodeUptimeProof[]
+  rewards NodeReward[]
+
+  @@index([ownerId])
+  @@index([status, lastSeenAt])
+  @@map("relay_nodes")
+}
+
+model NodeUptimeProof {
+  id                String   @id @default(uuid()) @db.Uuid
+  nodeId            String   @map("node_id") @db.Uuid
+  bytesRelayed      BigInt   @default(0) @map("bytes_relayed")   // since last proof
+  activeConnections Int      @default(0) @map("active_connections")
+  uniquePeers       Int      @default(0) @map("unique_peers")    // since last proof
+  submittedAt       DateTime @default(now()) @map("submitted_at")
+
+  node RelayNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([nodeId, submittedAt])
+  @@map("node_uptime_proofs")
+}
+
+model NodeReward {
+  id            String   @id @default(uuid()) @db.Uuid
+  nodeId        String   @map("node_id") @db.Uuid
+  ownerId       String   @map("owner_id") @db.Uuid
+  amount        BigInt
+  uptimeMinutes Int      @map("uptime_minutes")
+  bytesRelayed  BigInt   @map("bytes_relayed")
+  uniquePeers   Int      @map("unique_peers")
+  paidAt        DateTime @default(now()) @map("paid_at")
+
+  node RelayNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, paidAt])
+  @@index([nodeId, paidAt])
+  @@map("node_rewards")
+}
+
 // ─── PINNED MESSAGES ─────────────────────────────────────
 
 model PinnedMessage {

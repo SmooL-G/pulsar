@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, MessageCircle, UserPlus, Wifi, MessagesSquare, UsersRound, Server, Banknote, Gift, Trophy, Zap, Radio, Vote } from 'lucide-react';
+import { Users, MessageCircle, UserPlus, Wifi, MessagesSquare, UsersRound, Server, Banknote, Gift, Trophy, Zap, Radio, Vote, Cpu } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -197,6 +197,7 @@ export function AdminDashboard() {
       <ActivityToggle />
       <RevenueToggle />
       <TreasuryToggle />
+      <NodesToggle />
 
       {/* System info (SUPER_ADMIN) */}
       {isSuperAdmin && system && (
@@ -397,6 +398,58 @@ function TreasuryToggle() {
             {ru
               ? 'Создание новых предложений и приём голосов. Активные голосования продолжатся.'
               : 'Creation of new proposals and accepting votes. Active votes continue.'}
+          </p>
+          <p className="text-[11px] mt-1">
+            {enabled === null ? '…' : enabled
+              ? <span className="text-emerald-500 font-semibold">● {ru ? 'Включено' : 'On'}</span>
+              : <span className="text-gray-500 font-semibold">○ {ru ? 'Отключено' : 'Off'}</span>}
+          </p>
+        </div>
+        <button
+          onClick={toggle}
+          disabled={busy || enabled === null}
+          className={`relative w-12 h-6 rounded-full transition-colors disabled:opacity-50 ${enabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-dark-500'}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-6' : ''}`} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NodesToggle() {
+  const { locale } = useI18n();
+  const ru = locale === 'ru';
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api.get('/nodes/config').then(({ data }) => setEnabled(!!data.enabled)).catch(() => {});
+  }, []);
+
+  const toggle = async () => {
+    if (enabled === null) return;
+    setBusy(true);
+    try {
+      const { data } = await api.post('/nodes/toggle', { enabled: !enabled });
+      setEnabled(!!data.enabled);
+    } catch { /* silent */ } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border border-cyan-500/30 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Cpu size={16} className="text-cyan-500" />
+        <p className="text-sm font-medium text-cyan-700 dark:text-cyan-400">
+          {ru ? 'Релей-ноды и PLS-награды' : 'Relay nodes & PLS rewards'}
+        </p>
+      </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            {ru
+              ? 'Регистрация новых нод и приём proof-of-uptime. Уже зарегистрированные продолжают работать.'
+              : 'Accept new node registrations and proofs. Existing nodes keep running.'}
           </p>
           <p className="text-[11px] mt-1">
             {enabled === null ? '…' : enabled
