@@ -38,14 +38,22 @@ export function NodesSection() {
   const [revealedToken, setRevealedToken] = useState<{ id: string; token: string } | null>(null);
 
   const reload = async () => {
+    // Load independently so an error in /nodes/my doesn't blank the
+    // panel by silently dropping the config result.
     try {
-      const [{ data: cfg }, { data: list }] = await Promise.all([
-        api.get('/nodes/config'),
-        api.get('/nodes/my'),
-      ]);
+      const { data: cfg } = await api.get('/nodes/config');
       setConfig(cfg);
-      setNodes(list.nodes);
-    } finally { setLoading(false); }
+    } catch (err) {
+      console.error('[nodes] /config failed:', err);
+    }
+    try {
+      const { data: list } = await api.get('/nodes/my');
+      setNodes(list.nodes ?? []);
+    } catch (err) {
+      console.error('[nodes] /my failed:', err);
+      setNodes([]);
+    }
+    setLoading(false);
   };
 
   useEffect(() => { reload(); }, []);

@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { authMiddleware } from '../../middleware/auth.js';
 import { prisma } from '../../config/database.js';
 import {
@@ -10,8 +10,7 @@ import {
 } from './nodes.service.js';
 
 export async function nodesRoutes(app: FastifyInstance) {
-  // Public — used by both browser clients (relay discovery) and the
-  // proof endpoint (which authenticates with a node token, not a JWT).
+  // ─── Public routes (no auth) ───────────────────────────────────────
   app.get('/config', async () => ({
     enabled: await isNodesEnabled(),
     baseRatePerHour: BASE_RATE_PER_HOUR.toString(),
@@ -24,9 +23,7 @@ export async function nodesRoutes(app: FastifyInstance) {
 
   app.get('/public', async () => ({ nodes: await listPublicNodes() }));
 
-  // Proof submission uses a per-node bearer token. Auth header format:
-  //   Authorization: Bearer <token>
-  // The node id is in the path so the server can look up + compare token.
+  // Proof submission: bearer token in Authorization header.
   app.post<{
     Params: { nodeId: string };
     Body: { bytesRelayed?: string; activeConnections?: number; uniquePeers?: number };
@@ -35,12 +32,11 @@ export async function nodesRoutes(app: FastifyInstance) {
     const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
     if (!token) return reply.status(401).send({ error: 'NO_TOKEN' });
     try {
-      const result = await submitProof(request.params.nodeId, token, {
+      return await submitProof(request.params.nodeId, token, {
         bytesRelayed: BigInt(request.body?.bytesRelayed ?? '0'),
         activeConnections: request.body?.activeConnections ?? 0,
         uniquePeers: request.body?.uniquePeers ?? 0,
       });
-      return result;
     } catch (err) {
       if (err instanceof NodesError) {
         const status = err.code === 'UNAUTHORIZED' ? 401
@@ -53,15 +49,18 @@ export async function nodesRoutes(app: FastifyInstance) {
     }
   });
 
-  // Authenticated user routes ────────────────────────────────────────
-  app.register(async (instance) => {
-    instance.addHook('onRequest', authMiddleware);
+  // ─── Authenticated user routes ─────────────────────────────────────
+  // We check auth manually per-route instead of using a nested plugin —
+  // the latter sometimes drops route prefixing in Fastify v4 when the
+  // parent has no prefix.
+  app.get('/my', { preHandler: authMiddleware }, async (request) => ({
+    nodes: await listMyNodes(request.user!.userId),
+  }));
 
-    instance.get('/my', async (request) => ({
-      nodes: await listMyNodes(request.user!.userId),
-    }));
-
-    instance.post<{ Body: { endpoint?: string; label?: string } }>('/register', async (request, reply) => {
+  app.post<{ Body: { endpoint?: string; label?: string } }>(
+    '/register',
+    { preHandler: authMiddleware },
+    async (request, reply) => {
       try {
         const result = await registerNode(request.user!.userId, request.body || {});
         return reply.status(201).send(result);
@@ -71,18 +70,26 @@ export async function nodesRoutes(app: FastifyInstance) {
         }
         throw err;
       }
-    });
+    },
+  );
 
-    instance.post<{ Params: { nodeId: string } }>('/:nodeId/rotate-token', async (request, reply) => {
+  app.post<{ Params: { nodeId: string } }>(
+    '/:nodeId/rotate-token',
+    { preHandler: authMiddleware },
+    async (request, reply) => {
       try {
         return await rotateToken(request.user!.userId, request.params.nodeId);
       } catch (err) {
         if (err instanceof NodesError) return reply.status(404).send({ error: err.code });
         throw err;
       }
-    });
+    },
+  );
 
-    instance.delete<{ Params: { nodeId: string } }>('/:nodeId', async (request, reply) => {
+  app.delete<{ Params: { nodeId: string } }>(
+    '/:nodeId',
+    { preHandler: authMiddleware },
+    async (request, reply) => {
       try {
         await deleteNode(request.user!.userId, request.params.nodeId);
         return { ok: true };
@@ -90,9 +97,13 @@ export async function nodesRoutes(app: FastifyInstance) {
         if (err instanceof NodesError) return reply.status(404).send({ error: err.code });
         throw err;
       }
-    });
+    },
+  );
 
-    instance.get<{ Params: { nodeId: string } }>('/:nodeId/rewards', async (request, reply) => {
+  app.get<{ Params: { nodeId: string } }>(
+    '/:nodeId/rewards',
+    { preHandler: authMiddleware },
+    async (request, reply) => {
       const userId = request.user!.userId;
       const node = await prisma.relayNode.findUnique({ where: { id: request.params.nodeId } });
       if (!node || node.ownerId !== userId) return reply.status(404).send({ error: 'NOT_FOUND' });
@@ -111,10 +122,13 @@ export async function nodesRoutes(app: FastifyInstance) {
           paidAt: r.paidAt.toISOString(),
         })),
       };
-    });
+    },
+  );
 
-    // Admin toggle for the entire program.
-    instance.post<{ Body: { enabled: boolean } }>('/toggle', async (request, reply) => {
+  app.post<{ Body: { enabled: boolean } }>(
+    '/toggle',
+    { preHandler: authMiddleware },
+    async (request, reply) => {
       const me = await prisma.user.findUnique({
         where: { id: request.user!.userId }, select: { role: true },
       });
@@ -124,6 +138,6 @@ export async function nodesRoutes(app: FastifyInstance) {
       const enabled = !!request.body?.enabled;
       await setNodesEnabled(enabled);
       return { enabled };
-    });
-  });
+    },
+  );
 }
