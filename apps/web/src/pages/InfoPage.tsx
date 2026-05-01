@@ -1,13 +1,20 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Code, Map, Heart, Shield, FileText, Cookie, Sparkles, Home } from 'lucide-react';
+import { ArrowLeft, Code, Map, Heart, Shield, FileText, Cookie, Sparkles, Home, Cpu } from 'lucide-react';
 import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n';
 
 interface Tile {
   to: string;
   icon: any;
-  titleKey: TranslationKey;
-  descKey: TranslationKey;
+  titleKey?: TranslationKey;
+  descKey?: TranslationKey;
+  // Inline RU/EN fallback for tiles whose strings aren't in the i18n
+  // bundle yet (kept here so we don't have to expand 11-locale files
+  // every time a new section is added).
+  titleRu?: string;
+  titleEn?: string;
+  descRu?: string;
+  descEn?: string;
   color: string;
   badge?: string;
 }
@@ -20,6 +27,16 @@ const TILES: Tile[] = [
     descKey: 'info.tiles.dev.desc',
     color: 'from-blue-500/20 to-blue-700/5 border-blue-500/30',
     badge: 'Bot API',
+  },
+  {
+    to: '/mining',
+    icon: Cpu,
+    titleRu: 'Майнинг',
+    titleEn: 'Mining',
+    descRu: 'Запусти ноду — получай PLS за поддержку сети. Формула наград и инструкция.',
+    descEn: 'Run a node — earn PLS for supporting the network. Reward formula and setup guide.',
+    color: 'from-cyan-500/20 to-cyan-700/5 border-cyan-500/30',
+    badge: 'PLS',
   },
   {
     to: '/roadmap',
@@ -137,9 +154,11 @@ export function InfoPage() {
                 )}
               </div>
               <h3 className="text-lg font-bold text-white mb-1 group-hover:text-primary-300 transition-colors">
-                {t(tile.titleKey)}
+                {tile.titleKey ? t(tile.titleKey) : (locale === 'ru' ? tile.titleRu : tile.titleEn)}
               </h3>
-              <p className="text-sm text-gray-400">{t(tile.descKey)}</p>
+              <p className="text-sm text-gray-400">
+                {tile.descKey ? t(tile.descKey) : (locale === 'ru' ? tile.descRu : tile.descEn)}
+              </p>
             </button>
           ))}
         </div>
