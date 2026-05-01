@@ -99,12 +99,18 @@ wss.on('connection', (ws, req) => {
   ws.on('error', () => { /* close handler will clean up */ });
 
   ws.on('message', (raw) => {
-    if (raw.length > MAX_PAYLOAD_BYTES) {
+    // ws.RawData = Buffer | ArrayBuffer | Buffer[]; normalize to Buffer.
+    const buf = Buffer.isBuffer(raw)
+      ? raw
+      : Array.isArray(raw)
+        ? Buffer.concat(raw)
+        : Buffer.from(raw as ArrayBuffer);
+    if (buf.length > MAX_PAYLOAD_BYTES) {
       send(ws, { kind: 'error', code: 'PAYLOAD_TOO_LARGE' });
       return;
     }
     let msg: any;
-    try { msg = JSON.parse(raw.toString('utf8')); }
+    try { msg = JSON.parse(buf.toString('utf8')); }
     catch { send(ws, { kind: 'error', code: 'BAD_JSON' }); return; }
 
     const state = conns.get(ws)!;
