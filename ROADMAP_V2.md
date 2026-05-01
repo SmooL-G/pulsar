@@ -58,7 +58,7 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 40 | Capacitor + Solana MWA + FCM (Play Store) | 🔲 После теста APK | — |
 | 41 | P2P WebRTC для DM (signaling через сервер) | ✅ Готово | 2026-04-30 |
 | 42 | IPFS/Arweave хранение | 🔲 Опционально | — |
-| 43 | Публичный signaling-relay протокол (Phase 2 P2P) | 🔲 В очереди | — |
+| 43 | Публичный signaling-relay протокол (Phase 2 P2P) | ✅ Готово | 2026-05-01 |
 | 44 | Windows-десктоп = relay-нода + PLS-награды (Phase 3 P2P) | 🔲 В очереди | — |
 
 ---

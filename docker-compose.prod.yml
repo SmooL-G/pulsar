@@ -128,6 +128,21 @@ services:
     ports:
       - "5173:80"
 
+  # Stateless WebRTC signaling relay (Pulsar P2P Phase 2). Doesn't touch
+  # the DB or Redis. Anyone can run a relay; this is the reference one
+  # operated by the project. See apps/relay/src/index.ts for protocol.
+  relay:
+    build:
+      context: .
+      dockerfile: apps/relay/Dockerfile
+    container_name: pulsar-relay
+    restart: unless-stopped
+    ports:
+      - "3030:3030"
+    environment:
+      PORT: 3030
+      HOST: 0.0.0.0
+
 volumes:
   pgdata:
   redisdata:

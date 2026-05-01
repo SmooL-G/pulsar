@@ -3,7 +3,30 @@ import { usePeerStore } from './peerStore';
 import { getSocket } from '../hooks/useSocket';
 import { useMessageStore } from '../store/messageStore';
 import { useAuthStore } from '../store/authStore';
+import { relayClient } from './RelayClient';
 import type { Message } from '@pulsar/shared';
+
+/**
+ * Send a signaling event. Prefers a connected public relay (Phase 2);
+ * falls back to the legacy Socket.IO server path. Both wire formats
+ * are identical so the receiver dedupes naturally — they handle the
+ * first one that arrives and the second is a no-op (signalingState
+ * mismatch is silently caught in the on-handlers).
+ */
+function emitSignaling(
+  event: 'webrtc:offer' | 'webrtc:answer' | 'webrtc:ice' | 'webrtc:close',
+  to: string,
+  body: any,
+) {
+  const payload = { kind: event, ...body };
+  if (relayClient.isReady()) {
+    relayClient.publish(to, payload);
+    return;
+  }
+  // Server-socket fallback. Whatever the relay couldn't deliver still
+  // has a chance via our central server (Phase 1 path).
+  getSocket()?.emit(event, { to, ...body });
+}
 
 type DataChannelEnvelope =
   | { kind: 'message'; payload: Message }
@@ -48,7 +71,6 @@ export class PeerConnection {
 
   private wireConnection() {
     const pc = this.pc;
-    const sock = () => getSocket();
 
     // Negotiation: fires when something changes that needs a renegotiation.
     pc.onnegotiationneeded = async () => {
@@ -56,7 +78,7 @@ export class PeerConnection {
         this.makingOffer = true;
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        sock()?.emit('webrtc:offer', { to: this.remoteUserId, sdp: pc.localDescription! });
+        emitSignaling('webrtc:offer', this.remoteUserId, { sdp: pc.localDescription! });
       } catch (err) {
         console.error('[p2p] negotiationneeded error:', err);
       } finally {
@@ -66,7 +88,7 @@ export class PeerConnection {
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
-        sock()?.emit('webrtc:ice', { to: this.remoteUserId, candidate: e.candidate.toJSON() });
+        emitSignaling('webrtc:ice', this.remoteUserId, { candidate: e.candidate.toJSON() });
       }
     };
 
@@ -135,7 +157,7 @@ export class PeerConnection {
       await this.pc.setRemoteDescription(sdp);
       const answer = await this.pc.createAnswer();
       await this.pc.setLocalDescription(answer);
-      getSocket()?.emit('webrtc:answer', { to: this.remoteUserId, sdp: this.pc.localDescription! });
+      emitSignaling('webrtc:answer', this.remoteUserId, { sdp: this.pc.localDescription! });
     } catch (err) {
       console.error('[p2p] onRemoteOffer error:', err);
     }
@@ -171,7 +193,7 @@ export class PeerConnection {
 
   close(reason?: string) {
     try {
-      getSocket()?.emit('webrtc:close', { to: this.remoteUserId, reason });
+      emitSignaling('webrtc:close', this.remoteUserId, { reason });
     } catch { /* ignore */ }
     try { this.channel?.close(); } catch { /* ignore */ }
     try { this.pc.close(); } catch { /* ignore */ }
@@ -191,10 +213,35 @@ let myUserId: string | null = null;
 // The subscription means we get the id the moment user loads, regardless
 // of who reads it first (sender or receiver of an offer).
 useAuthStore.subscribe((s) => {
-  myUserId = s.user?.id ?? null;
+  const id = s.user?.id ?? null;
+  myUserId = id;
+  if (id) relayClient.start(id); else relayClient.stop();
 });
 // Initialize from current state in case user was already loaded.
 myUserId = useAuthStore.getState().user?.id ?? null;
+if (myUserId) relayClient.start(myUserId);
+
+// Dispatch packets that arrive over the relay back into the same
+// per-event handlers Socket.IO uses. Set up once at module load; the
+// closure captures the registry above.
+relayClient.onPacket(async (from, payload) => {
+  if (!payload || typeof payload.kind !== 'string') return;
+  try {
+    if (payload.kind === 'webrtc:offer') {
+      await ensurePeer(from).onRemoteOffer(payload.sdp);
+    } else if (payload.kind === 'webrtc:answer') {
+      const peer = peers.get(from);
+      if (peer) await peer.onRemoteAnswer(payload.sdp);
+    } else if (payload.kind === 'webrtc:ice') {
+      const peer = peers.get(from);
+      if (peer) await peer.onRemoteIce(payload.candidate);
+    } else if (payload.kind === 'webrtc:close') {
+      dropPeer(from, payload.reason);
+    }
+  } catch (err) {
+    console.warn('[relay] packet handler failed:', err);
+  }
+});
 
 export function setLocalUserId(id: string | null) {
   // Kept for back-compat with useSocket; no longer authoritative.
