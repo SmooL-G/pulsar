@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * @pulsar/relay-runner — single-binary node operator.
+ * @pulsar-chat/relay-runner — single-binary node operator.
  *
  * Hosts a Pulsar signaling relay on a local port AND submits proof-
  * of-uptime to the platform every 5 minutes. Anyone with Node 20+ can
- * `npx @pulsar/relay-runner` after registering a node in Pulsar
+ * `npx @pulsar-chat/relay-runner` after registering a node in Pulsar
  * settings to get a (Node ID, Token) pair.
  *
  * No DB, no external dependencies beyond `ws`. All state lives in
@@ -53,8 +53,8 @@ Get a Node ID + token by registering a node in Pulsar:
   Settings → Nodes → "Register a node"
 
 Then run one of:
-  npx @pulsar/relay-runner --node-id=<id> --token=<token>
-  PULSAR_NODE_ID=<id> PULSAR_NODE_TOKEN=<token> npx @pulsar/relay-runner
+  npx @pulsar-chat/relay-runner --node-id=<id> --token=<token>
+  PULSAR_NODE_ID=<id> PULSAR_NODE_TOKEN=<token> npx @pulsar-chat/relay-runner
 
 The values are cached in ~/.pulsar-runner.json after first run.
 

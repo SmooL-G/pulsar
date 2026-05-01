@@ -1,5 +1,5 @@
 {
-  "name": "@pulsar/relay-runner",
+  "name": "@pulsar-chat/relay-runner",
   "version": "0.1.0",
   "description": "Run a Pulsar signaling-relay node and earn PLS for uptime",
   "type": "module",

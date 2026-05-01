@@ -1,4 +1,4 @@
-# @pulsar/relay-runner
+# @pulsar-chat/relay-runner
 
 Run a [Pulsar](https://pulsar-chat.fun) signaling-relay node on your own machine and earn **PLS** for the uptime + relayed traffic.
 
@@ -11,7 +11,7 @@ Single-binary, no Docker, no config files needed — just Node.js 20+ and a one-
 2. **Run the runner:**
 
    ```bash
-   npx @pulsar/relay-runner --node-id=<YOUR-NODE-ID> --token=<YOUR-TOKEN>
+   npx @pulsar-chat/relay-runner --node-id=<YOUR-NODE-ID> --token=<YOUR-TOKEN>
    ```
 
    That's it. The runner starts a relay on port 3030 and submits proof-of-uptime to the platform every 5 minutes.
@@ -57,7 +57,7 @@ pulsar-relay
 After the first successful run, credentials are saved to `~/.pulsar-runner.json`. Subsequent runs need no flags:
 
 ```bash
-npx @pulsar/relay-runner
+npx @pulsar-chat/relay-runner
 ```
 
 ### All options
@@ -87,7 +87,7 @@ Type=simple
 User=pulsar
 Environment=PULSAR_NODE_ID=abc-123
 Environment=PULSAR_NODE_TOKEN=xyz-secret
-ExecStart=/usr/bin/npx -y @pulsar/relay-runner
+ExecStart=/usr/bin/npx -y @pulsar-chat/relay-runner
 Restart=always
 RestartSec=10
 
@@ -103,7 +103,7 @@ sudo journalctl -u pulsar-relay -f
 ### pm2
 
 ```bash
-pm2 start "npx @pulsar/relay-runner" \
+pm2 start "npx @pulsar-chat/relay-runner" \
   --name pulsar-relay \
   --restart-delay 10000
 pm2 save
@@ -113,7 +113,7 @@ pm2 startup
 ### Windows Service (via NSSM)
 
 ```bat
-nssm install pulsar-relay "C:\Program Files\nodejs\npx.cmd" "@pulsar/relay-runner"
+nssm install pulsar-relay "C:\Program Files\nodejs\npx.cmd" "@pulsar-chat/relay-runner"
 nssm set pulsar-relay AppEnvironmentExtra PULSAR_NODE_ID=... PULSAR_NODE_TOKEN=...
 nssm start pulsar-relay
 ```

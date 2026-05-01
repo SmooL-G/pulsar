@@ -193,7 +193,7 @@ export function MiningPage() {
                 {tx('Самый простой способ — через npm (нужен Node.js 20+):', 'Easiest way — via npm (needs Node.js 20+):')}
               </p>
               <pre className="bg-dark-900 border border-dark-600 rounded-lg p-3 text-[11px] text-gray-300 overflow-x-auto mb-3">
-{`npx @pulsar/relay-runner \\
+{`npx @pulsar-chat/relay-runner \\
   --node-id=<твой-node-id> \\
   --token=<твой-токен>`}
               </pre>
@@ -212,8 +212,8 @@ export function MiningPage() {
                   'systemd / pm2 / Windows Service — примеры в README пакета.',
                   'systemd / pm2 / Windows Service — examples in the package README.',
                 )}{' '}
-                <a href="https://www.npmjs.com/package/@pulsar/relay-runner" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">
-                  npmjs.com/package/@pulsar/relay-runner
+                <a href="https://www.npmjs.com/package/@pulsar-chat/relay-runner" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">
+                  npmjs.com/package/@pulsar-chat/relay-runner
                 </a>
               </p>
             </Step>
