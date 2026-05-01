@@ -206,6 +206,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   </button>
                 </div>
 
+                <UsernameSection />
                 <NickColorSection />
                 <CustomizationSection />
               </div>
@@ -1177,6 +1178,125 @@ function CustomizationSection() {
 
 function fmtPls(v: bigint): string {
   return v.toLocaleString('ru-RU');
+}
+
+// === Username change with cooldown ===
+function UsernameSection() {
+  const { user, setUser } = useAuthStore();
+  const { locale } = useI18n();
+  const ru = locale === 'ru';
+  const tx = (r: string, e: string) => (ru ? r : e);
+
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(user?.username || '');
+  const [busy, setBusy] = useState(false);
+
+  const changedAt = (user as any)?.usernameChangedAt as string | null | undefined;
+  const cooldownDays = 30;
+  const daysLeft = (() => {
+    if (!changedAt) return 0;
+    const elapsed = Date.now() - new Date(changedAt).getTime();
+    const remaining = cooldownDays * 24 * 3600 * 1000 - elapsed;
+    return remaining > 0 ? Math.ceil(remaining / (24 * 3600 * 1000)) : 0;
+  })();
+  const isLocked = daysLeft > 0;
+
+  const VALID = /^[A-Za-z0-9_-]{3,32}$/;
+
+  const submit = async () => {
+    const desired = draft.trim();
+    if (!VALID.test(desired)) {
+      toast.error(tx('Только латиница, цифры, _ и -, 3-32 символа', 'Latin/digits/_-/3-32 chars only'));
+      return;
+    }
+    if (desired === user?.username) {
+      setEditing(false);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data } = await api.patch('/users/me/username', { username: desired });
+      if (user) setUser({ ...(user as any), username: data.username, usernameChangedAt: data.usernameChangedAt });
+      toast.success(tx('Ник изменён', 'Username updated'));
+      setEditing(false);
+    } catch (err: any) {
+      const code = err.response?.data?.error;
+      const msg =
+        code === 'TAKEN' ? tx('Уже занят', 'Already taken')
+        : code === 'RESERVED' ? tx('Зарезервирован системой', 'Reserved by system')
+        : code === 'COOLDOWN' ? tx(`Можно сменить через ${err.response?.data?.daysLeft} дней`, `Available in ${err.response?.data?.daysLeft} days`)
+        : code === 'BAD_USERNAME' ? tx('Неверный формат ника', 'Bad username format')
+        : err.response?.data?.message || tx('Ошибка', 'Error');
+      toast.error(msg);
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="p-4 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 border border-blue-500/20 rounded-xl space-y-3">
+      <div>
+        <p className="text-sm font-semibold flex items-center gap-2">@ {tx('Уникальный ник', 'Username')}</p>
+        <p className="text-xs text-gray-400 mt-0.5">
+          {tx(
+            'Используется для входа, ссылок профиля (pulsar-chat.fun/your_nick) и упоминаний @.',
+            'Used for login, profile share-links (pulsar-chat.fun/your_nick) and @ mentions.',
+          )}
+        </p>
+      </div>
+
+      {!editing ? (
+        <div className="flex items-center gap-2">
+          <code className="flex-1 px-3 py-2 bg-dark-700/30 rounded-lg text-sm font-mono">@{user?.username}</code>
+          <button
+            onClick={() => { setDraft(user?.username || ''); setEditing(true); }}
+            disabled={isLocked}
+            className="px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-medium disabled:opacity-40"
+            title={isLocked ? tx(`Доступно через ${daysLeft} дней`, `Available in ${daysLeft} days`) : ''}
+          >
+            {tx('Сменить', 'Change')}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center bg-dark-700/30 rounded-lg overflow-hidden">
+            <span className="px-3 py-2 text-gray-500 font-mono">@</span>
+            <input
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              maxLength={32}
+              autoFocus
+              className="flex-1 bg-transparent py-2 pr-3 text-sm font-mono outline-none"
+              placeholder="new_username"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={submit}
+              disabled={busy || !VALID.test(draft.trim())}
+              className="flex-1 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium disabled:opacity-50"
+            >
+              {busy ? '…' : tx('Сохранить', 'Save')}
+            </button>
+            <button
+              onClick={() => setEditing(false)}
+              className="px-4 py-2 rounded-lg bg-dark-600 text-gray-300 text-sm"
+            >
+              {tx('Отмена', 'Cancel')}
+            </button>
+          </div>
+          <p className="text-[10px] text-gray-500">
+            {tx('После смены — кулдаун 30 дней.', 'After change — 30-day cooldown.')}
+          </p>
+        </div>
+      )}
+
+      {isLocked && !editing && (
+        <p className="text-[10px] text-amber-400">
+          {tx(`Следующая смена доступна через ${daysLeft} дн.`, `Next change in ${daysLeft} day(s)`)}
+        </p>
+      )}
+    </div>
+  );
 }
 
 // Inline frame thumb so we don't need to import FrameThumb at top of file

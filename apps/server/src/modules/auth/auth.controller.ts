@@ -12,8 +12,14 @@ import { z } from 'zod';
 import { sendResetEmail } from '../../utils/mailer.js';
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  // Accept either email or username. Old clients send {email}; new
+  // clients send {emailOrUsername}. Both flow into one resolver
+  // (auth.service.loginWithEmail despite the legacy name).
+  email: z.string().min(3).optional(),
+  emailOrUsername: z.string().min(3).optional(),
   password: z.string().min(8),
+}).refine((d) => !!(d.email || d.emailOrUsername), {
+  message: 'Email or username is required',
 });
 
 const nonceSchema = z.object({
@@ -83,8 +89,9 @@ export async function handleRegister(request: FastifyRequest, reply: FastifyRepl
 }
 
 export async function handleLogin(request: FastifyRequest, reply: FastifyReply) {
-  const { email, password } = loginSchema.parse(request.body);
-  const tokens = await loginWithEmail(email, password);
+  const parsed = loginSchema.parse(request.body);
+  const ident = parsed.emailOrUsername || parsed.email!;
+  const tokens = await loginWithEmail(ident, parsed.password);
 
   reply.setCookie('refreshToken', tokens.refreshToken, {
     httpOnly: true,
@@ -150,6 +157,7 @@ export async function handleGetMe(request: FastifyRequest, reply: FastifyReply) 
       nickColor: true,
       avatarFrame: true,
       bubbleColor: true,
+      usernameChangedAt: true,
       pushMuteFrom: true,
       pushMuteTo: true,
       pushMuteTimezone: true,

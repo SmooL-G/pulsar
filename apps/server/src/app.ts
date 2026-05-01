@@ -29,6 +29,7 @@ import { publicProfileRoutes } from './modules/publicProfile/publicProfile.route
 import { boostRoutes } from './modules/boost/boost.routes.js';
 import { customizationRoutes } from './modules/customization/customization.routes.js';
 import { nodesRoutes } from './modules/nodes/nodes.routes.js';
+import { turnRoutes } from './modules/turn/turn.routes.js';
 import { nftRoutes } from './modules/nft/nft.routes.js';
 import { keysRoutes } from './modules/keys/keys.routes.js';
 import { channelRoutes } from './modules/channel/channel.routes.js';
@@ -114,6 +115,7 @@ export async function buildApp() {
   await app.register(boostRoutes, { prefix: '/api/v1/boost' });
   await app.register(customizationRoutes, { prefix: '/api/v1/customization' });
   await app.register(nodesRoutes, { prefix: '/api/v1/nodes' });
+  await app.register(turnRoutes, { prefix: '/api/v1/turn' });
   await app.register(nftRoutes, { prefix: '/api/v1/nft' });
   await app.register(keysRoutes, { prefix: '/api/v1/keys' });
   await app.register(channelRoutes, { prefix: '/api/v1/channels' });

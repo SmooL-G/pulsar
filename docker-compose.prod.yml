@@ -143,6 +143,21 @@ services:
       PORT: 3030
       HOST: 0.0.0.0
 
+  # TURN server for WebRTC media relay when symmetric NAT prevents
+  # direct P2P. Used by the Phase-2/3 voice/video paths and by clients
+  # whose ISP blocks UDP hole punching. coturn with REST-API ephemeral
+  # creds — server signs (username, password) pairs; turnserver verifies
+  # via shared TURN_AUTH_SECRET. See apps/turn/turnserver.conf.
+  turn:
+    build:
+      context: .
+      dockerfile: apps/turn/Dockerfile
+    container_name: pulsar-turn
+    restart: unless-stopped
+    network_mode: host  # coturn needs the real public IP for ICE candidates
+    environment:
+      TURN_AUTH_SECRET: ${TURN_AUTH_SECRET}
+
 volumes:
   pgdata:
   redisdata:

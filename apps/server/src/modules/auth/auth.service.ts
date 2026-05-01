@@ -140,18 +140,26 @@ export async function registerWithEmail(
  * Login with email/password
  */
 export async function loginWithEmail(
-  email: string,
+  emailOrUsername: string,
   password: string
 ): Promise<TokenPair> {
-  email = email.trim().toLowerCase();
-  const user = await prisma.user.findUnique({ where: { email } });
+  const ident = emailOrUsername.trim();
+  // Email contains @, username is bare alphanumeric. Match accordingly so
+  // a username like "elite@2" doesn't collide with a real email lookup.
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ident);
+  const user = isEmail
+    ? await prisma.user.findUnique({ where: { email: ident.toLowerCase() } })
+    : await prisma.user.findFirst({
+        where: { username: { equals: ident, mode: 'insensitive' } },
+      });
+
   if (!user || !user.passwordHash) {
-    throw createError(401, ERROR_CODES.INVALID_CREDENTIALS, 'Invalid email or password');
+    throw createError(401, ERROR_CODES.INVALID_CREDENTIALS, 'Invalid credentials');
   }
 
   const isValid = await bcrypt.compare(password, user.passwordHash);
   if (!isValid) {
-    throw createError(401, ERROR_CODES.INVALID_CREDENTIALS, 'Invalid email or password');
+    throw createError(401, ERROR_CODES.INVALID_CREDENTIALS, 'Invalid credentials');
   }
 
   if (user.status !== 'ACTIVE') {

@@ -37,7 +37,8 @@ export function LoginPage() {
     setError('');
 
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      // Backend accepts emailOrUsername; the input field carries either.
+      const { data } = await api.post('/auth/login', { emailOrUsername: email, password });
       await login(data.accessToken);
       navigateAfterLogin(navigate);
     } catch (err: any) {
@@ -133,14 +134,18 @@ export function LoginPage() {
           {mode === 'login' && (
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">{t('auth.email')}</label>
+                <label className="block text-sm text-gray-400 mb-1">
+                  {locale === 'ru' ? 'Email или ник' : 'Email or username'}
+                </label>
                 <input
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoCapitalize="none"
+                  autoComplete="username"
                   className="w-full px-4 py-2.5 bg-dark-600 rounded-lg text-white border border-dark-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
-                  placeholder={t('auth.emailPlaceholder')}
+                  placeholder={locale === 'ru' ? 'you@example.com или your_nick' : 'you@example.com or your_nick'}
                 />
               </div>
               <div>

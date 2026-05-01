@@ -1,4 +1,4 @@
-import { ICE_SERVERS } from './iceServers';
+import { ICE_SERVERS, getIceServers } from './iceServers';
 import { usePeerStore } from './peerStore';
 import { getSocket } from '../hooks/useSocket';
 import { useMessageStore } from '../store/messageStore';
@@ -56,7 +56,16 @@ export class PeerConnection {
     this.localUserId = localUserId;
     this.remoteUserId = remoteUserId;
     this.polite = localUserId > remoteUserId;
+    // Bootstrap with STUN-only so the constructor stays sync; swap in
+    // TURN credentials as soon as they arrive (setConfiguration is
+    // safe before the first negotiation completes).
     this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    getIceServers().then((servers) => {
+      try {
+        this.pc.setConfiguration({ iceServers: servers });
+      } catch { /* connection may already be in stable state, ok */ }
+    }).catch(() => { /* TURN unavailable, STUN-only is fine */ });
+
     this.wireConnection();
     if (!this.polite) {
       // The impolite side opens the data channel; the polite side

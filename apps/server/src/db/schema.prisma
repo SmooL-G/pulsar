@@ -25,6 +25,9 @@ model User {
   socialLinks         Json?      @map("social_links") @db.JsonB
   profileBadge        String?    @map("profile_badge") @db.VarChar(20)
   nickColor           String?    @map("nick_color") @db.VarChar(7)
+  // Last time the user changed their username. Used to enforce a 30-day
+  // cooldown — anti-impersonation, also discourages handle squatting.
+  usernameChangedAt   DateTime?  @map("username_changed_at")
   // Profile cosmetics — purchased for PLS, see customization.routes.ts.
   // Stored as preset IDs (avatarFrame, profileBg) or hex (bubbleColor)
   // so the rendering layer can change visuals without DB migrations.

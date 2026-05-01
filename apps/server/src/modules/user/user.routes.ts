@@ -83,6 +83,77 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   // Update own profile
+  // Username change with cooldown + uniqueness. Allowed once every 30 days.
+  // Reserved names (system/admin/etc.) are rejected. Old @username links
+  // start pointing to the new owner immediately — that's fine since the
+  // cooldown discourages handle-recycling for impersonation.
+  const RESERVED_USERNAMES = new Set([
+    'admin', 'administrator', 'root', 'system', 'pulsar', 'support', 'help',
+    'official', 'api', 'bot', 'team', 'me', 'self', 'login', 'signup',
+    'register', 'logout', 'auth', 'profile', 'settings', 'privacy', 'terms',
+    'wallet', 'mining', 'docs', 'developers',
+  ]);
+  const USERNAME_RE = /^[A-Za-z0-9_-]{3,32}$/;
+  const USERNAME_COOLDOWN_DAYS = 30;
+
+  app.patch<{ Body: { username: string } }>('/me/username', async (request, reply) => {
+    const userId = request.user!.userId;
+    const desired = (request.body?.username || '').trim();
+    if (!USERNAME_RE.test(desired)) {
+      return reply.status(400).send({
+        error: 'BAD_USERNAME',
+        message: '3-32 chars, A-Z a-z 0-9 _ -',
+      });
+    }
+    if (RESERVED_USERNAMES.has(desired.toLowerCase())) {
+      return reply.status(400).send({ error: 'RESERVED', message: 'This username is reserved' });
+    }
+
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true, usernameChangedAt: true },
+    });
+    if (!me) return reply.status(404).send({ error: 'NOT_FOUND' });
+
+    if (me.username === desired) {
+      return reply.status(400).send({ error: 'SAME', message: 'New username matches current' });
+    }
+    if (me.usernameChangedAt) {
+      const elapsed = Date.now() - me.usernameChangedAt.getTime();
+      const cooldownMs = USERNAME_COOLDOWN_DAYS * 24 * 3600 * 1000;
+      if (elapsed < cooldownMs) {
+        const daysLeft = Math.ceil((cooldownMs - elapsed) / (24 * 3600 * 1000));
+        return reply.status(429).send({
+          error: 'COOLDOWN',
+          message: `Available again in ${daysLeft} days`,
+          daysLeft,
+        });
+      }
+    }
+
+    const taken = await prisma.user.findFirst({
+      where: { username: { equals: desired, mode: 'insensitive' }, NOT: { id: userId } },
+      select: { id: true },
+    });
+    if (taken) {
+      return reply.status(409).send({ error: 'TAKEN', message: 'Username already in use' });
+    }
+
+    try {
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { username: desired, usernameChangedAt: new Date() },
+        select: { id: true, username: true, usernameChangedAt: true },
+      });
+      return {
+        username: updated.username,
+        usernameChangedAt: updated.usernameChangedAt?.toISOString() ?? null,
+      };
+    } catch {
+      return reply.status(409).send({ error: 'TAKEN' });
+    }
+  });
+
   app.patch('/me', async (request) => {
     const {
       displayName,

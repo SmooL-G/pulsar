@@ -14,6 +14,7 @@ import { RoadmapPage } from './pages/RoadmapPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ProfileSharePage } from './pages/ProfileSharePage';
+import { MiningPage } from './pages/MiningPage';
 import { DevelopersPage } from './pages/DevelopersPage';
 import { InfoPage } from './pages/InfoPage';
 import { DonatePage } from './pages/DonatePage';
@@ -80,6 +81,7 @@ export function App() {
               <Route path="/bots/music/privacy" element={<MusicBotPrivacyPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/mining" element={<MiningPage />} />
               {/* Universal share-link landing for any user/bot username.
                   Reserved system paths above match first; anything else falls
                   through here and gets resolved by GET /api/v1/u/:username. */}
