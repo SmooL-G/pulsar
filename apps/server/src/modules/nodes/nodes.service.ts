@@ -6,12 +6,17 @@ import { redis } from '../../config/redis.js';
 //   daily_payout = base_rate * uptime_hours
 //                + bandwidth_bonus * GB_relayed
 //                + peer_bonus * unique_peers
+// Halved from initial values (2026-05-01) to make the runway sustainable.
 // Caps prevent farming via fake stats.
-export const BASE_RATE_PER_HOUR = 100n;        // PLS / hour online
-export const BANDWIDTH_BONUS_PER_GB = 50n;     // PLS / GB relayed
-export const PEER_BONUS_PER_PEER = 10n;        // PLS / unique peer served
-export const MAX_DAILY_PAYOUT = 5000n;         // hard cap per node per day
+export const BASE_RATE_PER_HOUR = 50n;         // PLS / hour online
+export const BANDWIDTH_BONUS_PER_GB = 25n;     // PLS / GB relayed
+export const PEER_BONUS_PER_PEER = 5n;         // PLS / unique peer served
+export const MAX_DAILY_PAYOUT = 2500n;         // hard cap per node per day
 export const MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS = 24;
+// Earned rewards land in NodeReward immediately but stay frozen for
+// this long before they're credited to the owner's PLS wallet. Gives
+// us a window to claw back fraudulent earnings before they're spent.
+export const FREEZE_HOURS = 24;
 
 // Heartbeat / staleness — proofs older than this mark the node STALE.
 export const PROOF_STALENESS_MINUTES = 30;
@@ -167,12 +172,16 @@ export async function listPublicNodes() {
 }
 
 /**
- * Daily reward distribution. For each ACTIVE node:
+ * Daily earnings calculation. For each ACTIVE node:
  *   1. Sum proofs in the last 24h
  *   2. Compute payout via formula, clamp at MAX_DAILY_PAYOUT
  *   3. Skip if total uptime so far < 24h (anti-sybil)
- *   4. Credit owner's wallet, log a NodeReward row
- * Returns total PLS distributed for the run.
+ *   4. Create a NodeReward row marked "frozen" (released=false,
+ *      availableAt=now+FREEZE_HOURS). The wallet is NOT credited yet.
+ *
+ * The matched amount actually lands in the user's PLS wallet later via
+ * `releasePendingRewards`. This gives us a 24h window to claw back
+ * fraudulent earnings before they can be spent.
  */
 export async function payoutNodes() {
   if (!(await isNodesEnabled())) return { paid: 0n, count: 0 };
@@ -183,7 +192,7 @@ export async function payoutNodes() {
     select: { id: true, ownerId: true, totalUptimeMinutes: true },
   });
 
-  let totalPaid = 0n;
+  let totalEarned = 0n;
   let count = 0;
   for (const n of nodes) {
     if (n.totalUptimeMinutes < MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS * 60) continue;
@@ -208,42 +217,84 @@ export async function payoutNodes() {
     if (payout > MAX_DAILY_PAYOUT) payout = MAX_DAILY_PAYOUT;
     if (payout <= 0n) continue;
 
-    const wallet = await prisma.plsWallet.upsert({
-      where: { userId: n.ownerId },
-      create: { userId: n.ownerId, balance: payout },
-      update: { balance: { increment: payout } },
+    const availableAt = new Date(Date.now() + FREEZE_HOURS * 3600 * 1000);
+
+    await prisma.nodeReward.create({
+      data: {
+        nodeId: n.id,
+        ownerId: n.ownerId,
+        amount: payout,
+        uptimeMinutes: uptimeMin,
+        bytesRelayed: totalBytes,
+        uniquePeers: peers,
+        availableAt,
+      },
     });
 
-    await prisma.$transaction([
-      prisma.plsTransaction.create({
-        data: {
-          walletId: wallet.id,
-          amount: payout,
-          type: 'REWARD',
-          description: `Node ${n.id.slice(0, 8)}: ${uptimeHours}h, ${totalGB}GB, ${peers} peers`,
-        },
-      }),
-      prisma.nodeReward.create({
-        data: {
-          nodeId: n.id,
-          ownerId: n.ownerId,
-          amount: payout,
-          uptimeMinutes: uptimeMin,
-          bytesRelayed: totalBytes,
-          uniquePeers: peers,
-        },
-      }),
-      prisma.relayNode.update({
-        where: { id: n.id },
-        data: { totalRewardsPaid: { increment: payout } },
-      }),
-    ]);
-
-    totalPaid += payout;
+    totalEarned += payout;
     count++;
   }
 
-  return { paid: totalPaid, count };
+  return { paid: totalEarned, count };
+}
+
+/**
+ * Sweep matured frozen rewards into wallets. Called hourly. Each
+ * matured row gets a wallet credit + plsTransaction + nodeReward
+ * marked released, all in one transaction.
+ */
+export async function releasePendingRewards() {
+  if (!(await isNodesEnabled())) return { released: 0n, count: 0 };
+
+  const due = await prisma.nodeReward.findMany({
+    where: { released: false, availableAt: { lte: new Date() } },
+    take: 100,
+  });
+
+  let totalReleased = 0n;
+  let count = 0;
+  for (const r of due) {
+    try {
+      const wallet = await prisma.plsWallet.upsert({
+        where: { userId: r.ownerId },
+        create: { userId: r.ownerId, balance: r.amount },
+        update: { balance: { increment: r.amount } },
+      });
+      await prisma.$transaction([
+        prisma.plsTransaction.create({
+          data: {
+            walletId: wallet.id,
+            amount: r.amount,
+            type: 'REWARD',
+            description: `Node ${r.nodeId.slice(0, 8)} reward (released)`,
+          },
+        }),
+        prisma.nodeReward.update({
+          where: { id: r.id },
+          data: { released: true, releasedAt: new Date() },
+        }),
+        prisma.relayNode.update({
+          where: { id: r.nodeId },
+          data: { totalRewardsPaid: { increment: r.amount } },
+        }),
+      ]);
+      totalReleased += r.amount;
+      count++;
+    } catch (err) {
+      console.error('[nodes] release error for', r.id, err);
+    }
+  }
+
+  return { released: totalReleased, count };
+}
+
+/** Sum currently-frozen reward amount for a user (UI shows it as pending). */
+export async function pendingRewardsFor(ownerId: string): Promise<bigint> {
+  const rows = await prisma.nodeReward.findMany({
+    where: { ownerId, released: false },
+    select: { amount: true },
+  });
+  return rows.reduce((s, r) => s + r.amount, 0n);
 }
 
 /** Mark nodes that haven't sent a proof recently as STALE. */

@@ -24,6 +24,7 @@ interface Config {
   maxDailyPayout: string;
   minUptimeHours: number;
   proofIntervalSeconds: number;
+  freezeHours: number;
 }
 
 export function NodesSection() {
@@ -32,6 +33,7 @@ export function NodesSection() {
   const tx = (r: string, e: string) => (ru ? r : e);
 
   const [nodes, setNodes] = useState<NodeRow[]>([]);
+  const [pendingRewards, setPendingRewards] = useState('0');
   const [config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -49,6 +51,7 @@ export function NodesSection() {
     try {
       const { data: list } = await api.get('/nodes/my');
       setNodes(list.nodes ?? []);
+      setPendingRewards(list.pendingRewards ?? '0');
     } catch (err) {
       console.error('[nodes] /my failed:', err);
       setNodes([]);
@@ -117,7 +120,28 @@ export function NodesSection() {
           `Первая выплата — после ${config.minUptimeHours}ч непрерывного uptime`,
           `First payout — after ${config.minUptimeHours}h of continuous uptime`,
         )}</p>
+        <p>• {tx(
+          `Новые награды заморожены ${config.freezeHours}ч на балансе перед зачислением (анти-фрод)`,
+          `New rewards are frozen for ${config.freezeHours}h before crediting (anti-fraud)`,
+        )}</p>
       </div>
+
+      {/* Pending rewards (frozen) */}
+      {BigInt(pendingRewards) > 0n && (
+        <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-amber-400 font-semibold">
+              {tx('Ждут разморозки', 'Pending release')}
+            </p>
+            <p className="text-[10px] text-gray-500">
+              {tx(`Зачислятся в кошелёк через ${config.freezeHours}ч после начисления`, `Credited to wallet ${config.freezeHours}h after earning`)}
+            </p>
+          </div>
+          <p className="font-mono font-bold text-amber-400">
+            {fmtPls(pendingRewards)} PLS
+          </p>
+        </div>
+      )}
 
       {/* Newly-revealed token after registration */}
       {revealedToken && (

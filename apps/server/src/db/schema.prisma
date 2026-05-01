@@ -561,12 +561,19 @@ model NodeReward {
   uptimeMinutes Int      @map("uptime_minutes")
   bytesRelayed  BigInt   @map("bytes_relayed")
   uniquePeers   Int      @map("unique_peers")
-  paidAt        DateTime @default(now()) @map("paid_at")
+  paidAt        DateTime @default(now()) @map("paid_at")    // earning date
+  // Reward is frozen until availableAt. Owner sees it as "pending" until
+  // the release worker credits the wallet. released is set when the
+  // wallet credit + plsTransaction row both land.
+  availableAt   DateTime @map("available_at")
+  released      Boolean  @default(false)
+  releasedAt    DateTime? @map("released_at")
 
   node RelayNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, paidAt])
   @@index([nodeId, paidAt])
+  @@index([released, availableAt])
   @@map("node_rewards")
 }
 

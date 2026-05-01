@@ -3,10 +3,11 @@ import { authMiddleware } from '../../middleware/auth.js';
 import { prisma } from '../../config/database.js';
 import {
   registerNode, rotateToken, deleteNode, submitProof, listMyNodes, listPublicNodes,
-  isNodesEnabled, setNodesEnabled,
+  isNodesEnabled, setNodesEnabled, pendingRewardsFor,
   NodesError,
   BASE_RATE_PER_HOUR, BANDWIDTH_BONUS_PER_GB, PEER_BONUS_PER_PEER,
   MAX_DAILY_PAYOUT, MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS, PROOF_INTERVAL_SECONDS,
+  FREEZE_HOURS,
 } from './nodes.service.js';
 
 export async function nodesRoutes(app: FastifyInstance) {
@@ -19,6 +20,7 @@ export async function nodesRoutes(app: FastifyInstance) {
     maxDailyPayout: MAX_DAILY_PAYOUT.toString(),
     minUptimeHours: MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS,
     proofIntervalSeconds: PROOF_INTERVAL_SECONDS,
+    freezeHours: FREEZE_HOURS,
   }));
 
   app.get('/public', async () => ({ nodes: await listPublicNodes() }));
@@ -53,9 +55,14 @@ export async function nodesRoutes(app: FastifyInstance) {
   // We check auth manually per-route instead of using a nested plugin —
   // the latter sometimes drops route prefixing in Fastify v4 when the
   // parent has no prefix.
-  app.get('/my', { preHandler: authMiddleware }, async (request) => ({
-    nodes: await listMyNodes(request.user!.userId),
-  }));
+  app.get('/my', { preHandler: authMiddleware }, async (request) => {
+    const userId = request.user!.userId;
+    const [nodes, pending] = await Promise.all([
+      listMyNodes(userId),
+      pendingRewardsFor(userId),
+    ]);
+    return { nodes, pendingRewards: pending.toString() };
+  });
 
   app.post<{ Body: { endpoint?: string; label?: string } }>(
     '/register',
