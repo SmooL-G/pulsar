@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Cpu, Loader2, Plus, RefreshCw, Trash2, Copy, Check, Zap } from 'lucide-react';
+import { Cpu, Loader2, Plus, RefreshCw, Trash2, Copy, Check, Zap, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useI18n } from '../../i18n';
+import { useAuthStore } from '../../store/authStore';
 
 interface NodeRow {
   id: string;
@@ -25,12 +26,15 @@ interface Config {
   minUptimeHours: number;
   proofIntervalSeconds: number;
   freezeHours: number;
+  minVerificationLevel: number;
 }
 
 export function NodesSection() {
   const { locale } = useI18n();
   const ru = locale === 'ru';
   const tx = (r: string, e: string) => (ru ? r : e);
+  const { user } = useAuthStore();
+  const myLevel = (user as any)?.verificationLevel ?? 0;
 
   const [nodes, setNodes] = useState<NodeRow[]>([]);
   const [pendingRewards, setPendingRewards] = useState('0');
@@ -124,6 +128,10 @@ export function NodesSection() {
           `Новые награды заморожены ${config.freezeHours}ч на балансе перед зачислением (анти-фрод)`,
           `New rewards are frozen for ${config.freezeHours}h before crediting (anti-fraud)`,
         )}</p>
+        <p>• {tx(
+          `Регистрация ноды — только с Elite-верификацией (Level ${config.minVerificationLevel}, 25 000 PLS)`,
+          `Node registration requires Elite verification (Level ${config.minVerificationLevel}, 25 000 PLS)`,
+        )}</p>
       </div>
 
       {/* Pending rewards (frozen) */}
@@ -173,15 +181,37 @@ export function NodesSection() {
         </div>
       )}
 
-      {/* Register */}
+      {/* Register / requirement gate */}
       {config.enabled && (
-        <button
-          onClick={() => setShowCreate(true)}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-medium"
-        >
-          <Plus size={16} />
-          {tx('Зарегистрировать ноду', 'Register a node')}
-        </button>
+        myLevel >= config.minVerificationLevel ? (
+          <button
+            onClick={() => setShowCreate(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-medium"
+          >
+            <Plus size={16} />
+            {tx('Зарегистрировать ноду', 'Register a node')}
+          </button>
+        ) : (
+          <div className="rounded-xl border-2 border-dashed border-amber-500/40 bg-amber-500/5 p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <Lock size={16} className="text-amber-400" />
+              <p className="text-sm font-bold text-amber-400">
+                {tx(`Нужна верификация Level ${config.minVerificationLevel}`, `Verification Level ${config.minVerificationLevel} required`)}
+              </p>
+            </div>
+            <p className="text-xs text-gray-500">
+              {tx(
+                `Регистрация ноды доступна только с Elite-верификацией (Level ${config.minVerificationLevel}, 25 000 PLS one-time). Это защищает программу наград от ботоферм — нечестный оператор сначала вкладывает 25k PLS, и потом долго отбивает.`,
+                `Node registration requires Elite verification (Level ${config.minVerificationLevel}, 25 000 PLS one-time). This blocks bot-farm sybil attacks — a fraudulent operator must commit 25k PLS upfront and earn it back slowly.`,
+              )}
+            </p>
+            <p className="text-xs text-gray-500">
+              {tx('Твой уровень', 'Your level')}: <span className="font-mono text-amber-400">{myLevel}</span>
+              {' / '}
+              <span className="font-mono">{config.minVerificationLevel}</span>
+            </p>
+          </div>
+        )
       )}
 
       {/* My nodes */}
@@ -323,7 +353,12 @@ function CreateNodeModal({ onClose, onCreated }: { onClose: () => void; onCreate
       const { data } = await api.post('/nodes/register', { label: label.trim() || undefined, endpoint: endpoint.trim() || undefined });
       onCreated(data.id, data.token);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || tx('Ошибка', 'Error'));
+      const code = err.response?.data?.error;
+      const msg =
+        code === 'NOT_VERIFIED' ? tx('Нужна верификация Level 3 (Elite, 25 000 PLS)', 'Elite verification (Level 3, 25 000 PLS) required')
+        : code === 'LIMIT_REACHED' ? tx('Максимум 5 нод на пользователя', 'Maximum 5 nodes per user')
+        : err.response?.data?.message || tx('Ошибка', 'Error');
+      toast.error(msg);
       setBusy(false);
     }
   };

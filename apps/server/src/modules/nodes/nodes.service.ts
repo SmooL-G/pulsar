@@ -17,6 +17,10 @@ export const MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS = 24;
 // this long before they're credited to the owner's PLS wallet. Gives
 // us a window to claw back fraudulent earnings before they're spent.
 export const FREEZE_HOURS = 24;
+// Sybil gate: only Level 3 (Elite, 25 000 PLS one-time burn) accounts
+// can register relay nodes. A bot farm needs to commit that much per
+// fake account before earning anything — usually unprofitable.
+export const MIN_VERIFICATION_LEVEL_TO_REGISTER = 3;
 
 // Heartbeat / staleness — proofs older than this mark the node STALE.
 export const PROOF_STALENESS_MINUTES = 30;
@@ -54,6 +58,19 @@ export async function registerNode(ownerId: string, opts: { endpoint?: string; l
     throw new NodesError('BAD_ENDPOINT', 'Endpoint must be ws:// or wss:// URL');
   }
   const label = opts.label?.trim().slice(0, 64) || null;
+
+  // Sybil gate: Elite verification (Level 3) required.
+  const user = await prisma.user.findUnique({
+    where: { id: ownerId },
+    select: { verificationLevel: true },
+  });
+  if (!user) throw new NodesError('NOT_FOUND', 'User not found');
+  if (user.verificationLevel < MIN_VERIFICATION_LEVEL_TO_REGISTER) {
+    throw new NodesError(
+      'NOT_VERIFIED',
+      `Verification Level ${MIN_VERIFICATION_LEVEL_TO_REGISTER}+ required to register a node`,
+    );
+  }
 
   // Cap nodes per user — anti-sybil at the cheapest layer.
   const existing = await prisma.relayNode.count({

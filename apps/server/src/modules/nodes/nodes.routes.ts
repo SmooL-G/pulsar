@@ -7,7 +7,7 @@ import {
   NodesError,
   BASE_RATE_PER_HOUR, BANDWIDTH_BONUS_PER_GB, PEER_BONUS_PER_PEER,
   MAX_DAILY_PAYOUT, MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS, PROOF_INTERVAL_SECONDS,
-  FREEZE_HOURS,
+  FREEZE_HOURS, MIN_VERIFICATION_LEVEL_TO_REGISTER,
 } from './nodes.service.js';
 
 export async function nodesRoutes(app: FastifyInstance) {
@@ -21,6 +21,7 @@ export async function nodesRoutes(app: FastifyInstance) {
     minUptimeHours: MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS,
     proofIntervalSeconds: PROOF_INTERVAL_SECONDS,
     freezeHours: FREEZE_HOURS,
+    minVerificationLevel: MIN_VERIFICATION_LEVEL_TO_REGISTER,
   }));
 
   app.get('/public', async () => ({ nodes: await listPublicNodes() }));
