@@ -232,18 +232,42 @@ export function MiningPage() {
           </ol>
         </section>
 
-        {/* Desktop coming */}
-        <section className="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-primary-500/5 p-5 text-center space-y-2">
-          <Download size={28} className="mx-auto text-cyan-400" />
-          <h3 className="text-lg font-bold">{tx('Десктоп-приложение для Windows', 'Windows desktop app')}</h3>
-          <p className="text-sm text-gray-400">
+        {/* Desktop app */}
+        <section className="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-primary-500/5 p-5 space-y-3">
+          <div className="flex items-center justify-center gap-2">
+            <Download size={28} className="text-cyan-400" />
+            <h3 className="text-lg font-bold">{tx('Pulsar Desktop', 'Pulsar Desktop')}</h3>
+          </div>
+          <p className="text-sm text-gray-400 text-center">
             {tx(
-              'Будет в разработке: Tauri-инсталлер с автозапуском, треем, статистикой в реальном времени, графиком заработка. Не нужно знать Docker.',
-              'In development: Tauri installer with auto-start, system tray, live stats, earnings chart. No Docker required.',
+              'Нативное приложение Windows / Linux: рантайм-бинарник без Node.js + Docker, системный трей, автозапуск, локальная статистика. Установил — забыл, PLS капают.',
+              'Native Windows / Linux app: runtime binary without Node.js + Docker, system tray, autostart, local stats. Install once and forget — PLS just drip in.',
             )}
           </p>
-          <p className="text-xs text-gray-500">
-            {tx('Подпишись на @pulsar_official чтобы узнать когда выйдет.', 'Follow @pulsar_official for release notice.')}
+          <div className="flex flex-wrap gap-2 justify-center">
+            <a
+              href="https://github.com/SmooL-G/pulsar/releases?q=desktop"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold"
+            >
+              <Download size={14} />
+              {tx('Скачать (Windows / Linux)', 'Download (Windows / Linux)')}
+            </a>
+            <a
+              href="https://github.com/SmooL-G/pulsar/blob/main/apps/desktop/README.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 text-sm font-medium"
+            >
+              {tx('Документация', 'Docs')}
+            </a>
+          </div>
+          <p className="text-[10px] text-gray-500 text-center">
+            {tx(
+              'Windows: NSIS-инсталлер + MSI. Linux: .deb пакет. macOS — план.',
+              'Windows: NSIS installer + MSI. Linux: .deb package. macOS — planned.',
+            )}
           </p>
         </section>
 
