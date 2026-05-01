@@ -188,18 +188,34 @@ export function MiningPage() {
                 'Settings → Nodes → "Register a node". You\'ll get a Node ID and one-time token — save it, won\'t show again.',
               )}
             </Step>
-            <Step n={3} title={tx('Запусти Docker-контейнер', 'Run the Docker container')}>
+            <Step n={3} title={tx('Запусти runner', 'Run the runner')}>
               <p className="text-xs text-gray-400 mb-2">
-                {tx('Пока десктоп-инсталлер не готов, запускай через Docker:', 'Until the desktop installer ships, run via Docker:')}
+                {tx('Самый простой способ — через npm (нужен Node.js 20+):', 'Easiest way — via npm (needs Node.js 20+):')}
+              </p>
+              <pre className="bg-dark-900 border border-dark-600 rounded-lg p-3 text-[11px] text-gray-300 overflow-x-auto mb-3">
+{`npx @pulsar/relay-runner \\
+  --node-id=<твой-node-id> \\
+  --token=<твой-токен>`}
+              </pre>
+              <p className="text-xs text-gray-400 mb-2">
+                {tx('Или через Docker:', 'Or via Docker:')}
               </p>
               <pre className="bg-dark-900 border border-dark-600 rounded-lg p-3 text-[11px] text-gray-300 overflow-x-auto">
 {`docker run -d --restart unless-stopped \\
   -p 3030:3030 \\
-  -e PULSAR_NODE_ID=<твой-node-id> \\
-  -e PULSAR_NODE_TOKEN=<твой-токен> \\
-  -e PULSAR_API_URL=https://pulsar-chat.fun \\
+  -e PULSAR_NODE_ID=<id> \\
+  -e PULSAR_NODE_TOKEN=<token> \\
   ghcr.io/smool-g/pulsar-relay:latest`}
               </pre>
+              <p className="text-[10px] text-gray-500 mt-2">
+                {tx(
+                  'systemd / pm2 / Windows Service — примеры в README пакета.',
+                  'systemd / pm2 / Windows Service — examples in the package README.',
+                )}{' '}
+                <a href="https://www.npmjs.com/package/@pulsar/relay-runner" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">
+                  npmjs.com/package/@pulsar/relay-runner
+                </a>
+              </p>
             </Step>
             <Step n={4} title={tx('Открой порт 3030 (если хочешь публичную ноду)', 'Open port 3030 (for public nodes)')}>
               {tx(
