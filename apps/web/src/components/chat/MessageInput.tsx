@@ -450,9 +450,9 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   };
 
   return (
-    <div className="px-4 py-3 pb-3-safe pl-safe pr-safe shrink-0">
+    <div className="px-3 sm:px-4 py-3 pb-3-safe shrink-0">
      <BotChatBar chatId={chatId} onCommandSelect={handleBotCommand} />
-     <div className="bg-white dark:bg-dark-600 rounded-2xl shadow-lg shadow-black/10 dark:shadow-black/30 border border-gray-200/50 dark:border-dark-500/50 px-3 py-2">
+     <div className="bg-white dark:bg-dark-600 rounded-2xl shadow-xl shadow-black/15 dark:shadow-black/40 border border-gray-200/60 dark:border-dark-500/60 px-3 py-2">
       {chatType === 'DIRECT' && !recipientIsBot && (
         <div className="flex items-center gap-3 mb-1 ml-1">
           <button
