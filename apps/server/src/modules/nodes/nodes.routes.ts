@@ -3,7 +3,7 @@ import { authMiddleware } from '../../middleware/auth.js';
 import { prisma } from '../../config/database.js';
 import {
   registerNode, rotateToken, deleteNode, submitProof, listMyNodes, listPublicNodes,
-  isNodesEnabled, setNodesEnabled, pendingRewardsFor,
+  isNodesEnabled, setNodesEnabled, pendingRewardsFor, findNodeByToken,
   NodesError,
   BASE_RATE_PER_HOUR, BANDWIDTH_BONUS_PER_GB, PEER_BONUS_PER_PEER,
   MAX_DAILY_PAYOUT, MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS, PROOF_INTERVAL_SECONDS,
@@ -25,6 +25,18 @@ export async function nodesRoutes(app: FastifyInstance) {
   }));
 
   app.get('/public', async () => ({ nodes: await listPublicNodes() }));
+
+  // Bearer-token-only lookup. Lets the desktop app find its own
+  // nodeId + owner display name from just the token the user pastes
+  // — saves them from manually copying both fields.
+  app.get('/by-token', async (request, reply) => {
+    const auth = request.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+    if (!token) return reply.status(401).send({ error: 'NO_TOKEN' });
+    const node = await findNodeByToken(token);
+    if (!node) return reply.status(404).send({ error: 'NOT_FOUND' });
+    return node;
+  });
 
   // Proof submission: bearer token in Authorization header.
   app.post<{

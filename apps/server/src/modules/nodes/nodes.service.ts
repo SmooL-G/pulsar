@@ -305,6 +305,33 @@ export async function releasePendingRewards() {
   return { released: totalReleased, count };
 }
 
+/**
+ * Find a node by its bearer token. Returns null if no match. Used by
+ * the desktop runner UI so the user only needs to paste the token —
+ * we look up nodeId + owner display info from there.
+ */
+export async function findNodeByToken(token: string) {
+  if (!token || typeof token !== 'string' || token.length < 16) return null;
+  const node = await prisma.relayNode.findUnique({
+    where: { token },
+    select: {
+      id: true,
+      label: true,
+      endpoint: true,
+      status: true,
+      owner: { select: { id: true, username: true, displayName: true } },
+    },
+  });
+  if (!node) return null;
+  return {
+    nodeId: node.id,
+    label: node.label,
+    endpoint: node.endpoint,
+    status: node.status,
+    owner: node.owner,
+  };
+}
+
 /** Sum currently-frozen reward amount for a user (UI shows it as pending). */
 export async function pendingRewardsFor(ownerId: string): Promise<bigint> {
   const rows = await prisma.nodeReward.findMany({
