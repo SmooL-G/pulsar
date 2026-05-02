@@ -6,6 +6,9 @@ on:
       - 'desktop-v*'   # tag like desktop-v0.1.0 to trigger
   workflow_dispatch:    # allow manual run
 
+permissions:
+  contents: write       # required by softprops/action-gh-release to create the Release
+
 jobs:
   build:
     name: Build ${{ matrix.platform }}
