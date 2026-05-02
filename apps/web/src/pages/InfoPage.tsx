@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Code, Map, Heart, Shield, FileText, Cookie, Sparkles, Home, Cpu } from 'lucide-react';
+import { ArrowLeft, Code, Map, Heart, Shield, FileText, Cookie, Sparkles, Home, Cpu, Download } from 'lucide-react';
 import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n';
 
@@ -27,6 +27,16 @@ const TILES: Tile[] = [
     descKey: 'info.tiles.dev.desc',
     color: 'from-blue-500/20 to-blue-700/5 border-blue-500/30',
     badge: 'Bot API',
+  },
+  {
+    to: '/download',
+    icon: Download,
+    titleRu: 'Скачать',
+    titleEn: 'Download',
+    descRu: 'Pulsar для Android, Windows и Linux. Один аккаунт, разные клиенты.',
+    descEn: 'Pulsar for Android, Windows, and Linux. One account, multiple clients.',
+    color: 'from-primary-500/20 to-primary-700/5 border-primary-500/30',
+    badge: 'APK',
   },
   {
     to: '/mining',
