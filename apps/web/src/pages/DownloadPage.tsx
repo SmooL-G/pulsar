@@ -71,12 +71,23 @@ export function DownloadPage() {
       .catch((e) => setError(String(e.message || e)));
   }, []);
 
+  // GitHub's default ordering is "most recently created" but with quirks
+  // (re-tags, draft promotion, etc.) — sort explicitly by published_at desc.
+  const sortByDateDesc = (a: Release, b: Release) =>
+    new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+
   const desktopReleases = useMemo(
-    () => (releases ?? []).filter((r) => r.tag_name.startsWith('desktop-')),
+    () =>
+      (releases ?? [])
+        .filter((r) => r.tag_name.startsWith('desktop-'))
+        .sort(sortByDateDesc),
     [releases],
   );
   const androidReleases = useMemo(
-    () => (releases ?? []).filter((r) => r.tag_name.startsWith('android-')),
+    () =>
+      (releases ?? [])
+        .filter((r) => r.tag_name.startsWith('android-'))
+        .sort(sortByDateDesc),
     [releases],
   );
   const latestDesktop = desktopReleases[0];
