@@ -245,15 +245,13 @@ export function MiningPage() {
             )}
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
-            <a
-              href="https://github.com/SmooL-G/pulsar-node/releases/latest"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/download"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold"
             >
               <Download size={14} />
               {tx('Скачать (Windows / Linux)', 'Download (Windows / Linux)')}
-            </a>
+            </Link>
             <a
               href="https://github.com/SmooL-G/pulsar-node"
               target="_blank"
