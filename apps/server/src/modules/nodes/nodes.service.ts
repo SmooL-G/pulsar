@@ -319,16 +319,20 @@ export async function findNodeByToken(token: string) {
       label: true,
       endpoint: true,
       status: true,
-      owner: { select: { id: true, username: true, displayName: true } },
+      ownerId: true,
     },
   });
   if (!node) return null;
+  const owner = await prisma.user.findUnique({
+    where: { id: node.ownerId },
+    select: { id: true, username: true, displayName: true },
+  });
   return {
     nodeId: node.id,
     label: node.label,
     endpoint: node.endpoint,
     status: node.status,
-    owner: node.owner,
+    owner,
   };
 }
 
