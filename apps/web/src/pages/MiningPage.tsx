@@ -246,7 +246,7 @@ export function MiningPage() {
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
             <a
-              href="https://github.com/SmooL-G/pulsar/releases?q=desktop"
+              href="https://github.com/SmooL-G/pulsar-node/releases/latest"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold"
@@ -255,12 +255,12 @@ export function MiningPage() {
               {tx('Скачать (Windows / Linux)', 'Download (Windows / Linux)')}
             </a>
             <a
-              href="https://github.com/SmooL-G/pulsar/blob/main/apps/desktop/README.md"
+              href="https://github.com/SmooL-G/pulsar-node"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 text-sm font-medium"
             >
-              {tx('Документация', 'Docs')}
+              {tx('Исходники', 'Source')}
             </a>
           </div>
           <p className="text-[10px] text-gray-500 text-center">
