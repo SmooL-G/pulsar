@@ -8,7 +8,7 @@
  * back to the legacy server-socket signaling path automatically (see
  * PeerConnection's emit helpers).
  */
-import { pickRelays } from './relays';
+import { pickRelays, bootstrapRelays } from './relays';
 
 type PacketHandler = (from: string, payload: any) => void;
 
@@ -32,6 +32,19 @@ class RelayClient {
   start(myPubkey: string) {
     if (this.myPubkey === myPubkey && this.ws) return; // idempotent
     this.myPubkey = myPubkey;
+    // Bootstrap fetches /api/v1/nodes/public and merges community nodes
+    // into the relay candidate list. Fire-and-forget; if it fails or is
+    // slow we still proceed with the seed list (reference relay).
+    bootstrapRelays().finally(() => {
+      if (this.myPubkey !== myPubkey) return; // user logged out mid-fetch
+      this.candidates = pickRelays();
+      this.candidateIdx = 0;
+      if (!this.ws) this.openNext();
+    });
+    // Kick off immediately with the seed list too — so signalling works
+    // during the bootstrap fetch. If bootstrap completes first the
+    // openNext above is the one that runs; if seed connects first, the
+    // bootstrap's openNext is a no-op (this.ws already set).
     this.candidates = pickRelays();
     this.candidateIdx = 0;
     this.openNext();
@@ -145,6 +158,9 @@ class RelayClient {
   private scheduleNext() {
     if (!this.myPubkey) return;
     this.candidateIdx++;
+    // Re-pick the candidate list each cycle so community nodes
+    // discovered after start() (via bootstrapRelays) join the rotation.
+    this.candidates = pickRelays();
     // Backoff so we don't spin if every relay is down: 1s after first
     // failure, 5s after second, 15s thereafter.
     const tries = Math.floor(this.candidateIdx / Math.max(1, this.candidates.length));
