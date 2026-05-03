@@ -2,8 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import { useMessageStore } from '../../store/messageStore';
 import { MessageBubble } from './MessageBubble';
 import { BotStartButton } from './BotStartButton';
+import { DateDivider } from './DateDivider';
 import { useAuthStore } from '../../store/authStore';
 import { getSocket } from '../../hooks/useSocket';
+import { useI18n } from '../../i18n';
+import { isSameDay, dayLabel } from '../../utils/messageDateLabel';
 
 interface MessageListProps {
   chatId: string;
@@ -16,6 +19,7 @@ interface MessageListProps {
 export function MessageList({ chatId, chatType, otherUserId, otherUserIsBot, onOpenComments }: MessageListProps) {
   const { messages, fetchMessages, isLoading } = useMessageStore();
   const user = useAuthStore((s) => s.user);
+  const locale = useI18n((s) => s.locale);
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatMessages = messages[chatId] || [];
 
@@ -57,17 +61,24 @@ export function MessageList({ chatId, chatType, otherUserId, otherUserIsBot, onO
         const prevMessage = chatMessages[index - 1];
         const showAvatar = !prevMessage || prevMessage.senderId !== message.senderId;
         const isOwn = message.senderId === user?.id;
+        const date = new Date(message.createdAt);
+        // Show divider before the first message of every new calendar
+        // day (and before the very first one in the list).
+        const showDivider =
+          !prevMessage || !isSameDay(new Date(prevMessage.createdAt), date);
 
         return (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            isOwn={isOwn}
-            showAvatar={showAvatar}
-            chatType={chatType}
-            otherUserId={otherUserId}
-            onOpenComments={onOpenComments}
-          />
+          <React.Fragment key={message.id}>
+            {showDivider && <DateDivider label={dayLabel(date, locale)} />}
+            <MessageBubble
+              message={message}
+              isOwn={isOwn}
+              showAvatar={showAvatar}
+              chatType={chatType}
+              otherUserId={otherUserId}
+              onOpenComments={onOpenComments}
+            />
+          </React.Fragment>
         );
       })}
       <div ref={bottomRef} />
