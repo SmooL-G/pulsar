@@ -7,7 +7,7 @@ import { useI18n } from '../../i18n';
  * 3s. Calls onDone() once both the minimum display time has elapsed
  * and the parent's awaited work is finished.
  */
-const MIN_DISPLAY_MS = 3500;
+const MIN_DISPLAY_MS = 5500;
 
 export function SplashScreen({ onDone }: { onDone: () => void }) {
   const { t } = useI18n();
