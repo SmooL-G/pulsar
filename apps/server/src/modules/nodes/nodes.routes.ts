@@ -4,6 +4,7 @@ import { prisma } from '../../config/database.js';
 import {
   registerNode, rotateToken, deleteNode, submitProof, listMyNodes, listPublicNodes,
   isNodesEnabled, setNodesEnabled, pendingRewardsFor, findNodeByToken,
+  reportTunneledNodes,
   NodesError,
   BASE_RATE_PER_HOUR, BANDWIDTH_BONUS_PER_GB, PEER_BONUS_PER_PEER,
   MAX_DAILY_PAYOUT, MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS, PROOF_INTERVAL_SECONDS,
@@ -25,6 +26,18 @@ export async function nodesRoutes(app: FastifyInstance) {
   }));
 
   app.get('/public', async () => ({ nodes: await listPublicNodes() }));
+
+  // Internal heartbeat from the relay container — tells us which node
+  // tunnels are currently open so /public can advertise them.
+  app.post<{ Body: { nodeIds: string[] } }>('/_relay/heartbeat', async (request, reply) => {
+    const expected = process.env.RELAY_HEARTBEAT_SECRET;
+    if (!expected) return reply.status(503).send({ error: 'NOT_CONFIGURED' });
+    const provided = request.headers['x-relay-secret'];
+    if (provided !== expected) return reply.status(401).send({ error: 'BAD_SECRET' });
+    const ids = Array.isArray(request.body?.nodeIds) ? request.body.nodeIds : [];
+    await reportTunneledNodes(ids);
+    return { ok: true, count: ids.length };
+  });
 
   // Bearer-token-only lookup. Lets the desktop app find its own
   // nodeId + owner display name from just the token the user pastes

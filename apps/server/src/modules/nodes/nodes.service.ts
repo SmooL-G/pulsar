@@ -173,19 +173,57 @@ export async function listMyNodes(ownerId: string) {
   })));
 }
 
+/**
+ * Public host that browsers reach the relay through. Used to synthesise
+ * `wss://<host>/n/<nodeId>` endpoints for tunneled nodes that don't have
+ * their own public DNS / port forwarding.
+ */
+const PUBLIC_RELAY_HOST = process.env.PUBLIC_RELAY_HOST ?? 'pulsar-chat.fun';
+const REDIS_TUNNELED_KEY = 'relay:tunneled-nodes';
+
 export async function listPublicNodes() {
-  // Show only nodes with a public endpoint and recent activity, so the
-  // client can pick alternative relays when the project ones go down.
+  // Surface two kinds of nodes:
+  //   1. Owners who set their own public endpoint (port forward / Cloudflare)
+  //   2. Nodes currently holding an outbound tunnel to our central relay
+  //      — we expose them at wss://<host>/n/<id>
+  // The browser bootstraps from this list and routes signaling through them.
   const cutoff = new Date(Date.now() - PROOF_STALENESS_MINUTES * 60 * 1000);
-  return prisma.relayNode.findMany({
-    where: { status: 'ACTIVE', endpoint: { not: null }, lastSeenAt: { gte: cutoff } },
+  let tunneledIds: string[] = [];
+  try {
+    const raw = await redis.get(REDIS_TUNNELED_KEY);
+    if (raw) tunneledIds = JSON.parse(raw);
+  } catch { /* fine — empty list */ }
+
+  const rows = await prisma.relayNode.findMany({
+    where: {
+      status: 'ACTIVE',
+      lastSeenAt: { gte: cutoff },
+      OR: [
+        { endpoint: { not: null } },
+        ...(tunneledIds.length > 0 ? [{ id: { in: tunneledIds } }] : []),
+      ],
+    },
     orderBy: { lastSeenAt: 'desc' },
     take: 50,
     select: { id: true, endpoint: true, label: true, lastSeenAt: true },
-  }).then(rows => rows.map(r => ({
-    ...r,
+  });
+  return rows.map(r => ({
+    id: r.id,
+    label: r.label,
+    // Tunneled nodes get a synthetic endpoint pointing at our relay.
+    endpoint: r.endpoint || `wss://${PUBLIC_RELAY_HOST}/n/${r.id}`,
     lastSeenAt: r.lastSeenAt.toISOString(),
-  })));
+  }));
+}
+
+/**
+ * Called by the relay container every ~10s with the current set of node
+ * tunnels it's holding. Stored in Redis with a short TTL so a relay
+ * crash naturally drops its nodes from the public list within 30s.
+ */
+export async function reportTunneledNodes(nodeIds: string[]): Promise<void> {
+  const filtered = nodeIds.filter(id => /^[a-f0-9-]{36}$/i.test(id)).slice(0, 1000);
+  await redis.set(REDIS_TUNNELED_KEY, JSON.stringify(filtered), 'EX', 30);
 }
 
 /**
