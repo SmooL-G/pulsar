@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Cpu, Wifi, HardDrive, Zap, Lock, Coins, ArrowLeft, Terminal, Download } from 'lucide-react';
+import { Cpu, Wifi, HardDrive, Zap, Lock, Coins, ArrowLeft, Terminal, Download, Shield, MemoryStick, BatteryCharging } from 'lucide-react';
 import { useI18n } from '../i18n';
 
 /**
@@ -12,73 +12,108 @@ export function MiningPage() {
   const ru = locale === 'ru';
   const tx = (r: string, e: string) => (ru ? r : e);
 
+  // What the desktop node ACTUALLY uses today. Realistic numbers — no
+  // future-promises mixed in (those have a separate "Roadmap" block below).
   const resources = [
     {
       icon: Wifi,
       color: 'text-cyan-400',
-      title: tx('Канал интернета (TURN-relay)', 'Internet bandwidth (TURN-relay)'),
+      title: tx('Сеть', 'Network'),
       use: tx(
-        'Когда у двух пользователей не получается прямое соединение (симметричный NAT — частая проблема мобильных операторов), их трафик идёт через твою ноду. ~50-500 KB/s на одну активную сессию.',
-        'When two users can\'t connect directly (symmetric NAT — common on mobile carriers), their traffic flows through your node. ~50-500 KB/s per active session.',
+        'Постоянное исходящее WebSocket-соединение к pulsar-chat.fun (keep-alive ~50 байт каждые 30 сек). Когда веб-клиенты выбирают твою ноду как relay, через неё проходят WebRTC signaling-пакеты — ~5-30 КБ на handshake. После handshake-а сообщения летят P2P direct между браузерами, нода больше не участвует. Реальный трафик: единицы ГБ в месяц.',
+        'Persistent outbound WebSocket to pulsar-chat.fun (keep-alive ~50 bytes every 30s). When web clients pick your node as relay, WebRTC signaling packets flow through it — ~5-30 KB per handshake. After handshake, messages go P2P direct between browsers — the node no longer participates. Real traffic: units of GB per month.',
       ),
-      reward: tx('25 PLS / GB переданного трафика', '25 PLS / GB relayed'),
+      reward: tx('25 PLS / ГБ переданного трафика', '25 PLS / GB relayed'),
     },
     {
-      icon: HardDrive,
+      icon: MemoryStick,
       color: 'text-violet-400',
-      title: tx('Жёсткий диск (CDN-кэш)', 'Disk space (CDN cache)'),
+      title: tx('Оперативная память', 'RAM'),
       use: tx(
-        'Кэшируешь популярные файлы (аватары, картинки, голосовые) и раздаёшь ближайшим юзерам — экономишь нагрузку на главный сервер. ~50-500 GB.',
-        'Cache popular files (avatars, images, voice messages) and serve them to nearby users — reduces load on the main server. ~50-500 GB.',
+        'WebView (Edge движок) занимает ~80-150 МБ — единоразово на UI приложения. Rust-runner — ещё ~10-20 МБ + несколько КБ на активную сессию. Итого ~100-200 МБ постоянно, меньше чем одна вкладка браузера.',
+        'WebView (Edge engine) uses ~80-150 MB — one-shot for the app UI. The Rust runner adds ~10-20 MB + a few KB per active session. Total ~100-200 MB steady, less than one browser tab.',
       ),
-      reward: tx('10 PLS / GB отданного трафика', '10 PLS / GB served from cache'),
+      reward: tx('Косвенно через uptime', 'Indirectly via uptime'),
     },
     {
       icon: Cpu,
       color: 'text-emerald-400',
-      title: tx('Процессор (Whisper-транскрипция)', 'CPU (Whisper transcription)'),
+      title: tx('Процессор', 'CPU'),
       use: tx(
-        'Распознавание голосовых сообщений в текст. Фича работает на whisper-cpp, нужно 2 свободных ядра. Опционально.',
-        'Speech-to-text for voice messages. Runs whisper-cpp, needs 2 idle cores. Optional.',
+        'В idle-режиме ~0.1%. Кратковременные всплески <1% во время WebRTC-handshake-а. Без активных handshake-ов — практически 0%. Никакого PoW, никакого майнинга криптовалют.',
+        'Idle ~0.1%. Brief spikes <1% during a WebRTC handshake. With no active handshakes — basically 0%. No PoW, no crypto mining.',
       ),
-      reward: tx('2 PLS / минута транскрипции', '2 PLS / minute transcribed'),
+      reward: tx('Косвенно через uptime', 'Indirectly via uptime'),
+    },
+    {
+      icon: HardDrive,
+      color: 'text-blue-400',
+      title: tx('Диск', 'Disk'),
+      use: tx(
+        'Бинарник приложения ~5 МБ. Файл конфига меньше 1 КБ. Сообщения и медиа НЕ кэшируются (это в планах — см. roadmap). Никаких файлов пользователей на диске.',
+        'App binary ~5 MB. Config file <1 KB. Messages and media are NOT cached (planned — see roadmap). No user files stored locally.',
+      ),
+      reward: tx('—', '—'),
+    },
+    {
+      icon: BatteryCharging,
+      color: 'text-pink-400',
+      title: tx('Батарея (на ноутбуках)', 'Battery (on laptops)'),
+      use: tx(
+        'Минимум. В основном idle + редкие IO-всплески. Влияет на расход батареи меньше чем подсветка экрана на 1 шаг.',
+        'Minimal. Mostly idle + rare IO bursts. Affects battery less than one notch of screen brightness.',
+      ),
+      reward: tx('—', '—'),
     },
     {
       icon: Zap,
       color: 'text-amber-400',
       title: tx('Аптайм', 'Uptime'),
       use: tx(
-        'Базовая ставка просто за то, что нода онлайн и принимает соединения. Нужен минимум 24h непрерывного uptime для первой выплаты.',
-        'Base rate just for being online and accepting connections. Requires 24h continuous uptime for first payout.',
+        'Базовая ставка просто за то, что нода онлайн и держит туннель. Нужно минимум 24h непрерывной работы до первой выплаты (анти-фрод).',
+        'Base rate just for being online and holding the tunnel. Requires 24h continuous uptime before the first payout (anti-fraud).',
       ),
       reward: tx('50 PLS / час онлайна', '50 PLS / hour online'),
     },
   ];
 
+  // Privacy reassurance — what we explicitly DO NOT touch.
+  const notUsed = [
+    tx('Криптокошелёк / приватные ключи', 'Crypto wallet / private keys'),
+    tx('Камера, микрофон, GPU', 'Camera, microphone, GPU'),
+    tx('Браузерная история, личные файлы', 'Browser history, personal files'),
+    tx('Фоновые сервисы Windows', 'Background Windows services'),
+    tx('Входящие порты, кроме твоего ручного port forwarding', 'Inbound ports, except your manual port forwarding'),
+    tx('Содержимое сообщений (E2E nacl-box, нода видит только зашифрованные блобы)', "Message contents (E2E nacl-box — node sees only encrypted blobs)"),
+  ];
+
+  // Current implementation has zero meaningful resource floor — even
+  // a Raspberry Pi 3 handles it. Tiers describe future-state when
+  // CDN-cache and Whisper-transcription land. Marked accordingly.
   const tiers = [
     {
-      name: 'Lite',
-      ram: '256 MB',
-      disk: '1 GB',
-      bandwidth: tx('10 Мбит', '10 Mbps'),
-      who: tx('Старый ноутбук, raspberry pi', 'Old laptop, Raspberry Pi'),
-      earn: tx('~500-1000 PLS/день', '~500-1000 PLS/day'),
+      name: tx('Сейчас (signaling-only)', 'Now (signaling-only)'),
+      ram: '~200 MB',
+      disk: '~5 MB',
+      bandwidth: tx('Любой', 'Any'),
+      who: tx('Любой ПК / ноутбук / Raspberry Pi', 'Any PC / laptop / Raspberry Pi'),
+      earn: tx('~1200 PLS/день за uptime', '~1200 PLS/day from uptime'),
     },
     {
-      name: 'Standard',
+      name: tx('+CDN-кэш (планы)', '+CDN cache (planned)'),
       ram: '1 GB',
       disk: '50 GB',
       bandwidth: tx('100 Мбит', '100 Mbps'),
       who: tx('Домашний ПК, мини-сервер', 'Home PC, mini server'),
-      earn: tx('~1500-2000 PLS/день', '~1500-2000 PLS/day'),
+      earn: tx('~2000 PLS/день', '~2000 PLS/day'),
     },
     {
-      name: 'Pro',
+      name: tx('+Whisper (планы)', '+Whisper (planned)'),
       ram: '4 GB',
       disk: '500 GB',
       bandwidth: tx('1 Гбит', '1 Gbps'),
       who: tx('Выделенный сервер, VPS', 'Dedicated server, VPS'),
-      earn: tx('~2500 PLS/день (макс)', '~2500 PLS/day (cap)'),
+      earn: tx('~2500 PLS/день (кап)', '~2500 PLS/day (cap)'),
     },
   ];
 
@@ -152,6 +187,28 @@ export function MiningPage() {
             {tx(
               'Кап: 2500 PLS / нода / сутки. Заморозка: новые награды зачисляются на баланс через 24h после начисления (анти-фрод).',
               'Cap: 2500 PLS / node / day. Freeze: new rewards land on balance 24h after earning (anti-fraud).',
+            )}
+          </p>
+        </section>
+
+        {/* Privacy reassurance: what we DON'T touch */}
+        <section className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+          <h3 className="text-lg font-bold text-emerald-400 mb-3 flex items-center gap-2">
+            <Shield size={18} />
+            {tx('Чего нода НЕ трогает', "What the node doesn't touch")}
+          </h3>
+          <ul className="space-y-2 text-sm">
+            {notUsed.map((item) => (
+              <li key={item} className="flex gap-2">
+                <span className="text-emerald-400 shrink-0">×</span>
+                <span className="text-gray-300">{item}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-gray-500 mt-4">
+            {tx(
+              'Сервер видит только метаданные: nodeId + сколько байт переслал + сколько уникальных peer-pubkey-ев + uptime. Содержимое сообщений зашифровано E2E между браузерами — даже мы не можем прочитать.',
+              'Server only sees metadata: nodeId + bytes relayed + unique peer pubkeys + uptime. Message contents are E2E-encrypted between browsers — even we can\'t read them.',
             )}
           </p>
         </section>
