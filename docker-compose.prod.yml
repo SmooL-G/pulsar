@@ -104,6 +104,11 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+      # Relay tunnel feature: shared secret for the relay container's
+      # heartbeat endpoint, plus the public host the relay is reachable
+      # at (used to synthesise wss://<host>/n/<id> for tunneled nodes).
+      RELAY_HEARTBEAT_SECRET: ${RELAY_HEARTBEAT_SECRET}
+      PUBLIC_RELAY_HOST: ${PUBLIC_RELAY_HOST:-pulsar-chat.fun}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
