@@ -159,6 +159,7 @@ export class PeerConnection {
   // ─── Signaling intake (called from useSocket on relayed events) ────
 
   async onRemoteOffer(sdp: RTCSessionDescriptionInit) {
+    if (this.pc.signalingState === 'closed') return; // stale handler post-teardown
     const offerCollision = this.makingOffer || this.pc.signalingState !== 'stable';
     this.ignoreOffer = !this.polite && offerCollision;
     if (this.ignoreOffer) return;
@@ -168,23 +169,32 @@ export class PeerConnection {
       await this.pc.setLocalDescription(answer);
       emitSignaling('webrtc:answer', this.remoteUserId, { sdp: this.pc.localDescription! });
     } catch (err) {
-      console.error('[p2p] onRemoteOffer error:', err);
+      // Don't log if the connection was torn down between checks.
+      if (this.pc.signalingState !== 'closed') {
+        console.error('[p2p] onRemoteOffer error:', err);
+      }
     }
   }
 
   async onRemoteAnswer(sdp: RTCSessionDescriptionInit) {
+    if (this.pc.signalingState === 'closed') return;
     try {
       await this.pc.setRemoteDescription(sdp);
     } catch (err) {
-      console.error('[p2p] onRemoteAnswer error:', err);
+      if (this.pc.signalingState !== 'closed') {
+        console.error('[p2p] onRemoteAnswer error:', err);
+      }
     }
   }
 
   async onRemoteIce(candidate: RTCIceCandidateInit) {
+    if (this.pc.signalingState === 'closed') return;
     try {
       await this.pc.addIceCandidate(candidate);
     } catch (err) {
-      if (!this.ignoreOffer) console.warn('[p2p] addIceCandidate error:', err);
+      if (!this.ignoreOffer && this.pc.signalingState !== 'closed') {
+        console.warn('[p2p] addIceCandidate error:', err);
+      }
     }
   }
 

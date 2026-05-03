@@ -33,21 +33,19 @@ class RelayClient {
     if (this.myPubkey === myPubkey && this.ws) return; // idempotent
     this.myPubkey = myPubkey;
     // Bootstrap fetches /api/v1/nodes/public and merges community nodes
-    // into the relay candidate list. Fire-and-forget; if it fails or is
-    // slow we still proceed with the seed list (reference relay).
-    bootstrapRelays().finally(() => {
+    // into the relay candidate list. Wait for it (with a 1.5s ceiling)
+    // so we actually pick a community node — kicking off with the seed
+    // list immediately makes the reference relay always win the race
+    // and community nodes never see traffic.
+    Promise.race([
+      bootstrapRelays(),
+      new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+    ]).finally(() => {
       if (this.myPubkey !== myPubkey) return; // user logged out mid-fetch
       this.candidates = pickRelays();
       this.candidateIdx = 0;
-      if (!this.ws) this.openNext();
+      this.openNext();
     });
-    // Kick off immediately with the seed list too — so signalling works
-    // during the bootstrap fetch. If bootstrap completes first the
-    // openNext above is the one that runs; if seed connects first, the
-    // bootstrap's openNext is a no-op (this.ws already set).
-    this.candidates = pickRelays();
-    this.candidateIdx = 0;
-    this.openNext();
   }
 
   stop() {
