@@ -59,10 +59,18 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 41 | P2P WebRTC для DM (signaling через сервер) | ✅ Готово | 2026-04-30 |
 | 42 | IPFS/Arweave хранение | 🔲 Опционально | — |
 | 43 | Публичный signaling-relay протокол (Phase 2 P2P) | ✅ Готово | 2026-05-01 |
-| 44 | Relay-нода + PLS-награды (Phase 3 — slice A: backend готов) | 🔄 В работе | 2026-05-01 |
+| 44 | Relay-нода + PLS-награды (Phase 3 — slice A: backend готов) | ✅ Готово | 2026-05-01 |
 | 45 | CLI-runner для нод (slice B Phase 3) | ✅ Готово | 2026-05-01 |
 | 46 | Tauri Windows-десктоп (slice C Phase 3) | ✅ Готово (CI билдит .msi/.exe) | 2026-05-01 |
 | 47 | Выделили pulsar-node как публичный репо для майнеров | ✅ Готово | 2026-05-02 |
+| 48 | Десктоп-апдейтер (tauri-plugin-updater + minisign-подписи + latest.json) | ✅ Готово | 2026-05-02 |
+| 49 | Cosmos-splash на логине (mantras + parallax-звёзды) | ✅ Готово | 2026-05-03 |
+| 50 | Reverse-tunnel: десктоп-нода без port-forwarding (`/node-tunnel` + `/n/<id>`) | ✅ Готово | 2026-05-03 |
+| 51 | Date-разделители в чате (Сегодня / Вчера / Позавчера / weekday / дата) | ✅ Готово | 2026-05-03 |
+| 52 | Stop-кнопка в десктопе + idempotent start_runner | ✅ Готово | 2026-05-03 |
+| 53 | TURN secret в проде (для пользователей с симметричным NAT) | 🔲 В очереди | — |
+| 54 | P2PIndicator: показывать через какую ноду пошёл трафик | 🔲 В очереди | — |
+| 55 | Бандл cloudflared в десктоп для «настоящей» децентрализации (опционально) | 🔲 В очереди | — |
 
 ---
 
@@ -247,26 +255,58 @@ encryptionType   String? @map("encryption_type") @db.VarChar(32)
 
 ---
 
-## 🔲 13. P2P WebRTC Data Channels (следующий)
+## ✅ 13. P2P WebRTC Data Channels
 
-Прямое P2P-соединение для DM между онлайн-пользователями. Сервер = signaling + fallback.
+Прямое P2P-соединение для DM между онлайн-пользователями работает. Polite-peer pattern, deterministic offerer/answerer. Signaling идёт через signaling-relay (Phase 2), fallback на socket.io. Если ICE собирается за 8 сек — сообщения летят мимо сервера, иначе тихо откатываемся на server-relayed путь.
 
-**Socket-события:**
-```typescript
-'webrtc:signal': { targetUserId: string; signal: RTCSignalData }
-'webrtc:request': { targetUserId: string }
-```
-
-**Планируемые файлы:**
-- `apps/web/src/p2p/peerManager.ts` — WebRTC соединения
-- `apps/web/src/p2p/p2pMessageTransport.ts` — отправка через data channel с fallback
-- `apps/server/src/socket/handlers/webrtcHandler.ts` — relay signaling
-
-**Требования:** TURN-сервер для NAT traversal (coturn или Twilio).
+**Файлы:**
+- `apps/web/src/p2p/PeerConnection.ts` — RTCPeerConnection + data channel + signaling-collision-resolution
+- `apps/web/src/p2p/MessageTransport.ts` — `sendDmMessage()` пытается P2P первым, fallback на socket.emit
+- `apps/web/src/p2p/iceServers.ts` — STUN (Google + Cloudflare) + опц. TURN через `/api/v1/turn/credentials`
+- `apps/web/src/p2p/peerStore.ts` — Zustand-стор: per-peer state (idle/connecting/open/failed)
+- `apps/web/src/components/chat/P2PIndicator.tsx` — ⚡ переключатель в шапке DM
+- `apps/server/src/socket/handlers/webrtcHandler.ts` — fallback signaling через socket.io
+- coturn в `infra/docker/turn/` (TURN_AUTH_SECRET — TBD на проде)
 
 ---
 
-## 🔲 14. IPFS/Arweave хранение (опционально)
+## ✅ 15. Сеть нод + reverse-tunnel + PLS-награды
+
+Полный pipeline десктопной ноды: пользователь регает ноду на сайте (Verification Level 3), получает 64-hex токен, ставит Tauri-приложение, вставляет токен — нода поднимает исходящий ws-туннель к `wss://pulsar-chat.fun/node-tunnel`. Центральный relay валидирует токен, регистрирует туннель, мультиплексирует браузерные сессии через `wss://pulsar-chat.fun/n/<nodeId>`. Никакого port forwarding или Cloudflare. За uptime + bandwidth + уникальные пиры капают PLS (формула 50/25/5, кап 2500/день/нода, 24h freeze).
+
+**Ключевые файлы:**
+
+*Серверная сторона:*
+- `apps/server/src/modules/nodes/nodes.routes.ts` — register / proof / public list / by-token / heartbeat
+- `apps/server/src/modules/nodes/nodes.service.ts` — формула + reportTunneledNodes() + listPublicNodes() мерджит DB-ноды (свой endpoint) с туннелированными (synthetic `wss://pulsar-chat.fun/n/<id>`)
+- `apps/server/src/modules/nodes/nodesWorker.ts` — daily payoutNodes() + releasePendingRewards()
+- `apps/relay/src/index.ts` — Node-relay контейнер: pubsub /ws, тоннель /node-tunnel (валидация через `/api/v1/nodes/by-token`), мультиплексор /n/<id>, periodic heartbeat в auth-сервер
+
+*Web-клиент:*
+- `apps/web/src/p2p/relays.ts` — bootstrapRelays() фетчит /public, шуффлит в front of rotation
+- `apps/web/src/p2p/RelayClient.ts` — ждёт bootstrap до 1.5s перед openNext (community-нода реально побеждает гонку)
+
+*Десктоп (pulsar-node репо):*
+- `desktop/src-tauri/src/runner.rs` — параллельные таски: TCP listener (порт 3030 для тех у кого port forwarding), исходящий тоннель (для всех остальных), proof-loop. Auto-reconnect на drop. Стоп через RunnerHandle.abort().
+- `desktop/src-tauri/src/lib.rs` — Tauri commands: get/save_config, start/stop_runner, lookup_token (HTTP в обход webview CORS), runner_status
+- `desktop/ui/index.html` — RU/EN UI, Save & Start / красная Stop / Check for updates, withGlobalTauri:true
+- GitHub Actions (`pulsar-node/.github/workflows/desktop-release.yml`) — matrix Win+Linux, signing через minisign-keypair (TAURI_SIGNING_PRIVATE_KEY), `latest.json` манифест публикуется в release
+- `pulsar-node/scripts/gen_updater_key.py` + `reencrypt_updater_key.py` — самописные генераторы minisign-encrypted-with-empty-password ключей (Tauri требует именно encrypted, даже с empty password)
+
+**Что было сложным:**
+- Tauri-апдейтер: `check` возвращает `{rid, version}`, не `{available}` — фикс v0.1.19. `download_and_install` требует `rid` — фикс v0.1.22.
+- Подпись тауриных бандлов: ключ должен быть encrypted-with-empty-password в формате minisign 0.7+; в env должна быть base64-кодировка ВСЕГО файла (с шапкой `untrusted comment:`), а не только base64-строка ключа.
+- nginx regex `~ "^/n/[a-f0-9-]{36}$"` — `{36}` без кавычек интерпретируется nginx как блок-делимитер.
+- runner.rs: `tokio::spawn` из синхронного `#[tauri::command] fn` паникует — нет рантайма в воркер-потоке. Через `tauri::async_runtime::spawn` работает.
+
+**Что осталось:**
+- TURN_AUTH_SECRET в .env на проде (для пользователей с симметричным NAT, в основном мобильный интернет)
+- P2PIndicator: показывать через какую ноду пошёл трафик (UX-плюшка)
+- Опционально: бандл cloudflared в десктоп → нода получает свой публичный URL без зависимости от pulsar-chat.fun (настоящая децентрализация для гиков)
+
+---
+
+## 🔲 16. IPFS/Arweave хранение (опционально)
 
 Зашифрованные сообщения хранятся на IPFS/Arweave для перманентного децентрализованного хранения. CID/tx ID сохраняется в metadata сообщения.
 
