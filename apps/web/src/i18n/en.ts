@@ -23,6 +23,15 @@ export const en = {
   'auth.loginFailed': 'Login failed',
   'auth.registerFailed': 'Registration failed',
 
+  // Splash (post-login loading screen)
+  'splash.tagline': 'Loading your encrypted space',
+  'splash.mantra1': 'Messages are end-to-end encrypted — only you and the recipient can read them',
+  'splash.mantra2': 'The server stores nothing in plaintext, not even your contacts',
+  'splash.mantra3': 'A Solana signature is your identity — no one can impersonate you',
+  'splash.mantra4': 'A network of community-run nodes keeps Pulsar online',
+  'splash.mantra5': 'The whole codebase is open — verify, fork, audit',
+  'splash.mantra6': 'We are making private communication free again',
+
   // Chat
   'chat.welcome': 'Welcome to Pulsar',
   'chat.selectChat': 'Select a chat or start a new conversation',

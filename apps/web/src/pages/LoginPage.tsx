@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { useI18n } from '../i18n';
 import { LANGUAGES } from '../components/settings/LanguageSelector';
 import { UserCountInformer } from '../components/auth/UserCountInformer';
+import { SplashScreen } from '../components/auth/SplashScreen';
 import { ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 function navigateAfterLogin(navigate: ReturnType<typeof useNavigate>) {
@@ -28,6 +29,7 @@ export function LoginPage() {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
 
@@ -40,10 +42,10 @@ export function LoginPage() {
       // Backend accepts emailOrUsername; the input field carries either.
       const { data } = await api.post('/auth/login', { emailOrUsername: email, password });
       await login(data.accessToken);
-      navigateAfterLogin(navigate);
+      // Show splash; navigation happens in <SplashScreen onDone>.
+      setShowSplash(true);
     } catch (err: any) {
       setError(err.response?.data?.message || t('auth.loginFailed'));
-    } finally {
       setLoading(false);
     }
   };
@@ -56,13 +58,16 @@ export function LoginPage() {
     try {
       const { data } = await api.post('/auth/register', { username, email, password });
       await login(data.accessToken);
-      navigateAfterLogin(navigate);
+      setShowSplash(true);
     } catch (err: any) {
       setError(err.response?.data?.message || t('auth.registerFailed'));
-    } finally {
       setLoading(false);
     }
   };
+
+  if (showSplash) {
+    return <SplashScreen onDone={() => navigateAfterLogin(navigate)} />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900 p-4">

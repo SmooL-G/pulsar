@@ -23,6 +23,15 @@ export const ru = {
   'auth.loginFailed': 'Ошибка входа',
   'auth.registerFailed': 'Ошибка регистрации',
 
+  // Splash (post-login loading screen)
+  'splash.tagline': 'Загружаем твоё зашифрованное пространство',
+  'splash.mantra1': 'Сообщения шифруются end-to-end — прочитать может только адресат',
+  'splash.mantra2': 'Сервер не хранит контент открытым текстом, даже список твоих контактов',
+  'splash.mantra3': 'Подпись Solana — твоя личность. Никто не подделает её',
+  'splash.mantra4': 'Сеть нод от сообщества держит Pulsar онлайн',
+  'splash.mantra5': 'Весь код открыт — проверяй, форкай, аудируй',
+  'splash.mantra6': 'Мы возвращаем свободу частной переписки',
+
   // Chat
   'chat.welcome': 'Добро пожаловать в Pulsar',
   'chat.selectChat': 'Выберите чат или начните новый разговор',
