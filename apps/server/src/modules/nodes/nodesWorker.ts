@@ -1,9 +1,8 @@
 import { isNodesEnabled, payoutNodes, markStale, releasePendingRewards } from './nodes.service.js';
 
 const TICK_MS = 5 * 60 * 1000;     // every 5 min: stale-check + release sweep
-const PAYOUT_HOUR_UTC = 11;        // 11:00 UTC ≈ 14:00 MSK
 
-let lastPayoutDay = -1;
+let lastPayoutHour = -1;
 let lastReleaseHour = -1;
 
 export function startNodesWorker() {
@@ -19,13 +18,16 @@ export function startNodesWorker() {
 
       const now = new Date();
       const hour = now.getUTCHours();
-      const day = now.getUTCDate();
 
-      // 2) Earn (frozen) once per day at the configured hour.
-      if (hour === PAYOUT_HOUR_UTC && lastPayoutDay !== day) {
+      // 2) Earnings every hour (frozen 24h before wallet credit).
+      // Each call only sums proofs from the last 1h — so per-hour
+      // accrual matches what the desktop projection shows live.
+      if (hour !== lastPayoutHour) {
         const result = await payoutNodes();
-        lastPayoutDay = day;
-        console.log(`[NodesWorker] Earnings: ${result.count} nodes, ${result.paid} PLS frozen`);
+        lastPayoutHour = hour;
+        if (result.count > 0) {
+          console.log(`[NodesWorker] Hourly payout: ${result.count} nodes, ${result.paid} PLS frozen`);
+        }
       }
 
       // 3) Release matured frozen rewards once per hour.

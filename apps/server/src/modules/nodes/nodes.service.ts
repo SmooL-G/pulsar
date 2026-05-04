@@ -11,8 +11,16 @@ import { redis } from '../../config/redis.js';
 export const BASE_RATE_PER_HOUR = 50n;         // PLS / hour online
 export const BANDWIDTH_BONUS_PER_GB = 25n;     // PLS / GB relayed
 export const PEER_BONUS_PER_PEER = 5n;         // PLS / unique peer served
-export const MAX_DAILY_PAYOUT = 2500n;         // hard cap per node per day
-export const MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS = 24;
+export const MAX_DAILY_PAYOUT = 2500n;         // soft daily total (sum of hourly caps)
+// Hourly cap = daily / 24, rounded down. Each `payoutNodes()` run
+// earns at most this much per node, so a single big bandwidth burst
+// can't exceed the daily total even with hourly accrual.
+export const MAX_HOURLY_PAYOUT = MAX_DAILY_PAYOUT / 24n;
+// Hourly accrual (was 24h continuous required). Verification Level 3
+// burn (25k PLS) remains the real sybil gate; the 1h floor just gives
+// users feedback faster — the projected counter ticks live and the
+// first frozen reward lands within 1h of being online.
+export const MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS = 1;
 // Earned rewards land in NodeReward immediately but stay frozen for
 // this long before they're credited to the owner's PLS wallet. Gives
 // us a window to claw back fraudulent earnings before they're spent.
@@ -227,21 +235,29 @@ export async function reportTunneledNodes(nodeIds: string[]): Promise<void> {
 }
 
 /**
- * Daily earnings calculation. For each ACTIVE node:
- *   1. Sum proofs in the last 24h
- *   2. Compute payout via formula, clamp at MAX_DAILY_PAYOUT
- *   3. Skip if total uptime so far < 24h (anti-sybil)
+ * Hourly earnings calculation. For each ACTIVE node:
+ *   1. Sum proofs in the last 1h (proofs the node submitted since the
+ *      previous payoutNodes run)
+ *   2. Compute payout via the same per-hour formula, clamp at
+ *      MAX_HOURLY_PAYOUT (daily/24)
+ *   3. Skip if lifetime uptime < MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS
  *   4. Create a NodeReward row marked "frozen" (released=false,
- *      availableAt=now+FREEZE_HOURS). The wallet is NOT credited yet.
+ *      availableAt = now + FREEZE_HOURS).
  *
- * The matched amount actually lands in the user's PLS wallet later via
- * `releasePendingRewards`. This gives us a 24h window to claw back
- * fraudulent earnings before they can be spent.
+ * The matched amount lands in the user's PLS wallet later via
+ * `releasePendingRewards` — 24h freeze gives us a claw-back window
+ * before fraudulent earnings can be spent.
+ *
+ * Used to be daily; switched to hourly so the projected-earnings
+ * counter in the desktop app actually translates to wallet credit
+ * within an hour rather than a day.
  */
+const PAYOUT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
 export async function payoutNodes() {
   if (!(await isNodesEnabled())) return { paid: 0n, count: 0 };
 
-  const since = new Date(Date.now() - 24 * 3600 * 1000);
+  const since = new Date(Date.now() - PAYOUT_WINDOW_MS);
   const nodes = await prisma.relayNode.findMany({
     where: { status: 'ACTIVE' },
     select: { id: true, ownerId: true, totalUptimeMinutes: true },
@@ -258,18 +274,22 @@ export async function payoutNodes() {
     });
     if (proofs.length === 0) continue;
 
-    const uptimeMin = proofs.length * Math.floor(PROOF_INTERVAL_SECONDS / 60);
-    const uptimeHours = BigInt(Math.floor(uptimeMin / 60));
+    // Each proof covers PROOF_INTERVAL_SECONDS of uptime. With proofs
+    // every 5 min, an active hour produces 12 proofs → uptime ≈ 60min.
+    const uptimeMin = Math.min(60, proofs.length * Math.floor(PROOF_INTERVAL_SECONDS / 60));
+    // BigInt-safe per-minute math: 50 PLS/hour = 50/60 PLS/min.
+    // Compute as (BASE_RATE_PER_HOUR * uptimeMin) / 60 to avoid losing
+    // precision below an hour.
     const totalBytes = proofs.reduce((s, p) => s + p.bytesRelayed, 0n);
     const totalGB = totalBytes / 1_000_000_000n;
     const peers = proofs.reduce((s, p) => s + p.uniquePeers, 0);
 
     let payout =
-      BASE_RATE_PER_HOUR * uptimeHours
+      (BASE_RATE_PER_HOUR * BigInt(uptimeMin)) / 60n
       + BANDWIDTH_BONUS_PER_GB * totalGB
       + PEER_BONUS_PER_PEER * BigInt(peers);
 
-    if (payout > MAX_DAILY_PAYOUT) payout = MAX_DAILY_PAYOUT;
+    if (payout > MAX_HOURLY_PAYOUT) payout = MAX_HOURLY_PAYOUT;
     if (payout <= 0n) continue;
 
     const availableAt = new Date(Date.now() + FREEZE_HOURS * 3600 * 1000);
