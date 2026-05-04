@@ -23,8 +23,19 @@ export const DEV_RELAY = 'ws://localhost:3030/ws';
 
 // Mutable list — bootstrapRelays() merges /public into it on first call.
 const RELAYS: string[] = [...SEED_RELAYS];
+// URL → display label. Reference relay is "Pulsar"; community nodes
+// show their owner-chosen label (or short node-id fallback).
+const LABELS: Map<string, string> = new Map([[defaultRelay(), 'Pulsar (reference)']]);
 let bootstrapped = false;
 let bootstrapInflight: Promise<void> | null = null;
+
+export function labelForRelay(url: string): string {
+  if (LABELS.has(url)) return LABELS.get(url)!;
+  // Fallback for the synthetic /n/<id> form where the public-list fetch
+  // hasn't completed yet — show a shortened node id.
+  const m = url.match(/\/n\/([a-f0-9-]{8})/i);
+  return m ? `node ${m[1]}` : 'unknown relay';
+}
 
 export async function bootstrapRelays(): Promise<void> {
   if (bootstrapped) return;
@@ -33,11 +44,14 @@ export async function bootstrapRelays(): Promise<void> {
     try {
       const { data } = await api.get('/nodes/public');
       const nodes: Array<{ endpoint: string | null }> = data?.nodes ?? [];
-      const fresh = nodes
-        .map((n) => n.endpoint)
-        .filter((e): e is string => !!e && /^wss?:\/\//.test(e))
-        // dedupe against seed list
-        .filter((e) => !RELAYS.includes(e));
+      const fresh: string[] = [];
+      for (const n of nodes as Array<{ endpoint: string | null; label?: string | null; id?: string }>) {
+        if (!n.endpoint || !/^wss?:\/\//.test(n.endpoint)) continue;
+        if (RELAYS.includes(n.endpoint)) continue;
+        fresh.push(n.endpoint);
+        const display = n.label?.trim() || (n.id ? `node ${n.id.slice(0, 8)}` : 'community node');
+        LABELS.set(n.endpoint, display);
+      }
       // Insert community nodes BEFORE the reference relay so traffic
       // actually flows through them when available — the reference is
       // just a fallback safety net.

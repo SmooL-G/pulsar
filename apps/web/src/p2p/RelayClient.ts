@@ -9,6 +9,7 @@
  * PeerConnection's emit helpers).
  */
 import { pickRelays, bootstrapRelays } from './relays';
+import { useRelayStatusStore } from './relayStatusStore';
 
 type PacketHandler = (from: string, payload: any) => void;
 
@@ -115,6 +116,7 @@ class RelayClient {
       clearTimeout(watchdog);
       this.connected = true;
       console.log('[relay] open', url);
+      useRelayStatusStore.getState().setActive(url);
       ws.send(JSON.stringify({ kind: 'subscribe', pubkey: this.myPubkey }));
     };
 
@@ -145,7 +147,10 @@ class RelayClient {
       clearTimeout(watchdog);
       this.connected = false;
       this.subscribed = false;
-      if (this.ws === ws) this.ws = null;
+      if (this.ws === ws) {
+        this.ws = null;
+        useRelayStatusStore.getState().setActive(null);
+      }
       // If the user logged out we don't reconnect.
       if (this.myPubkey) this.scheduleNext();
     };

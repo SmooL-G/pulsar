@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Zap, ZapOff, Loader2 } from 'lucide-react';
 import { usePeerStore } from '../../p2p/peerStore';
+import { useRelayStatusStore } from '../../p2p/relayStatusStore';
 import { ensurePeer, dropPeer } from '../../p2p/PeerConnection';
 import { useI18n } from '../../i18n';
 
@@ -13,6 +14,7 @@ export function P2PIndicator({ remoteUserId }: Props) {
   const ru = locale === 'ru';
   const entry = usePeerStore((s) => s.peers[remoteUserId]);
   const setEnabled = usePeerStore((s) => s.setEnabled);
+  const relayLabel = useRelayStatusStore((s) => s.label);
 
   // Effect: when enabled flips on, open a peer; off → tear down.
   useEffect(() => {
@@ -27,15 +29,21 @@ export function P2PIndicator({ remoteUserId }: Props) {
   const enabled = !!entry?.enabled;
   const state = entry?.state ?? 'idle';
 
+  // Add the relay label whenever we know which one the local browser
+  // is currently subscribed to — answers the "where did my signaling
+  // packets go" question directly in the tooltip.
+  const viaSuffix = relayLabel && relayLabel !== '—'
+    ? (ru ? ` · через ${relayLabel}` : ` · via ${relayLabel}`)
+    : '';
   const tooltip = !enabled
     ? (ru ? 'Включить прямое соединение (P2P)' : 'Enable direct connection (P2P)')
     : state === 'open'
-      ? (ru ? 'Прямое соединение активно — мимо сервера' : 'Direct connection active — bypassing server')
+      ? (ru ? `Прямое соединение активно — мимо сервера${viaSuffix}` : `Direct connection active — bypassing server${viaSuffix}`)
       : state === 'connecting'
-        ? (ru ? 'Поднимаю прямое соединение…' : 'Establishing direct connection…')
+        ? (ru ? `Поднимаю прямое соединение…${viaSuffix}` : `Establishing direct connection…${viaSuffix}`)
         : state === 'failed'
           ? (ru ? 'Не получилось — отправка через сервер' : 'Direct connection failed — using server')
-          : (ru ? 'Прямое соединение готово' : 'Direct ready');
+          : (ru ? `Прямое соединение готово${viaSuffix}` : `Direct ready${viaSuffix}`);
 
   return (
     <button
