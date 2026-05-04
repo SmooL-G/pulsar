@@ -4,7 +4,7 @@ import { prisma } from '../../config/database.js';
 import {
   registerNode, rotateToken, deleteNode, submitProof, listMyNodes, listPublicNodes,
   isNodesEnabled, setNodesEnabled, pendingRewardsFor, findNodeByToken,
-  reportTunneledNodes,
+  reportTunneledNodes, nodeStats,
   NodesError,
   BASE_RATE_PER_HOUR, BANDWIDTH_BONUS_PER_GB, PEER_BONUS_PER_PEER,
   MAX_DAILY_PAYOUT, MIN_UPTIME_FOR_FIRST_PAYOUT_HOURS, PROOF_INTERVAL_SECONDS,
@@ -49,6 +49,23 @@ export async function nodesRoutes(app: FastifyInstance) {
     const node = await findNodeByToken(token);
     if (!node) return reply.status(404).send({ error: 'NOT_FOUND' });
     return node;
+  });
+
+  // Per-node earnings dashboard for the desktop app. Same auth as /proof:
+  // bearer token (which the runner already has, no separate auth needed).
+  app.get<{ Params: { nodeId: string } }>('/:nodeId/stats', async (request, reply) => {
+    const auth = request.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+    if (!token) return reply.status(401).send({ error: 'NO_TOKEN' });
+    try {
+      return await nodeStats(request.params.nodeId, token);
+    } catch (err) {
+      if (err instanceof NodesError) {
+        const status = err.code === 'UNAUTHORIZED' ? 401 : 400;
+        return reply.status(status).send({ error: err.code, message: err.message });
+      }
+      throw err;
+    }
   });
 
   // Proof submission: bearer token in Authorization header.

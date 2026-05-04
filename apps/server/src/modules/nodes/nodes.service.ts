@@ -294,6 +294,60 @@ export async function payoutNodes() {
 }
 
 /**
+ * Per-node earnings dashboard for the desktop app. Aggregates:
+ *   - lifetime PLS paid out (RelayNode.totalRewardsPaid)
+ *   - last-24h PLS rewards (NodeReward.createdAt within 24h)
+ *   - currently-frozen PLS (released = false)
+ *   - hourly-bucketed bytes_relayed for the last 24h (sparkline data)
+ *
+ * Authenticated via bearer token (same as /proof).
+ */
+export async function nodeStats(nodeId: string, token: string) {
+  const node = await prisma.relayNode.findUnique({
+    where: { id: nodeId },
+    select: { id: true, token: true, ownerId: true, totalRewardsPaid: true },
+  });
+  if (!node || node.token !== token) {
+    throw new NodesError('UNAUTHORIZED', 'bad token');
+  }
+
+  const since24h = new Date(Date.now() - 24 * 3600 * 1000);
+
+  const [todayRewardsRow, frozenRow, proofs24h] = await Promise.all([
+    prisma.nodeReward.aggregate({
+      where: { nodeId, createdAt: { gte: since24h } },
+      _sum: { amount: true },
+    }),
+    prisma.nodeReward.aggregate({
+      where: { nodeId, released: false },
+      _sum: { amount: true },
+    }),
+    prisma.nodeUptimeProof.findMany({
+      where: { nodeId, createdAt: { gte: since24h } },
+      select: { createdAt: true, bytesRelayed: true },
+      orderBy: { createdAt: 'asc' },
+    }),
+  ]);
+
+  // Bucket proofs into 24 hourly slots, oldest → newest. Index 0 = the
+  // hour 23h ago, index 23 = the current hour.
+  const buckets = new Array<bigint>(24).fill(0n);
+  const nowH = Math.floor(Date.now() / 3600_000);
+  for (const p of proofs24h) {
+    const proofH = Math.floor(p.createdAt.getTime() / 3600_000);
+    const idx = 23 - (nowH - proofH);
+    if (idx >= 0 && idx < 24) buckets[idx] += p.bytesRelayed;
+  }
+
+  return {
+    lifetimeRewards: node.totalRewardsPaid.toString(),
+    todayRewards: (todayRewardsRow._sum.amount ?? 0n).toString(),
+    pendingFrozen: (frozenRow._sum.amount ?? 0n).toString(),
+    hourlyBytes24h: buckets.map(b => b.toString()),
+  };
+}
+
+/**
  * Sweep matured frozen rewards into wallets. Called hourly. Each
  * matured row gets a wallet credit + plsTransaction + nodeReward
  * marked released, all in one transaction.
