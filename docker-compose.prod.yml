@@ -104,6 +104,11 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+      # TURN credentials endpoint (/api/v1/turn/credentials) signs with
+      # the same secret coturn validates against. TURN_PUBLIC_HOST is
+      # the hostname clients will use as turn:<host>:3478.
+      TURN_AUTH_SECRET: ${TURN_AUTH_SECRET}
+      TURN_PUBLIC_HOST: ${TURN_PUBLIC_HOST:-pulsar-chat.fun}
       # Relay tunnel feature: shared secret for the relay container's
       # heartbeat endpoint, plus the public host the relay is reachable
       # at (used to synthesise wss://<host>/n/<id> for tunneled nodes).
