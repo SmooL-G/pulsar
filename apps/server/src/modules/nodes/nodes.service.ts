@@ -315,7 +315,7 @@ export async function nodeStats(nodeId: string, token: string) {
 
   const [todayRewardsRow, frozenRow, proofs24h] = await Promise.all([
     prisma.nodeReward.aggregate({
-      where: { nodeId, createdAt: { gte: since24h } },
+      where: { nodeId, paidAt: { gte: since24h } },
       _sum: { amount: true },
     }),
     prisma.nodeReward.aggregate({
@@ -323,9 +323,9 @@ export async function nodeStats(nodeId: string, token: string) {
       _sum: { amount: true },
     }),
     prisma.nodeUptimeProof.findMany({
-      where: { nodeId, createdAt: { gte: since24h } },
-      select: { createdAt: true, bytesRelayed: true },
-      orderBy: { createdAt: 'asc' },
+      where: { nodeId, submittedAt: { gte: since24h } },
+      select: { submittedAt: true, bytesRelayed: true },
+      orderBy: { submittedAt: 'asc' },
     }),
   ]);
 
@@ -334,7 +334,7 @@ export async function nodeStats(nodeId: string, token: string) {
   const buckets = new Array<bigint>(24).fill(0n);
   const nowH = Math.floor(Date.now() / 3600_000);
   for (const p of proofs24h) {
-    const proofH = Math.floor(p.createdAt.getTime() / 3600_000);
+    const proofH = Math.floor(p.submittedAt.getTime() / 3600_000);
     const idx = 23 - (nowH - proofH);
     if (idx >= 0 && idx < 24) buckets[idx] += p.bytesRelayed;
   }
