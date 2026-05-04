@@ -173,7 +173,7 @@ const PHASES: Phase[] = [
       { text: { en: 'WebRTC P2P direct messaging', ru: 'WebRTC P2P для прямой переписки' }, status: 'done' },
       { text: { en: 'Reverse-tunnel: zero-config (no port forwarding)', ru: 'Reverse-tunnel: ноль конфига (без port forwarding)' }, status: 'done' },
       { text: { en: 'In-app auto-updater (signed releases)', ru: 'Авто-обновление прямо в приложении (подписи)' }, status: 'done' },
-      { text: { en: 'TURN server for symmetric NAT (mobile users)', ru: 'TURN-сервер для симметричного NAT (мобильный интернет)' }, status: 'active' },
+      { text: { en: 'TURN server for symmetric NAT (mobile users)', ru: 'TURN-сервер для симметричного NAT (мобильный интернет)' }, status: 'done' },
       { text: { en: 'Public-endpoint mode (Cloudflare Tunnel bundle)', ru: 'Public-endpoint режим (бандл Cloudflare Tunnel)' }, status: 'planned' },
       { text: { en: "Shamir's Secret Sharing for E2E key shards", ru: 'Shamir Secret Sharing для шардов E2E-ключей' }, status: 'planned' },
       { text: { en: 'Solana smart contract for on-chain rewards', ru: 'Смарт-контракт Solana для on-chain наград' }, status: 'planned' },
