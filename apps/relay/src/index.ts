@@ -51,6 +51,9 @@ const subscriptions = new Map<string, Set<WebSocket>>();
 
 // nodeId → active tunnel WS from a desktop node
 const tunnels = new Map<string, TunnelState>();
+// Connected admin WS clients (the auth server). Storage-related
+// responses from any tunnel are mirrored to all of them.
+const admins = new Set<WebSocket>();
 
 interface TunnelState {
   ws: WebSocket;
@@ -138,6 +141,21 @@ httpServer.on('upgrade', (req, socket, head) => {
       return;
     }
     wss.handleUpgrade(req, socket, head, (ws) => handleProxied(ws, tunnel));
+    return;
+  }
+  // Internal admin channel — used by the auth server to send
+  // miner-storage frames (Store / Challenge / Fetch) to specific node
+  // tunnels and receive their responses. Authed by the same shared
+  // secret as the heartbeat endpoint.
+  if (path === '/_admin/tunnel-ws') {
+    const provided = req.headers['x-relay-secret'];
+    const expected = process.env.RELAY_HEARTBEAT_SECRET;
+    if (!expected || provided !== expected) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+    wss.handleUpgrade(req, socket, head, (ws) => handleAdminWs(ws));
     return;
   }
   socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
@@ -281,12 +299,26 @@ async function handleTunnelUpgrade(
 
 function handleTunnelMessage(tunnel: TunnelState, raw: WebSocket.RawData) {
   const buf = toBuffer(raw);
-  if (buf.length > MAX_PAYLOAD_BYTES * 2) return; // generous, framing has overhead
+  if (buf.length > MAX_PAYLOAD_BYTES * 64) return; // 512KB limit (storage frames carry payload)
   tunnel.bytesIn += buf.length;
   let frame: any;
   try { frame = JSON.parse(buf.toString('utf8')); } catch { return; }
 
   if (frame.type === 'pong') return;
+
+  // Storage protocol responses (stored / proof / fetched) — fan out to
+  // every connected admin client, tagged with the source nodeId.
+  if (frame.type === 'stored' || frame.type === 'proof' || frame.type === 'fetched') {
+    const out = JSON.stringify({ from: tunnel.nodeId, frame });
+    for (const a of admins) {
+      if (a.readyState === WebSocket.OPEN) {
+        try { a.send(out); } catch { /* ignore */ }
+      }
+    }
+    return;
+  }
+
+  // Browser-session multiplexing — needs a sid.
   if (typeof frame.sid !== 'number') return;
   const browser = tunnel.sessions.get(frame.sid);
   if (!browser) return;
@@ -301,6 +333,29 @@ function handleTunnelMessage(tunnel: TunnelState, raw: WebSocket.RawData) {
     tunnel.sessions.delete(frame.sid);
     return;
   }
+}
+
+// ─── Admin channel: server pushes storage frames to specific tunnels ─
+function handleAdminWs(ws: WebSocket) {
+  admins.add(ws);
+  console.log(`[admin] connected (total: ${admins.size})`);
+  ws.on('close', () => {
+    admins.delete(ws);
+    console.log(`[admin] disconnected (total: ${admins.size})`);
+  });
+  ws.on('error', () => { /* close cleans up */ });
+  ws.on('message', (raw) => {
+    let req: any;
+    try { req = JSON.parse(toBuffer(raw).toString('utf8')); } catch { return; }
+    if (typeof req.to !== 'string' || !NODE_ID_RE.test(req.to)) return;
+    if (typeof req.frame !== 'object' || req.frame === null) return;
+    const tunnel = tunnels.get(req.to);
+    if (!tunnel) {
+      try { ws.send(JSON.stringify({ from: req.to, error: 'NODE_OFFLINE' })); } catch {}
+      return;
+    }
+    try { tunnel.ws.send(JSON.stringify(req.frame)); } catch {}
+  });
 }
 
 function closeTunnel(tunnel: TunnelState) {
