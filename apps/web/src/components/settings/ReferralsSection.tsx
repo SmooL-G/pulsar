@@ -113,24 +113,24 @@ export function ReferralsSection() {
       </div>
 
       {/* Tier table */}
-      <div className="rounded-2xl border border-dark-500 bg-dark-800/40 p-4">
-        <h4 className="font-semibold text-sm mb-3 text-gray-300">
+      <div className="rounded-2xl border border-dark-500 bg-dark-800/60 p-4">
+        <h4 className="font-semibold text-sm mb-3 text-gray-100">
           {tx('Регистрационный бонус по тиру', 'Tier-based signup bonus')}
         </h4>
-        <div className="space-y-1.5 text-xs">
+        <div className="space-y-2 text-sm">
           {[
             { tier: tx('Места 1-100', 'Slots 1-100'), bonus: '200 PLS' },
             { tier: tx('Места 101-1000', 'Slots 101-1000'), bonus: '40 PLS' },
             { tier: tx('Места 1001-10000', 'Slots 1001-10000'), bonus: '10 PLS' },
             { tier: tx('Дальше', 'After that'), bonus: tx('только % с майнинга', 'mining % only') },
           ].map((row) => (
-            <div key={row.tier} className="flex justify-between">
-              <span className="text-gray-400">{row.tier}</span>
-              <span className="font-mono font-semibold text-primary-300">{row.bonus}</span>
+            <div key={row.tier} className="flex justify-between items-center py-1 border-b border-dark-500/50 last:border-0">
+              <span className="text-gray-300">{row.tier}</span>
+              <span className="font-mono font-bold text-primary-300">{row.bonus}</span>
             </div>
           ))}
         </div>
-        <p className="text-[11px] text-gray-500 mt-3">
+        <p className="text-xs text-gray-400 mt-3 leading-relaxed">
           {tx(
             'Бонус начисляется обоим (тебе и приглашённому) когда приглашённый достигает Verification Level 1.',
             'Bonus paid to both you and your invitee when they reach Verification Level 1.',
@@ -178,9 +178,9 @@ function Stat({
 }) {
   return (
     <div className="rounded-xl border border-dark-500 bg-dark-800/60 p-3">
-      <div className="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase tracking-wider mb-1">
-        {icon}
-        {label}
+      <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-300 uppercase tracking-wider mb-1.5 leading-tight min-h-[28px]">
+        {icon && <span className="text-primary-400 shrink-0">{icon}</span>}
+        <span className="truncate">{label}</span>
       </div>
       <div className={`text-xl font-bold ${highlight ? 'text-primary-300' : 'text-gray-100'}`}>
         {value}
