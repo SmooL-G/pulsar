@@ -114,6 +114,11 @@ services:
       # at (used to synthesise wss://<host>/n/<id> for tunneled nodes).
       RELAY_HEARTBEAT_SECRET: ${RELAY_HEARTBEAT_SECRET}
       PUBLIC_RELAY_HOST: ${PUBLIC_RELAY_HOST:-pulsar-chat.fun}
+      # Miner-storage rollout phase. 0 = off, 1 = dual-write (Postgres
+      # AND nodes), 2 = dual-read opt-in beta, 3 = production, 4 = pure
+      # miner storage. See docs/MINER_STORAGE.md.
+      MINER_STORAGE_PHASE: ${MINER_STORAGE_PHASE:-0}
+      RELAY_ADMIN_URL: ${RELAY_ADMIN_URL:-ws://relay:3030/_admin/tunnel-ws}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

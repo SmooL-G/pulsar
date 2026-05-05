@@ -175,6 +175,37 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
       // Broadcast to all members of the chat
       io.to(`chat:${data.chatId}`).emit('message:new', messagePayload);
 
+      // Phase 1 dual-write: for DIRECT chats, mirror the encrypted blob
+      // onto the offline recipient's shard nodes. Fire-and-forget —
+      // never blocks delivery, no-op if MINER_STORAGE_PHASE < 1.
+      if (message.encryptedContent) {
+        (async () => {
+          try {
+            const { dualWriteOfflineMessage, isMinerStorageEnabled } =
+              await import('../../modules/messages/miner-storage.service.js');
+            if (!isMinerStorageEnabled()) return;
+            // Find chat members not currently in the room and not the sender.
+            const memberIds = new Set(
+              (await prisma.chatMember.findMany({
+                where: { chatId: data.chatId, leftAt: null, NOT: { userId } },
+                select: { userId: true },
+              })).map((m) => m.userId),
+            );
+            const inRoom = new Set(roomSockets.map((s) => s.data.userId as string));
+            const offlineRecipients = Array.from(memberIds).filter((id) => !inRoom.has(id));
+            for (const rid of offlineRecipients) {
+              await dualWriteOfflineMessage({
+                messageId: message.id,
+                recipientPubkey: rid,
+                ciphertext: message.encryptedContent!,
+              });
+            }
+          } catch (err) {
+            console.error('[miner-storage] dual-write error:', err);
+          }
+        })();
+      }
+
       // Activity reward — fire-and-forget, never blocks delivery.
       (async () => {
         try {

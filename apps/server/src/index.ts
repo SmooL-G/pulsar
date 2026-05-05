@@ -11,6 +11,8 @@ import { startLotteryWorker } from './modules/lottery/lotteryWorker.js';
 import { startRevenueWorker } from './modules/revenue/revenueWorker.js';
 import { startTreasuryWorker } from './modules/treasury/treasuryWorker.js';
 import { startNodesWorker } from './modules/nodes/nodesWorker.js';
+import { adminWs } from './modules/messages/admin-ws-client.js';
+import { startStorageChallengeWorker } from './modules/messages/storage-challenge.worker.js';
 
 async function main() {
   const app = await buildApp();
@@ -56,6 +58,10 @@ async function main() {
 
   // Start desktop-relay-node worker (stale + daily payout)
   startNodesWorker();
+
+  // Persistent admin-ws to relay container (Phase 1+ miner-storage)
+  adminWs.start();
+  startStorageChallengeWorker();
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

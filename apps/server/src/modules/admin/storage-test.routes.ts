@@ -3,6 +3,7 @@ import WebSocket from 'ws';
 import { randomUUID } from 'crypto';
 import { authMiddleware } from '../../middleware/auth.js';
 import { pickShardForRecipient } from '../messages/storage-shard.js';
+import { readStorageHealth } from '../messages/storage-challenge.worker.js';
 
 /**
  * Dev-only round-trip test for the miner-storage protocol (Phase 0).
@@ -30,6 +31,9 @@ export async function storageTestRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'FORBIDDEN' });
     }
   });
+
+  // 24h rolling success rate from the challenge worker.
+  app.get('/storage-health', async () => readStorageHealth());
 
   app.post<{ Body: { recipient?: string; ciphertext?: string } }>(
     '/storage-roundtrip',
