@@ -409,6 +409,20 @@ export async function releasePendingRewards() {
       ]);
       totalReleased += r.amount;
       count++;
+
+      // Pay the referral chain — L1 (10%) + L2 (2%) of the released
+      // reward, subject to per-earner 500 PLS/24h soft cap. Lazy-import
+      // so a referrals-module fault never blocks the miner's payout.
+      try {
+        const { creditMiningCut } = await import('../referrals/referrals.service.js');
+        await creditMiningCut({
+          minerId: r.ownerId,
+          rewardAmount: r.amount,
+          sourceRewardId: r.id,
+        });
+      } catch (err) {
+        console.error('[referrals] mining cut error for', r.id, err);
+      }
     } catch (err) {
       console.error('[nodes] release error for', r.id, err);
     }

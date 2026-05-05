@@ -88,13 +88,16 @@ export async function verifyWalletAuth(
 }
 
 /**
- * Register with email/password and auto-generate a Solana wallet
+ * Register with email/password and auto-generate a Solana wallet.
+ * Optional `referralCode` attributes the new user to a referrer for
+ * the registration bonus + ongoing mining-share commission.
  */
 export async function registerWithEmail(
   username: string,
   email: string,
   password: string,
-  displayName?: string
+  displayName?: string,
+  referralCode?: string,
 ): Promise<{ tokens: TokenPair; walletAddress: string }> {
   // Email is case-insensitive in practice — store and compare in lowercase
   email = email.trim().toLowerCase();
@@ -130,6 +133,19 @@ export async function registerWithEmail(
       displayName,
     },
   });
+
+  // Referral attribution + signup-rank assignment. Lazy-imported so the
+  // referrals module can be removed/disabled without breaking signup.
+  try {
+    const { findUserByReferralCode, attributeNewUser, ensureReferralCode } =
+      await import('../referrals/referrals.service.js');
+    const referrerId = referralCode ? await findUserByReferralCode(referralCode) : null;
+    await attributeNewUser(user.id, referrerId);
+    // Mint the new user's own code now so they can immediately invite.
+    await ensureReferralCode(user.id);
+  } catch (err) {
+    console.error('[referrals] attribution failed:', err);
+  }
 
   const tokens = await generateTokens(user.id, user.walletAddress, user.role);
 

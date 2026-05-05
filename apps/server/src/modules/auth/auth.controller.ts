@@ -71,7 +71,8 @@ export async function handleRegister(request: FastifyRequest, reply: FastifyRepl
     data.username,
     data.email,
     data.password,
-    data.displayName
+    data.displayName,
+    data.referralCode,
   );
 
   reply.setCookie('refreshToken', tokens.refreshToken, {

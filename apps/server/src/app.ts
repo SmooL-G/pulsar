@@ -19,6 +19,7 @@ import { friendRoutes } from './modules/friend/friend.routes.js';
 import { statsRoutes } from './modules/stats/stats.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
 import { storageTestRoutes } from './modules/admin/storage-test.routes.js';
+import { referralsRoutes } from './modules/referrals/referrals.routes.js';
 import { walletRoutes } from './modules/wallet/wallet.routes.js';
 import { yookassaWebhookRoutes } from './modules/wallet/yookassa.webhook.js';
 import { stakingRoutes } from './modules/staking/staking.routes.js';
@@ -105,6 +106,7 @@ export async function buildApp() {
   await app.register(statsRoutes, { prefix: '/api/v1/stats' });
   await app.register(adminRoutes, { prefix: '/api/v1/admin' });
   await app.register(storageTestRoutes, { prefix: '/api/v1/admin' });
+  await app.register(referralsRoutes, { prefix: '/api/v1/referrals' });
   await app.register(walletRoutes, { prefix: '/api/v1/wallet' });
   await app.register(yookassaWebhookRoutes, { prefix: '/api/v1/yookassa' });
   await app.register(stakingRoutes, { prefix: '/api/v1/staking' });

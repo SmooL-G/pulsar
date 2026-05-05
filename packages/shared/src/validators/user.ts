@@ -10,6 +10,7 @@ export const registerSchema = z.object({
   email: z.string().email().optional(),
   password: z.string().min(8).max(128).optional(),
   displayName: z.string().max(LIMITS.DISPLAY_NAME_MAX).optional(),
+  referralCode: z.string().max(16).optional(),
 });
 
 export const updateProfileSchema = z.object({

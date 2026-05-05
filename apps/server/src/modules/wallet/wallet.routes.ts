@@ -356,6 +356,20 @@ export async function walletRoutes(app: FastifyInstance) {
       });
     } catch {}
 
+    // Referral registration bonus is gated on Verification Level 1
+    // (anti-empty-account). The first time a user crosses that line,
+    // both they and their referrer get the tier-based PLS bonus.
+    if (updatedUser.verificationLevel >= 1) {
+      try {
+        const { grantRegistrationBonusIfReady } = await import(
+          '../referrals/referrals.service.js'
+        );
+        await grantRegistrationBonusIfReady(userId);
+      } catch (err) {
+        console.error('[referrals] grant-on-verify failed:', err);
+      }
+    }
+
     return {
       success: true,
       balance: updatedWallet.balance.toString(),

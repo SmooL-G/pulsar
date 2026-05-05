@@ -49,6 +49,23 @@ model User {
   createdAt           DateTime   @default(now()) @map("created_at")
   updatedAt           DateTime   @updatedAt @map("updated_at")
 
+  // ─── Referral system ──────────────────────────────────────
+  // Generated on signup, used in invite links (?ref=<code>).
+  // Stays empty until the first /referrals/mine call → first user
+  // ever queried, before that no need to clutter the index.
+  referralCode        String?    @unique @map("referral_code") @db.VarChar(16)
+  // Who invited this user (set at signup if ?ref= was valid).
+  referredById        String?    @map("referred_by_id") @db.Uuid
+  referredBy          User?      @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals           User[]     @relation("UserReferrals")
+  // Monotonic rank used to assign the registration-bonus tier
+  // (1-100 = 200 PLS, 101-1000 = 40, 1001-10000 = 10, else 0).
+  // Atomically incremented at signup so we don't have to recount.
+  signupRank          Int        @default(0) @map("signup_rank")
+  // True once the registration bonus has been credited (after the
+  // user reaches Verification Level 1 — anti-empty-account gate).
+  referralBonusPaid   Boolean    @default(false) @map("referral_bonus_paid")
+
   sentMessages      Message[]
   chatMembers       ChatMember[]
   ownedGroups       Chat[]             @relation("owner")
@@ -578,6 +595,32 @@ model NodeReward {
   @@index([nodeId, paidAt])
   @@index([released, availableAt])
   @@map("node_rewards")
+}
+
+// ─── REFERRAL EARNINGS LEDGER ─────────────────────────────
+
+enum ReferralEarningType {
+  REGISTRATION   // tier-based one-shot bonus (200 / 40 / 10 / 0 PLS)
+  MINING_L1      // 10% from a direct referral's mined PLS
+  MINING_L2      // 2% from a referral-of-referral's mined PLS
+}
+
+model ReferralEarning {
+  id              String              @id @default(uuid()) @db.Uuid
+  // Who gets paid (the referrer in MINING_*; either party in REGISTRATION).
+  earnerId        String              @map("earner_id") @db.Uuid
+  // Whose activity triggered this payment (the new user / the miner).
+  refereeId       String              @map("referee_id") @db.Uuid
+  type            ReferralEarningType
+  amount          BigInt
+  // For MINING_L1/L2 — the NodeReward row that triggered this share.
+  // Lets us audit "this 5 PLS came from that 50-PLS reward".
+  sourceRewardId  String?             @map("source_reward_id") @db.Uuid
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  @@index([earnerId, createdAt])
+  @@index([refereeId, type])
+  @@map("referral_earnings")
 }
 
 // ─── PINNED MESSAGES ─────────────────────────────────────
