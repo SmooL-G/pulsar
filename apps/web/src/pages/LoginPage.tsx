@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../services/api';
@@ -33,6 +33,25 @@ export function LoginPage() {
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
 
+  // Referral capture: ?ref=<code> in the URL pre-fills the field on
+  // the register form and shows a "you're invited by @X" preview.
+  const [referralCode, setReferralCode] = useState<string>('');
+  const [referrerInfo, setReferrerInfo] = useState<{
+    referrer: { username?: string; displayName?: string };
+    yourTierBonus: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (!ref) return;
+    setReferralCode(ref);
+    setMode('register');
+    api.get(`/referrals/info/${encodeURIComponent(ref)}`)
+      .then((r) => setReferrerInfo(r.data))
+      .catch(() => { /* invalid code — silently ignore */ });
+  }, []);
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -56,7 +75,12 @@ export function LoginPage() {
     setError('');
 
     try {
-      const { data } = await api.post('/auth/register', { username, email, password });
+      const { data } = await api.post('/auth/register', {
+        username,
+        email,
+        password,
+        ...(referralCode ? { referralCode } : {}),
+      });
       await login(data.accessToken);
       setShowSplash(true);
     } catch (err: any) {
@@ -194,6 +218,20 @@ export function LoginPage() {
           {/* Register */}
           {mode === 'register' && (
             <form onSubmit={handleRegister} className="space-y-4">
+              {/* Referral preview banner — visible when ?ref=<code> resolved */}
+              {referrerInfo && (
+                <div className="rounded-xl border border-primary-500/40 bg-primary-500/10 p-3 text-sm">
+                  <div className="text-primary-300 font-semibold">
+                    {locale === 'ru' ? 'Тебя пригласил' : 'Invited by'}{' '}
+                    @{referrerInfo.referrer.username || '?'}
+                  </div>
+                  <div className="text-xs text-gray-300 mt-1">
+                    {locale === 'ru'
+                      ? `При регистрации вы оба получите ${referrerInfo.yourTierBonus} PLS (после Verification Level 1).`
+                      : `On signup both of you get ${referrerInfo.yourTierBonus} PLS (after Verification Level 1).`}
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm text-gray-400 mb-1">{t('auth.username')}</label>
                 <input

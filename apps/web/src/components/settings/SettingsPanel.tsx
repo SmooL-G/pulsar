@@ -8,6 +8,7 @@ import { StakingSection } from './StakingSection';
 import { LotterySection } from './LotterySection';
 import { TreasurySection } from './TreasurySection';
 import { NodesSection } from './NodesSection';
+import { ReferralsSection } from './ReferralsSection';
 import { useNotificationStore } from '../../store/notificationStore';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -26,7 +27,7 @@ interface SettingsPanelProps {
   onClose: () => void;
 }
 
-type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'premium' | 'staking' | 'lottery' | 'treasury' | 'nodes' | 'admin';
+type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'premium' | 'staking' | 'lottery' | 'treasury' | 'nodes' | 'referrals' | 'admin';
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { t, locale, setLocale } = useI18n();
@@ -106,6 +107,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     { id: 'lottery', icon: Trophy, label: t('lottery.title') },
     { id: 'treasury', icon: Vote, label: locale === 'ru' ? 'Голосования' : 'Votes' },
     { id: 'nodes', icon: Cpu, label: locale === 'ru' ? 'Ноды' : 'Nodes' },
+    { id: 'referrals', icon: Award, label: locale === 'ru' ? 'Рефералы' : 'Referrals' },
     ...(isStaff ? [{ id: 'admin' as Tab, icon: Shield, label: t('admin.title') }] : []),
   ];
 
@@ -368,6 +370,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             {tab === 'lottery' && <LotterySection />}
             {tab === 'treasury' && <TreasurySection />}
             {tab === 'nodes' && <NodesSection />}
+            {tab === 'referrals' && <ReferralsSection />}
 
             {/* Admin rendered as separate modal */}
           </div>
