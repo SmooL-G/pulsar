@@ -71,6 +71,16 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 53 | TURN secret в проде (для пользователей с симметричным NAT) | ✅ Готово | 2026-05-03 |
 | 54 | P2PIndicator: показывать через какую ноду пошёл трафик | ✅ Готово | 2026-05-03 |
 | 55 | Бандл cloudflared в десктоп для «настоящей» децентрализации (опционально) | 🔲 В очереди | — |
+| 56 | Live PLS-ticker + 24h sparkline в десктопе (sec-by-sec проекция) | ✅ Готово | 2026-05-04 |
+| 57 | Hourly payouts (1h окно вместо 24h, snapshot в кошелёк через 24h freeze) | ✅ Готово | 2026-05-04 |
+| 58 | Frameless window (custom titlebar, drag, fixed 420×620, custom scrollbar) | ✅ Готово | 2026-05-04 |
+| 59 | Tabs в десктопе (Главное / Настройки) | ✅ Готово | 2026-05-04 |
+| 60 | **Miner-storage Phase 0** — SQLite + tunnel-протокол (Store/Challenge/Fetch) + admin WS + round-trip test | ✅ Готово | 2026-05-04 |
+| 61 | Miner-storage Phase 1 — dual-write (server пишет в Postgres И в N=3 нод) | 🔄 Следующее | — |
+| 62 | Miner-storage Phase 2 — opt-in dual-read beta | 🔲 В очереди | — |
+| 63 | Miner-storage Phase 3 — production rollout, Postgres → 24h fallback | 🔲 В очереди | — |
+| 64 | Miner-storage Phase 4 — drop Postgres OfflineMessage table | 🔲 В очереди | — |
+| 65 | Общая реферальная система (signup-бонус + % от mining-earnings) | 🔲 В очереди | — |
 
 ---
 
