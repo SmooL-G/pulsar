@@ -43,9 +43,11 @@ export function startStorageChallengeWorker(): void {
 async function tick(): Promise<void> {
   if (!adminWs.isReady()) return;
 
-  // Sample messages stored in the last 24h that have ciphertext (so they
-  // were eligible for dual-write).
-  const since = new Date(Date.now() - 24 * 3600 * 1000);
+  // Sample messages stored in the last 1h. Wider windows would include
+  // pre-Phase-1 messages that were never fanned out → noisy false-fails.
+  // 1h is short enough that even fresh deploys produce honest metrics
+  // within an hour of the first user activity.
+  const since = new Date(Date.now() - 3600 * 1000);
   const sample = await prisma.message.findMany({
     where: {
       createdAt: { gte: since },
