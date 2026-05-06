@@ -39,6 +39,18 @@ jobs:
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli@latest
 
+      - name: Pre-seed Bubblewrap config (skip interactive JDK/SDK prompts)
+        run: |
+          mkdir -p ~/.bubblewrap
+          cat > ~/.bubblewrap/config.json <<EOF
+          {
+            "jdkPath": "${JAVA_HOME}",
+            "androidSdkPath": "${ANDROID_HOME}"
+          }
+          EOF
+          echo "Wrote bubblewrap config:"
+          cat ~/.bubblewrap/config.json
+
       - name: Bubblewrap doctor (diagnostic)
         run: bubblewrap doctor || true
 
