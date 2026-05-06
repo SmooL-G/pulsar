@@ -80,7 +80,7 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 62 | Miner-storage Phase 2 — opt-in dual-read beta | 🔲 В очереди | — |
 | 63 | Miner-storage Phase 3 — production rollout, Postgres → 24h fallback | 🔲 В очереди | — |
 | 64 | Miner-storage Phase 4 — drop Postgres OfflineMessage table | 🔲 В очереди | — |
-| 65 | Общая реферальная система (signup-бонус + % от mining-earnings) | 🔲 В очереди | — |
+| 65 | Общая реферальная система (signup-бонус + % от mining-earnings) | ✅ Готово | 2026-05-05 |
 
 ---
 
