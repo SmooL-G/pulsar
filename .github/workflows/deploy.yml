@@ -3,9 +3,42 @@ name: Deploy Pulsar
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      web: ${{ steps.filter.outputs.web }}
+      schema: ${{ steps.filter.outputs.schema }}
+      compose: ${{ steps.filter.outputs.compose }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'apps/server/**'
+              - 'packages/shared/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            web:
+              - 'apps/web/**'
+              - 'packages/shared/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            schema:
+              - 'apps/server/prisma/**'
+            compose:
+              - 'docker-compose.prod.yml'
+              - 'apps/*/Dockerfile*'
+
   deploy:
+    needs: detect-changes
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to server
@@ -16,13 +49,46 @@ jobs:
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
           command_timeout: 30m
+          envs: SRV_CHANGED,WEB_CHANGED,SCHEMA_CHANGED,COMPOSE_CHANGED
           script: |
+            set -e
             cd /home/pulsar/app
             eval "$(ssh-agent -s)"
             ssh-add /root/.ssh/github_deploy
             git pull origin main
-            docker compose -f docker-compose.prod.yml build
-            docker compose -f docker-compose.prod.yml up -d
-            sleep 8
-            docker compose -f docker-compose.prod.yml exec -T server npx prisma db push --skip-generate
-            echo "Deploy complete: $(date)"
+
+            SRV='${{ needs.detect-changes.outputs.server }}'
+            WEB='${{ needs.detect-changes.outputs.web }}'
+            SCHEMA='${{ needs.detect-changes.outputs.schema }}'
+            COMPOSE='${{ needs.detect-changes.outputs.compose }}'
+
+            echo "[deploy] changes: server=$SRV web=$WEB schema=$SCHEMA compose=$COMPOSE"
+
+            # Compose changes affect everything
+            if [ "$COMPOSE" = "true" ]; then
+              echo "[deploy] compose changed → rebuild + restart all"
+              docker compose -f docker-compose.prod.yml build
+              docker compose -f docker-compose.prod.yml up -d --force-recreate
+            else
+              if [ "$SRV" = "true" ]; then
+                echo "[deploy] rebuilding server"
+                docker compose -f docker-compose.prod.yml build server
+                docker compose -f docker-compose.prod.yml up -d --force-recreate server
+              fi
+              if [ "$WEB" = "true" ]; then
+                echo "[deploy] rebuilding web"
+                docker compose -f docker-compose.prod.yml build web
+                docker compose -f docker-compose.prod.yml up -d --force-recreate web
+              fi
+              if [ "$SRV" != "true" ] && [ "$WEB" != "true" ]; then
+                echo "[deploy] no app code changes — skipping rebuild"
+              fi
+            fi
+
+            if [ "$SCHEMA" = "true" ]; then
+              echo "[deploy] schema changed → prisma db push"
+              sleep 5
+              docker compose -f docker-compose.prod.yml exec -T server npx prisma db push --skip-generate --schema=prisma/schema.prisma
+            fi
+
+            echo "[deploy] done $(date -u +%FT%TZ)"
