@@ -64,6 +64,29 @@ export async function chatRoutes(app: FastifyInstance) {
       return { ...rest, isPremium };
     };
 
+    // Per-chat unread count: messages newer than the user's most-recent
+    // ReadReceipt for this chat (or, if they've never read anything,
+    // newer than the moment they joined). Computed in parallel here so
+    // the chat list survives a page refresh — previously unreadCount
+    // only existed in client memory and reset to 0 on reload.
+    const unreadCounts = await Promise.all(memberships.map(async (m) => {
+      const lastRead = await prisma.readReceipt.findFirst({
+        where: { userId, message: { chatId: m.chatId } },
+        orderBy: { readAt: 'desc' },
+        select: { readAt: true },
+      });
+      const floor = lastRead?.readAt ?? m.joinedAt;
+      const count = await prisma.message.count({
+        where: {
+          chatId: m.chatId,
+          NOT: { senderId: userId },
+          createdAt: { gt: floor },
+        },
+      });
+      return [m.chatId, count] as const;
+    }));
+    const unreadByChat = new Map(unreadCounts);
+
     const chats = memberships.map((m) => {
       const lastMessage = m.chat.messages[0];
       return {
@@ -91,6 +114,7 @@ export async function chatRoutes(app: FastifyInstance) {
           m.chat.type === 'DIRECT'
             ? flattenPremium(m.chat.members.find((member) => member.userId !== userId)?.user)
             : null,
+        unreadCount: unreadByChat.get(m.chatId) ?? 0,
       };
     });
 

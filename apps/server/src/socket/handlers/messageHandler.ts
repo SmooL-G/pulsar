@@ -172,6 +172,15 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
         status,
       };
 
+      // Bump the chat's updatedAt so the chat-list sort order reflects
+      // recent activity. Without this, refresh shows chats in their
+      // original creation order even if there's been new traffic.
+      // Fire-and-forget — never blocks delivery.
+      prisma.chat.update({
+        where: { id: data.chatId },
+        data: { updatedAt: new Date() },
+      }).catch((err) => console.warn('[chat] updatedAt bump failed:', err));
+
       // Broadcast to all members of the chat
       io.to(`chat:${data.chatId}`).emit('message:new', messagePayload);
 
