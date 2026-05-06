@@ -144,9 +144,15 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
             </span>
           )}
           {chat.unreadCount && chat.unreadCount > 0 ? (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-dark-700 leading-none">
-              {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
-            </span>
+            <>
+              {/* Pulsing purple ring around the avatar — instantly draws the eye. */}
+              <span className="absolute inset-0 rounded-full ring-2 ring-primary-500/70 animate-pulse pointer-events-none" />
+              {/* Counter pill with tabular-nums + a tiny pulse dot for liveness. */}
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1.5 bg-gradient-to-br from-primary-500 to-primary-700 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-dark-700 leading-none gap-1 shadow-lg shadow-primary-500/40 tabular-nums">
+                <span className="w-1 h-1 rounded-full bg-white animate-ping" />
+                {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
+              </span>
+            </>
           ) : null}
         </div>
 
@@ -161,14 +167,20 @@ export function ChatListItem({ chat, isActive, onClick }: ChatListItemProps) {
                   : undefined
               }
             >
-              {name}
+              <span className={(chat.unreadCount ?? 0) > 0 ? 'font-bold text-gray-900 dark:text-white' : ''}>
+                {name}
+              </span>
               <PulsarBadge level={(chat.type === 'DIRECT' ? (chat.otherUser as any)?.verificationLevel : 0) || 0} size={13} role={chat.type === 'DIRECT' ? (chat.otherUser as any)?.role : undefined} />
               {chat.type === 'DIRECT' && <PremiumBadge isPremium={(chat.otherUser as any)?.isPremium} size={13} />}
               {chat.type === 'DIRECT' && <ProfileBadgeIcon badge={(chat.otherUser as any)?.profileBadge} size={13} />}
             </span>
-            {time && <span className="text-xs text-gray-400 shrink-0 ml-2">{time}</span>}
+            {time && (
+              <span className={`text-xs shrink-0 ml-2 ${(chat.unreadCount ?? 0) > 0 ? 'text-primary-400 font-semibold' : 'text-gray-400'}`}>
+                {time}
+              </span>
+            )}
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
+          <p className={`text-sm truncate mt-0.5 ${(chat.unreadCount ?? 0) > 0 ? 'text-gray-700 dark:text-gray-200 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
             {lastMsg?.sender && chat.type === 'GROUP' && (
               <span className="text-gray-600 dark:text-gray-300 inline-flex items-center gap-0.5">
                 {lastMsg.sender.displayName || lastMsg.sender.username}

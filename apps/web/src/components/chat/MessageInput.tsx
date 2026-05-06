@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { signMessage } from '../../crypto/messageSigner';
 import { encryptMessage } from '../../crypto/e2eEncrypt';
 import { sendDmMessage } from '../../p2p/MessageTransport';
+import { maxFileSizeFor } from '@pulsar/shared';
 
 interface MessageInputProps {
   chatId: string;
@@ -40,7 +41,7 @@ function setSignEnabled(v: boolean) {
 }
 
 export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot }: MessageInputProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [text, setText] = useState('');
   const [e2eOn, setE2eOn] = useState(getE2EEnabled);
   const [signOn, setSignOn] = useState(getSignEnabled);
@@ -94,14 +95,39 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   // Helper for any path that wants to push a File into the pending list.
   const addFiles = useCallback((files: File[]) => {
     if (files.length === 0) return;
+    // Per-tier upload cap. Mirrors server-side getFileSizeLimit().
+    const u = useAuthStore.getState().user as any;
+    const cap = maxFileSizeFor({
+      verificationLevel: u?.verificationLevel ?? 0,
+      isPremium: !!u?.isPremium,
+      role: u?.role,
+    });
+    const tooBig = files.filter((f) => f.size > cap);
+    const ok = files.filter((f) => f.size <= cap);
+    if (tooBig.length > 0) {
+      const capMB = Math.floor(cap / (1024 * 1024));
+      const upgradeHint =
+        cap < 100 * 1024 * 1024
+          ? (locale === 'ru'
+              ? ` Подними Verification Level (Settings → Кошелёк) — на L3 лимит 100MB.`
+              : ' Bump Verification Level (Settings → Wallet) — L3 raises the cap to 100MB.')
+          : '';
+      toast.error(
+        (locale === 'ru'
+          ? `Файл слишком большой (макс ${capMB}MB).`
+          : `File too large (max ${capMB}MB).`) + upgradeHint,
+        { duration: 6000 },
+      );
+    }
+    if (ok.length === 0) return;
     setPendingFiles((prev) => [
       ...prev,
-      ...files.map((file) => ({
+      ...ok.map((file) => ({
         file,
         preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
       })),
     ]);
-  }, []);
+  }, [locale]);
 
   // Drag & drop anywhere on the page → add files to pending. ChatArea owns
   // the visual hint overlay; here we just listen for the custom event it fires.
