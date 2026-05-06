@@ -7,31 +7,63 @@
  * without any prompts.
  */
 import { TwaGenerator, TwaManifest } from '@bubblewrap/core';
+import { createServer } from 'node:http';
 import { promises as fs } from 'node:fs';
-import { pathToFileURL, fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve, basename } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectDir = __dirname;
 const repoRoot = resolve(projectDir, '..');
 const manifestPath = resolve(projectDir, 'twa-manifest.json');
 
-console.log(`[gen] loading ${manifestPath}`);
-const manifest = await TwaManifest.fromFile(manifestPath);
-
-// Override icon URLs to use the icons checked into the repo. The
-// twa-manifest.json points at github raw URLs for documentation, but
-// the repo is private so anonymous fetch returns 404 in CI. Resolving
-// to file:// against the local checkout sidesteps the network entirely.
+// fetch-h2 (used by @bubblewrap/core) refuses file:// URLs, and the
+// public PWA host can be unreachable from CI. So we serve the icons
+// from a local Node http server on a random loopback port for the
+// duration of project generation.
 const iconsDir = resolve(repoRoot, 'apps/web/public/icons');
-const localIcon = (name) => pathToFileURL(resolve(iconsDir, name)).toString();
-manifest.iconUrl = localIcon('icon-512.png');
-manifest.maskableIconUrl = localIcon('icon-maskable-512.png');
-manifest.monochromeIconUrl = localIcon('icon-512.png');
-console.log(`[gen] using local icons from ${iconsDir}`);
+const allowedIcons = new Set([
+  'icon-512.png',
+  'icon-maskable-512.png',
+  'icon-256.png',
+  'icon-384.png',
+  'icon-192.png',
+  'icon-maskable-192.png',
+]);
 
-console.log(`[gen] generating Android project into ${projectDir}`);
-const generator = new TwaGenerator();
-await generator.createTwaProject(projectDir, manifest, console);
+const server = createServer(async (req, res) => {
+  try {
+    const name = basename(new URL(req.url, 'http://x').pathname);
+    if (!allowedIcons.has(name)) {
+      res.writeHead(404).end('not found');
+      return;
+    }
+    const buf = await fs.readFile(resolve(iconsDir, name));
+    res.writeHead(200, { 'content-type': 'image/png', 'content-length': buf.length });
+    res.end(buf);
+  } catch (err) {
+    res.writeHead(500).end(String(err));
+  }
+});
+await new Promise((r) => server.listen(0, '127.0.0.1', r));
+const port = server.address().port;
+const base = `http://127.0.0.1:${port}`;
+console.log(`[gen] icon server listening on ${base}`);
 
-console.log('[gen] done — gradle project ready, run `bubblewrap build` next');
+try {
+  console.log(`[gen] loading ${manifestPath}`);
+  const manifest = await TwaManifest.fromFile(manifestPath);
+
+  manifest.iconUrl = `${base}/icon-512.png`;
+  manifest.maskableIconUrl = `${base}/icon-maskable-512.png`;
+  manifest.monochromeIconUrl = `${base}/icon-512.png`;
+  console.log(`[gen] icons sourced from ${iconsDir}`);
+
+  console.log(`[gen] generating Android project into ${projectDir}`);
+  const generator = new TwaGenerator();
+  await generator.createTwaProject(projectDir, manifest, console);
+
+  console.log('[gen] done — gradle project ready');
+} finally {
+  server.close();
+}
