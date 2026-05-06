@@ -102,10 +102,18 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          # bubblewrap build accepts passwords via env or via prompt;
-          # we pipe them on stdin to avoid the prompt hanging in CI.
-          # Order of prompts: keystore pw, then key pw.
-          printf "%s\n%s\n" "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" | bubblewrap build --skipPwaValidation
+          # Stdin order matters:
+          #   1. "No" — bubblewrap build first asks "regenerate project?
+          #      (Y/n)" because there is no checksum file (we generated
+          #      the project ourselves via @bubblewrap/core). We answer
+          #      No so it just builds the existing files.
+          #   2. keystore password
+          #   3. key alias password
+          {
+            echo "No"
+            echo "$KEYSTORE_PASSWORD"
+            echo "$KEY_PASSWORD"
+          } | bubblewrap build --skipPwaValidation
 
       - name: Locate built APK
         id: apk
