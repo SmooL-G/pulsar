@@ -96,36 +96,37 @@ jobs:
         working-directory: android
         run: npm run generate
 
-      - name: Build signed APK
+      - name: Write keystore.properties for Gradle signing
         working-directory: android
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          # Stdin order matters:
-          #   1. "No" — bubblewrap build first asks "regenerate project?
-          #      (Y/n)" because there is no checksum file (we generated
-          #      the project ourselves via @bubblewrap/core). We answer
-          #      No so it just builds the existing files.
-          #   2. keystore password
-          #   3. key alias password
-          {
-            echo "No"
-            echo "$KEYSTORE_PASSWORD"
-            echo "$KEY_PASSWORD"
-          } | bubblewrap build --skipPwaValidation
+          cat > keystore.properties <<EOF
+          storeFile=$(pwd)/android.keystore
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+          echo "keystore.properties written (passwords masked)"
+
+      - name: Build signed release APK with Gradle
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon assembleRelease
 
       - name: Locate built APK
         id: apk
         working-directory: android
         run: |
-          APK=$(ls app-release-signed.apk 2>/dev/null || ls app/build/outputs/apk/release/*.apk 2>/dev/null | head -1)
+          APK=$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | head -1)
           if [ -z "$APK" ]; then
             echo "::error::No APK was produced"
-            ls -R . | head -50
+            ls -R app/build/outputs 2>/dev/null | head -40 || ls -la
             exit 1
           fi
-          # Rename with version for clarity
           VN=$(jq -r '.appVersionName' twa-manifest.json)
           NEW_NAME="pulsar-${VN}.apk"
           cp "$APK" "$NEW_NAME"
