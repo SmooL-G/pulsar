@@ -1,0 +1,23 @@
+# Bubblewrap-generated files (regenerated each CI build)
+app/
+gradle/
+.gradle/
+build/
+node_modules/
+local.properties
+gradle.properties
+gradlew
+gradlew.bat
+build.gradle
+settings.gradle
+
+# Keystore (NEVER commit — comes from GH secrets)
+*.keystore
+*.jks
+keystore.properties
+
+# Build artifacts
+*.apk
+*.aab
+*.idsig
+output-metadata.json

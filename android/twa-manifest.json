@@ -1,0 +1,42 @@
+{
+  "packageId": "fun.pulsarchat.app",
+  "host": "pulsar-chat.fun",
+  "name": "Pulsar — Crypto Messenger",
+  "launcherName": "Pulsar",
+  "display": "standalone",
+  "orientation": "default",
+  "themeColor": "#4c6ef5",
+  "navigationColor": "#0f1115",
+  "navigationColorDark": "#0f1115",
+  "navigationDividerColor": "#0f1115",
+  "navigationDividerColorDark": "#0f1115",
+  "backgroundColor": "#0f1115",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://pulsar-chat.fun/icons/icon-512.png",
+  "maskableIconUrl": "https://pulsar-chat.fun/icons/icon-maskable-512.png",
+  "monochromeIconUrl": "https://pulsar-chat.fun/icons/icon-512.png",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://pulsar-chat.fun/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": { "enabled": false },
+    "locationDelegation": { "enabled": false }
+  },
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://pulsar-chat.fun/",
+  "minSdkVersion": 23,
+  "appVersionName": "0.1.0",
+  "appVersionCode": 1,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "pulsar"
+  },
+  "orientation_meta": {
+    "comment": "default = follow OS rotation lock; portrait = locked"
+  }
+}
