@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Paperclip, Smile, Lock, LockOpen, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon, ListChecks, BarChart3, Mic, Trash2, Clock } from 'lucide-react';
+import { Send, Paperclip, Smile, Lock, MessageCircle, ShieldCheck, ShieldOff, Gem, X, FileIcon, ImageIcon, ListChecks, BarChart3, Mic, Trash2, Clock } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { BotChatBar } from './BotChatBar';
 import { ChecklistComposer } from './ChecklistComposer';
@@ -26,20 +26,8 @@ interface MessageInputProps {
   recipientIsBot?: boolean;
 }
 
-// Настройка E2E шифрования — localStorage.
-// Default ON: privacy-by-default. Earlier versions defaulted to OFF
-// because the API was unstable; that's no longer true. Returning true
-// when the key is unset means new users + anyone who never touched
-// the toggle automatically get E2E. Users who explicitly disabled
-// stay disabled (we honour the literal 'false' string).
-function getE2EEnabled(): boolean {
-  const v = localStorage.getItem('pulsar_e2e_enabled');
-  if (v === null) return true;
-  return v === 'true';
-}
-function setE2EEnabled(v: boolean) {
-  localStorage.setItem('pulsar_e2e_enabled', v ? 'true' : 'false');
-}
+// E2E for DMs is now always-on (no user toggle). Privacy-by-default.
+// Old localStorage key 'pulsar_e2e_enabled' is ignored.
 function getSignEnabled(): boolean {
   return localStorage.getItem('pulsar_sign_enabled') === 'true';
 }
@@ -50,7 +38,6 @@ function setSignEnabled(v: boolean) {
 export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot }: MessageInputProps) {
   const { t, locale } = useI18n();
   const [text, setText] = useState('');
-  const [e2eOn, setE2eOn] = useState(getE2EEnabled);
   const [signOn, setSignOn] = useState(getSignEnabled);
   const [commentsOn, setCommentsOn] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -70,14 +57,6 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   const [superChatSending, setSuperChatSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { signMessage: walletSignMessage, publicKey } = useWallet();
-
-  const toggleE2E = useCallback(() => {
-    setE2eOn((prev) => {
-      const next = !prev;
-      setE2EEnabled(next);
-      return next;
-    });
-  }, []);
 
   const toggleSign = useCallback(() => {
     setSignOn((prev) => {
@@ -328,9 +307,14 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
         publicKey?.toBase58(),
       ) : null;
 
-      // E2E шифрование только для DM и если включено
+      // E2E шифрование для всех DM с не-ботом. Всегда пытаемся зашифровать;
+      // encryptMessage() сам вернёт null если у получателя нет key bundle —
+      // тогда отправляем как plain (graceful fallback). Раньше было поведение
+      // через toggle e2eOn (default OFF), что приводило к молчаливо незащищённым
+      // сообщениям. Privacy-by-default — toggle оставлен только как индикатор
+      // в UI, не как gate.
       let encryptedContent: string | undefined;
-      if (e2eOn && chatType === 'DIRECT' && !recipientIsBot && recipientUserId && content) {
+      if (chatType === 'DIRECT' && !recipientIsBot && recipientUserId && content) {
         const encrypted = await encryptMessage(content, recipientUserId);
         if (encrypted) encryptedContent = encrypted;
       }
@@ -488,16 +472,16 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
      <div className="bg-white dark:bg-dark-600 rounded-2xl shadow-xl shadow-black/15 dark:shadow-black/40 border border-gray-200/60 dark:border-dark-500/60 px-3 py-2">
       {chatType === 'DIRECT' && !recipientIsBot && (
         <div className="flex items-center gap-3 mb-1 ml-1">
-          <button
-            onClick={toggleE2E}
-            className={`flex items-center gap-1 transition-colors ${
-              e2eOn ? 'text-green-500' : 'text-gray-500'
-            }`}
-            title={e2eOn ? t('chat.e2eEncrypted') : t('chat.e2eDisabled')}
+          {/* E2E indicator — DM messages always encrypt now (privacy-by-default).
+              Static icon, not a toggle, so a stray click can't accidentally
+              disable encryption like the old version did. */}
+          <span
+            className="flex items-center gap-1 text-green-500"
+            title={t('chat.e2eEncrypted')}
           >
-            {e2eOn ? <Lock size={10} /> : <LockOpen size={10} />}
-            <span className="text-[10px]">{e2eOn ? t('chat.e2eEncrypted') : t('chat.e2eDisabled')}</span>
-          </button>
+            <Lock size={10} />
+            <span className="text-[10px]">{t('chat.e2eEncrypted')}</span>
+          </span>
           <button
             onClick={toggleSign}
             className={`flex items-center gap-1 transition-colors ${
