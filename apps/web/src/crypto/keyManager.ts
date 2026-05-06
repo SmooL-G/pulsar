@@ -89,28 +89,37 @@ export async function initializeE2EKeys(userId?: string): Promise<void> {
       currentUserId = data.id;
     }
 
-    // Проверяем локальные ключи
-    const localIdentity = await get<string>(identityKey());
-    if (localIdentity) {
-      // Ключи есть — убеждаемся что загружены на сервер
-      const { data } = await api.get('/keys/my-bundle');
-      if (data.hasBundle) return; // Всё синхронизировано
-      // Локальные есть, на сервере нет — загружаем
-    }
-
-    // Генерируем (или берём существующие) и загружаем
+    // Берём (или генерируем) локальные ключи
     const identityKP = await getIdentityKeyPair();
     const preKP = await getPreKeyPair();
+
+    const localIdentityPubB64 = toBase64(identityKP.publicKey);
+    const localPreKeyPubB64 = toBase64(preKP.publicKey);
+
+    // Сверяем с тем что лежит на сервере. Если на сервере другой pubkey
+    // (например юзер заходит из браузера где IndexedDB ещё не публиковался,
+    // или старая запись осталась) — перезаливаем, иначе отправители будут
+    // шифровать на чужой pubkey и расшифровка упадёт.
+    try {
+      const { data } = await api.get('/keys/my-bundle');
+      if (data.hasBundle && data.bundle?.identityKeyPub === localIdentityPubB64
+          && data.bundle?.preKeyPub === localPreKeyPubB64) {
+        return; // всё синхронизировано
+      }
+    } catch {
+      // если запрос упал — на всякий случай попробуем загрузить
+    }
 
     // Подписываем pre-key identity-ключом для верификации
     const signKeyPair = nacl.sign.keyPair.fromSeed(identityKP.secretKey.slice(0, 32));
     const preKeySignature = nacl.sign.detached(preKP.publicKey, signKeyPair.secretKey);
 
     await api.post('/keys/bundle', {
-      identityKeyPub: toBase64(identityKP.publicKey),
-      preKeyPub: toBase64(preKP.publicKey),
+      identityKeyPub: localIdentityPubB64,
+      preKeyPub: localPreKeyPubB64,
       preKeySignature: toBase64(preKeySignature),
     });
+    console.log('[e2e] Key bundle synced to server');
   } catch (err) {
     console.error('E2E key init error:', err);
   }
