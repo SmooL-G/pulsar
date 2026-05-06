@@ -26,9 +26,16 @@ interface MessageInputProps {
   recipientIsBot?: boolean;
 }
 
-// Настройка E2E шифрования — localStorage
+// Настройка E2E шифрования — localStorage.
+// Default ON: privacy-by-default. Earlier versions defaulted to OFF
+// because the API was unstable; that's no longer true. Returning true
+// when the key is unset means new users + anyone who never touched
+// the toggle automatically get E2E. Users who explicitly disabled
+// stay disabled (we honour the literal 'false' string).
 function getE2EEnabled(): boolean {
-  return localStorage.getItem('pulsar_e2e_enabled') === 'true';
+  const v = localStorage.getItem('pulsar_e2e_enabled');
+  if (v === null) return true;
+  return v === 'true';
 }
 function setE2EEnabled(v: boolean) {
   localStorage.setItem('pulsar_e2e_enabled', v ? 'true' : 'false');
