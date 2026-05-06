@@ -1,0 +1,12 @@
+{
+  "name": "pulsar-android-build",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node generate-project.mjs"
+  },
+  "dependencies": {
+    "@bubblewrap/core": "^1.22.0"
+  }
+}

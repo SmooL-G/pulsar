@@ -88,16 +88,13 @@ jobs:
           jq --arg vn "$TAG" --argjson vc "$VC" '.appVersionName = $vn | .appVersionCode = $vc' android/twa-manifest.json > /tmp/m.json && mv /tmp/m.json android/twa-manifest.json
           echo "Tag-derived version: $TAG ($VC)"
 
-      - name: Generate Android project from manifest
+      - name: Install @bubblewrap/core for headless project gen
         working-directory: android
-        run: |
-          # init reads twa-manifest.json that already exists in the directory
-          # and produces gradle/app/etc. --skipPwaValidation avoids the lighthouse
-          # check (which would fail in CI without a browser).
-          bubblewrap init \
-            --manifest=https://pulsar-chat.fun/manifest.webmanifest \
-            --directory=. \
-            --skipPwaValidation
+        run: npm install --no-audit --no-fund
+
+      - name: Generate Android project from manifest (headless)
+        working-directory: android
+        run: npm run generate
 
       - name: Build signed APK
         working-directory: android
