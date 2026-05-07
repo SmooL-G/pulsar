@@ -150,3 +150,21 @@ jobs:
             Pulsar Android — TWA wrapper of https://pulsar-chat.fun
 
             Install the APK directly. The web app updates over the network, so a fresh APK is only needed when the wrapper itself changes (icons, package id, permissions).
+
+      # Cross-publish to the public pulsar-node releases repo so the
+      # /download page (which only fetches that repo) can list the APK.
+      # Requires PULSAR_NODE_TOKEN secret — fine-grained PAT with
+      # contents:write on SmooL-G/pulsar-node.
+      - name: Mirror release to pulsar-node (public download repo)
+        if: startsWith(github.ref, 'refs/tags/android-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: SmooL-G/pulsar-node
+          token: ${{ secrets.PULSAR_NODE_TOKEN }}
+          files: ${{ steps.apk.outputs.path }}
+          tag_name: ${{ github.ref_name }}
+          name: Android ${{ github.ref_name }}
+          body: |
+            Pulsar Android — TWA wrapper of https://pulsar-chat.fun
+
+            Install the APK directly. The web app updates over the network, so a fresh APK is only needed when the wrapper itself changes (icons, package id, permissions).
