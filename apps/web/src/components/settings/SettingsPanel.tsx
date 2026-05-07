@@ -19,6 +19,7 @@ import { DepositModal } from '../wallet/DepositModal';
 import { HistoryModal } from '../wallet/HistoryModal';
 import { TransferModal } from '../wallet/TransferModal';
 import { exportKeys, importKeys, hasLocalKeys } from '../../crypto/keyManager';
+import { LinkedDevicesSection } from './LinkedDevicesSection';
 import { useWallet } from '@solana/wallet-adapter-react';
 import bs58 from 'bs58';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
@@ -359,6 +360,9 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                   <Shield size={18} className="text-gray-400" />
                   <span className="text-sm text-gray-500 dark:text-gray-400">{t('settings.privacy')}</span>
                 </a>
+
+                {/* Связанные устройства — multi-device E2E */}
+                <LinkedDevicesSection />
 
                 {/* E2E ключи — экспорт/импорт */}
                 <E2EKeysSection />
