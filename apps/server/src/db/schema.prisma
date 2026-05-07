@@ -749,6 +749,11 @@ enum PlsTransactionStatus {
 // fiat (СБП / USDT / PayPal / etc). Seller's PLS is escrowed until the
 // buyer marks payment received and the seller confirms.
 
+enum P2POfferSide {
+  SELL  // creator sells PLS for fiat (escrow on offer creation)
+  BUY   // creator buys PLS with fiat (escrow on trade open by responder)
+}
+
 enum P2POfferStatus {
   ACTIVE      // listed, accepting trades
   PAUSED      // hidden from marketplace, can be resumed
@@ -766,7 +771,13 @@ enum P2PTradeStatus {
 
 model P2POffer {
   id              String           @id @default(uuid()) @db.Uuid
+  // Creator of the offer. For SELL offers this is the seller (and PLS
+  // is escrowed from this user at offer creation). For BUY offers this
+  // is the buyer (no escrow at creation — escrow happens at trade open
+  // from the responder, who is the seller).
+  // DB column kept as seller_id for migration simplicity.
   sellerId        String           @map("seller_id") @db.Uuid
+  side            P2POfferSide     @default(SELL)
   // Price seller wants per 1 PLS, in USD. UI converts to user's display
   // currency via the live FX rates from /api/v1/price.
   pricePerPlsUsd  Decimal          @map("price_per_pls_usd") @db.Decimal(18, 9)

@@ -18,9 +18,12 @@ import {
 } from '../hooks/usePlsPrice';
 import { TradeDetailModal } from '../components/p2p/TradeDetailModal';
 
+type OfferSide = 'SELL' | 'BUY';
+
 interface Offer {
   id: string;
-  seller: { id: string; username: string; displayName: string | null; avatarUrl: string | null; verificationLevel: number };
+  creator: { id: string; username: string; displayName: string | null; avatarUrl: string | null; verificationLevel: number };
+  side: OfferSide;
   pricePerPlsUsd: number;
   totalAmount: string;
   remainingAmount: string;
@@ -32,6 +35,7 @@ interface Offer {
 
 interface MyOffer {
   id: string;
+  side: OfferSide;
   pricePerPlsUsd: number;
   totalAmount: string;
   remainingAmount: string;
@@ -122,7 +126,8 @@ export function P2PPage() {
 function BrowseTab({ onOpenTrade, ru }: { onOpenTrade: (id: string) => void; ru: boolean }) {
   const [offers, setOffers] = useState<Offer[] | null>(null);
   const [openTradeFor, setOpenTradeFor] = useState<Offer | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [createSide, setCreateSide] = useState<OfferSide | null>(null);
+  const [filter, setFilter] = useState<'ALL' | OfferSide>('ALL');
   const tx = (r: string, e: string) => (ru ? r : e);
 
   const load = async () => {
@@ -135,41 +140,68 @@ function BrowseTab({ onOpenTrade, ru }: { onOpenTrade: (id: string) => void; ru:
   };
   useEffect(() => { load(); }, []);
 
+  const visible = offers?.filter((o) => filter === 'ALL' || o.side === filter) ?? null;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm text-gray-400">
-          {tx('Покупай PLS у других пользователей за СБП / USDT / любым удобным способом', 'Buy PLS from other users via local payments')}
-        </h2>
+      <div className="flex items-center gap-2">
         <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-500 hover:bg-primary-600 rounded-lg text-sm font-medium transition-colors"
+          onClick={() => setCreateSide('SELL')}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 rounded-lg text-sm font-medium transition-colors"
         >
           <Plus size={14} />
-          {tx('Продать', 'Sell PLS')}
+          {tx('Продать PLS', 'Sell PLS')}
+        </button>
+        <button
+          onClick={() => setCreateSide('BUY')}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-lg text-sm font-medium transition-colors"
+        >
+          <Plus size={14} />
+          {tx('Купить PLS', 'Buy PLS')}
         </button>
       </div>
 
-      {offers === null && (
+      {/* Side filter pills */}
+      <div className="flex gap-1.5">
+        {(['ALL', 'SELL', 'BUY'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1 rounded-full text-[11px] font-medium transition-colors ${
+              filter === f
+                ? f === 'SELL' ? 'bg-amber-500/30 text-amber-200'
+                  : f === 'BUY' ? 'bg-emerald-500/30 text-emerald-200'
+                  : 'bg-primary-500/30 text-primary-200'
+                : 'bg-dark-500 text-gray-400 hover:bg-dark-400'
+            }`}
+          >
+            {f === 'ALL' && tx('Все', 'All')}
+            {f === 'SELL' && tx('Продают', 'Sellers')}
+            {f === 'BUY' && tx('Покупают', 'Buyers')}
+          </button>
+        ))}
+      </div>
+
+      {visible === null && (
         <div className="flex justify-center py-8">
           <Loader2 size={20} className="animate-spin text-gray-500" />
         </div>
       )}
 
-      {offers && offers.length === 0 && (
+      {visible && visible.length === 0 && (
         <div className="rounded-xl border border-dashed border-dark-500 p-8 text-center">
           <Tag size={28} className="mx-auto text-gray-500 mb-2" />
           <p className="text-sm text-gray-400">{tx('Пока нет активных объявлений — будь первым!', 'No active offers yet — be the first!')}</p>
         </div>
       )}
 
-      {offers && offers.length > 0 && (
+      {visible && visible.length > 0 && (
         <div className="space-y-2">
-          {offers.map((o) => <OfferCard key={o.id} offer={o} onBuy={() => setOpenTradeFor(o)} ru={ru} />)}
+          {visible.map((o) => <OfferCard key={o.id} offer={o} onAct={() => setOpenTradeFor(o)} ru={ru} />)}
         </div>
       )}
 
-      {showCreate && <CreateOfferModal onClose={() => { setShowCreate(false); load(); }} ru={ru} />}
+      {createSide && <CreateOfferModal side={createSide} onClose={() => { setCreateSide(null); load(); }} ru={ru} />}
       {openTradeFor && (
         <OpenTradeModal
           offer={openTradeFor}
@@ -182,7 +214,7 @@ function BrowseTab({ onOpenTrade, ru }: { onOpenTrade: (id: string) => void; ru:
   );
 }
 
-function OfferCard({ offer, onBuy, ru }: { offer: Offer; onBuy: () => void; ru: boolean }) {
+function OfferCard({ offer, onAct, ru }: { offer: Offer; onAct: () => void; ru: boolean }) {
   const snap = usePlsPrice();
   const currency = useDisplayCurrency((s) => s.currency);
   const tx = (r: string, e: string) => (ru ? r : e);
@@ -190,19 +222,39 @@ function OfferCard({ offer, onBuy, ru }: { offer: Offer; onBuy: () => void; ru: 
   const minT = BigInt(offer.minTrade);
   const maxT = BigInt(offer.maxTrade);
 
-  // Render seller's USD price in user's local currency (purely informational)
   const priceInDisplayCcy = snap ? offer.pricePerPlsUsd * snap.fx[currency] : null;
+  const isSell = offer.side === 'SELL';
+
+  // Visual cue: amber border for sellers, emerald for buyers
+  const sideStyle = isSell
+    ? 'border-amber-500/30 hover:border-amber-400/60'
+    : 'border-emerald-500/30 hover:border-emerald-400/60';
+  const sideLabel = isSell
+    ? { ru: 'Продаёт', en: 'Selling' }
+    : { ru: 'Покупает', en: 'Buying' };
+  const sidePill = isSell
+    ? 'bg-amber-500/15 text-amber-300'
+    : 'bg-emerald-500/15 text-emerald-300';
+  const actionLabel = isSell
+    ? { ru: 'Купить', en: 'Buy' }
+    : { ru: 'Продать', en: 'Sell' };
+  const actionStyle = isSell
+    ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300'
+    : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300';
 
   return (
-    <div className="rounded-2xl border border-dark-500 bg-dark-700/50 p-4 hover:border-primary-500/40 transition-colors">
+    <div className={`rounded-2xl border bg-dark-700/50 p-4 transition-colors ${sideStyle}`}>
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-cyan-500 flex items-center justify-center font-bold text-sm shrink-0">
-          {(offer.seller.displayName || offer.seller.username).slice(0, 1).toUpperCase()}
+          {(offer.creator.displayName || offer.creator.username).slice(0, 1).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">
-            <span className="font-medium truncate">{offer.seller.displayName || offer.seller.username}</span>
-            <span className="text-[11px] text-gray-500">@{offer.seller.username}</span>
+            <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold ${sidePill}`}>
+              {ru ? sideLabel.ru : sideLabel.en}
+            </span>
+            <span className="font-medium truncate">{offer.creator.displayName || offer.creator.username}</span>
+            <span className="text-[11px] text-gray-500">@{offer.creator.username}</span>
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
             <div>
@@ -212,7 +264,7 @@ function OfferCard({ offer, onBuy, ru }: { offer: Offer; onBuy: () => void; ru: 
               </p>
             </div>
             <div>
-              <p className="text-gray-500">{tx('Доступно', 'Available')}</p>
+              <p className="text-gray-500">{isSell ? tx('Доступно', 'Available') : tx('Хочет купить', 'Wants to buy')}</p>
               <p className="font-bold tabular-nums">{remaining.toLocaleString()} PLS</p>
             </div>
           </div>
@@ -224,10 +276,10 @@ function OfferCard({ offer, onBuy, ru }: { offer: Offer; onBuy: () => void; ru: 
           <p className="text-xs text-gray-300 mt-2 line-clamp-2 whitespace-pre-wrap">{offer.terms}</p>
         </div>
         <button
-          onClick={onBuy}
-          className="px-3 py-1.5 bg-primary-500/15 hover:bg-primary-500/25 text-primary-300 rounded-lg text-xs font-semibold transition-colors shrink-0"
+          onClick={onAct}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${actionStyle}`}
         >
-          {tx('Купить', 'Buy')}
+          {ru ? actionLabel.ru : actionLabel.en}
         </button>
       </div>
     </div>
@@ -236,7 +288,7 @@ function OfferCard({ offer, onBuy, ru }: { offer: Offer; onBuy: () => void; ru: 
 
 // ─── CREATE OFFER ───────────────────────────────────────
 
-function CreateOfferModal({ onClose, ru }: { onClose: () => void; ru: boolean }) {
+function CreateOfferModal({ side, onClose, ru }: { side: OfferSide; onClose: () => void; ru: boolean }) {
   const tx = (r: string, e: string) => (ru ? r : e);
   const [amount, setAmount] = useState('');
   const [pricePerPls, setPricePerPls] = useState('');
@@ -247,6 +299,8 @@ function CreateOfferModal({ onClose, ru }: { onClose: () => void; ru: boolean })
   const currency = useDisplayCurrency((s) => s.currency);
   const snap = usePlsPrice();
 
+  const isSell = side === 'SELL';
+
   const submit = async () => {
     if (!amount || !pricePerPls || terms.trim().length < 5) {
       toast.error(tx('Заполни все обязательные поля', 'Fill all required fields'));
@@ -254,10 +308,10 @@ function CreateOfferModal({ onClose, ru }: { onClose: () => void; ru: boolean })
     }
     setBusy(true);
     try {
-      // Convert price from display currency to USD before sending.
       const priceInDisplay = Number(pricePerPls);
       const priceUsd = snap ? priceInDisplay / snap.fx[currency] : priceInDisplay;
       await api.post('/p2p/offers', {
+        side,
         pricePerPlsUsd: priceUsd,
         totalAmount: amount,
         minTrade: minTrade || 0,
@@ -276,10 +330,16 @@ function CreateOfferModal({ onClose, ru }: { onClose: () => void; ru: boolean })
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="bg-dark-700 rounded-2xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-bold mb-1">{tx('Продать PLS', 'Sell PLS')}</h3>
-        <p className="text-xs text-gray-400 mb-4">{tx('Твои PLS залочатся в эскроу до завершения сделки. Комиссия платформы 1%.', 'Your PLS will be escrowed until the trade completes. 1% platform fee.')}</p>
+        <h3 className="text-lg font-bold mb-1">
+          {isSell ? tx('Продать PLS', 'Sell PLS') : tx('Купить PLS', 'Buy PLS')}
+        </h3>
+        <p className="text-xs text-gray-400 mb-4">
+          {isSell
+            ? tx('Твои PLS залочатся в эскроу до завершения сделки. Комиссия платформы 1%.', 'Your PLS will be escrowed until the trade completes. 1% platform fee.')
+            : tx('Когда продавец откликнется — его PLS залочатся в эскроу. Ты переводишь ему фиат, он подтверждает — PLS уходят к тебе. Комиссия платформы 1%.', 'When a seller responds, their PLS gets escrowed. You send fiat, they confirm — PLS goes to you. 1% platform fee.')}
+        </p>
 
-        <Field label={tx('Сколько PLS продаёшь', 'PLS amount')}>
+        <Field label={isSell ? tx('Сколько PLS продаёшь', 'PLS amount to sell') : tx('Сколько PLS хочешь купить', 'PLS amount to buy')}>
           <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" placeholder="100000" />
         </Field>
 
@@ -297,12 +357,28 @@ function CreateOfferModal({ onClose, ru }: { onClose: () => void; ru: boolean })
         </div>
 
         <Field label={tx('Условия и реквизиты', 'Terms & payment details')}>
-          <textarea value={terms} onChange={(e) => setTerms(e.target.value)} rows={4} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none resize-none" placeholder={tx('СБП Сбербанк +7 900 123 45 67, оплата в течение 30 минут', 'SBP / USDT TRC-20: TXyz... — pay within 30 min')} />
+          <textarea
+            value={terms}
+            onChange={(e) => setTerms(e.target.value)}
+            rows={4}
+            className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none resize-none"
+            placeholder={isSell
+              ? tx('СБП Сбербанк +7 900 123 45 67, оплата в течение 30 минут', 'SBP / USDT TRC-20: TXyz... — pay within 30 min')
+              : tx('Готов платить через СБП / USDT-TRC20. Куда отправлять — обсудим в чате после открытия сделки.', 'I pay via SBP / USDT-TRC20. Confirm payment route in chat after trade opens.')}
+          />
         </Field>
 
         <div className="flex gap-2 mt-4">
           <button onClick={onClose} className="flex-1 py-2.5 bg-dark-500 hover:bg-dark-400 rounded-lg text-sm font-medium">{tx('Отмена', 'Cancel')}</button>
-          <button onClick={submit} disabled={busy} className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 rounded-lg text-sm font-bold disabled:opacity-50">
+          <button
+            onClick={submit}
+            disabled={busy}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-bold disabled:opacity-50 ${
+              isSell
+                ? 'bg-amber-500 hover:bg-amber-600 text-black'
+                : 'bg-emerald-500 hover:bg-emerald-600 text-black'
+            }`}
+          >
             {busy ? <Loader2 size={16} className="animate-spin mx-auto" /> : tx('Опубликовать', 'Post offer')}
           </button>
         </div>
@@ -336,11 +412,14 @@ function OpenTradeModal({ offer, onClose, onOpened, ru }: { offer: Offer; onClos
   const totalUsd = amtNum > 0n ? Number(amtNum) * offer.pricePerPlsUsd : 0;
   const totalDisplay = snap ? totalUsd * snap.fx[currency] : totalUsd;
 
-  const valid =
-    amtNum > 0n &&
-    amtNum <= remaining &&
-    (minT === 0n || amtNum >= minT) &&
-    (maxT === 0n || amtNum <= maxT);
+  const isSellOffer = offer.side === 'SELL';
+  // For SELL offer, responder is buyer (pays fiat); for BUY, responder is seller (sends PLS, receives fiat).
+  const respondingAsLabel = isSellOffer ? tx('Купить у', 'Buy from') : tx('Продать пользователю', 'Sell to');
+  const fiatLineLabel = isSellOffer ? tx('К оплате', 'You pay') : tx('Получишь', 'You receive');
+  const ctaLabel = isSellOffer ? tx('Открыть сделку', 'Open trade') : tx('Принять заявку', 'Accept request');
+  const ctaStyle = isSellOffer
+    ? 'bg-emerald-500 hover:bg-emerald-600 text-black'
+    : 'bg-amber-500 hover:bg-amber-600 text-black';
 
   const submit = async () => {
     if (!valid) return;
@@ -356,22 +435,32 @@ function OpenTradeModal({ offer, onClose, onOpened, ru }: { offer: Offer; onClos
     }
   };
 
+  const valid =
+    amtNum > 0n &&
+    amtNum <= remaining &&
+    (minT === 0n || amtNum >= minT) &&
+    (maxT === 0n || amtNum <= maxT);
+
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="bg-dark-700 rounded-2xl w-full max-w-md p-5">
-        <h3 className="text-lg font-bold mb-1">{tx('Купить у', 'Buy from')} {offer.seller.displayName || offer.seller.username}</h3>
-        <p className="text-xs text-gray-400 mb-4">{tx('После открытия сделки у тебя 30 минут на оплату', 'After opening, you have 30 minutes to pay')}</p>
+        <h3 className="text-lg font-bold mb-1">{respondingAsLabel} {offer.creator.displayName || offer.creator.username}</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          {isSellOffer
+            ? tx('После открытия сделки у тебя 30 минут на оплату', 'After opening, you have 30 minutes to pay')
+            : tx('Твои PLS залочатся в эскроу. Покупатель отправит тебе фиат, потом подтвердишь — и PLS уйдут к нему.', 'Your PLS will be escrowed. Buyer sends fiat, you confirm — PLS goes to them.')}
+        </p>
 
         <div className="rounded-xl bg-dark-800 p-3 mb-3 text-sm whitespace-pre-wrap">{offer.terms}</div>
 
-        <Field label={tx('Сколько PLS купить', 'PLS amount')}>
+        <Field label={isSellOffer ? tx('Сколько PLS купить', 'PLS to buy') : tx('Сколько PLS продать', 'PLS to sell')}>
           <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" placeholder="" />
         </Field>
 
         {amount && (
           <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 mb-3">
             <div className="flex items-baseline justify-between text-sm">
-              <span className="text-gray-400">{tx('К оплате', 'You pay')}</span>
+              <span className="text-gray-400">{fiatLineLabel}</span>
               <span className="font-bold text-emerald-300 tabular-nums text-base">{formatFiat(totalDisplay, currency)}</span>
             </div>
           </div>
@@ -387,8 +476,8 @@ function OpenTradeModal({ offer, onClose, onOpened, ru }: { offer: Offer; onClos
 
         <div className="flex gap-2">
           <button onClick={onClose} className="flex-1 py-2.5 bg-dark-500 hover:bg-dark-400 rounded-lg text-sm font-medium">{tx('Отмена', 'Cancel')}</button>
-          <button onClick={submit} disabled={!valid || busy} className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 rounded-lg text-sm font-bold disabled:opacity-50 text-black">
-            {busy ? <Loader2 size={16} className="animate-spin mx-auto" /> : tx('Открыть сделку', 'Open trade')}
+          <button onClick={submit} disabled={!valid || busy} className={`flex-1 py-2.5 rounded-lg text-sm font-bold disabled:opacity-50 ${ctaStyle}`}>
+            {busy ? <Loader2 size={16} className="animate-spin mx-auto" /> : ctaLabel}
           </button>
         </div>
       </div>
@@ -431,7 +520,12 @@ function MyOffersTab({ ru }: { ru: boolean }) {
       {offers.map((o) => (
         <div key={o.id} className="rounded-xl border border-dark-500 bg-dark-700/50 p-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-xs flex-wrap">
+              <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold ${
+                o.side === 'SELL' ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'
+              }`}>
+                {o.side === 'SELL' ? tx('продаю', 'selling') : tx('покупаю', 'buying')}
+              </span>
               <StatusPill status={o.status} ru={ru} />
               <span className="text-gray-500">{new Date(o.createdAt).toLocaleString()}</span>
             </div>

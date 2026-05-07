@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database.js';
-import { P2POfferStatus, P2PTradeStatus } from '@prisma/client';
+import { P2POfferSide, P2POfferStatus, P2PTradeStatus } from '@prisma/client';
 
 const TICK_MS = 60_000; // every minute
 
@@ -14,21 +14,28 @@ export function startP2PWorker() {
       const now = new Date();
       const expired = await prisma.p2PTrade.findMany({
         where: { status: P2PTradeStatus.PENDING_PAYMENT, expiresAt: { lt: now } },
-        select: { id: true, offerId: true, amount: true },
+        select: { id: true, offerId: true, amount: true, sellerId: true, offer: { select: { side: true } } },
         take: 50,
       });
       for (const t of expired) {
         try {
-          await prisma.$transaction([
-            prisma.p2PTrade.update({
+          await prisma.$transaction(async (tx) => {
+            await tx.p2PTrade.update({
               where: { id: t.id },
               data: { status: P2PTradeStatus.CANCELLED, cancelledAt: now, paymentNote: '[AUTO] payment window expired' },
-            }),
-            prisma.p2POffer.update({
+            });
+            await tx.p2POffer.update({
               where: { id: t.offerId },
               data: { remainingAmount: { increment: t.amount } },
-            }),
-          ]);
+            });
+            // BUY offer: seller had PLS locked at trade open — return it.
+            if (t.offer.side === P2POfferSide.BUY) {
+              await tx.plsWallet.update({
+                where: { userId: t.sellerId },
+                data: { lockedAmount: { decrement: t.amount } },
+              });
+            }
+          });
         } catch (err) {
           console.error('[p2p-worker] failed to auto-cancel trade', t.id, err);
         }

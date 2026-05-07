@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database.js';
-import { Prisma, P2POfferStatus, P2PTradeStatus, PlsTransactionType } from '@prisma/client';
+import { Prisma, P2POfferSide, P2POfferStatus, P2PTradeStatus, PlsTransactionType } from '@prisma/client';
 
 /**
  * Internal P2P PLS marketplace.
@@ -27,7 +27,8 @@ export class P2PError extends Error {
 }
 
 interface CreateOfferArgs {
-  sellerId: string;
+  creatorId: string;
+  side: P2POfferSide;
   pricePerPlsUsd: number;
   totalAmount: bigint;
   minTrade?: bigint;
@@ -44,21 +45,26 @@ export async function createOffer(args: CreateOfferArgs) {
   }
 
   return prisma.$transaction(async (tx) => {
-    const wallet = await tx.plsWallet.findUnique({ where: { userId: args.sellerId } });
-    if (!wallet) throw new P2PError('NO_WALLET', 'Seller has no PLS wallet');
-    const spendable = wallet.balance - wallet.lockedAmount;
-    if (spendable < args.totalAmount) {
-      throw new P2PError('INSUFFICIENT_BALANCE', `Need ${args.totalAmount} PLS, have ${spendable} spendable`);
+    // Only SELL offers escrow PLS at creation. For BUY offers the
+    // creator is the buyer — they have no PLS to lock; the responding
+    // seller's PLS gets escrowed when the trade opens.
+    if (args.side === P2POfferSide.SELL) {
+      const wallet = await tx.plsWallet.findUnique({ where: { userId: args.creatorId } });
+      if (!wallet) throw new P2PError('NO_WALLET', 'No PLS wallet');
+      const spendable = wallet.balance - wallet.lockedAmount;
+      if (spendable < args.totalAmount) {
+        throw new P2PError('INSUFFICIENT_BALANCE', `Need ${args.totalAmount} PLS, have ${spendable} spendable`);
+      }
+      await tx.plsWallet.update({
+        where: { userId: args.creatorId },
+        data: { lockedAmount: { increment: args.totalAmount } },
+      });
     }
-
-    await tx.plsWallet.update({
-      where: { userId: args.sellerId },
-      data: { lockedAmount: { increment: args.totalAmount } },
-    });
 
     const offer = await tx.p2POffer.create({
       data: {
-        sellerId: args.sellerId,
+        sellerId: args.creatorId,    // column re-used as creator id
+        side: args.side,
         pricePerPlsUsd: new Prisma.Decimal(args.pricePerPlsUsd),
         totalAmount: args.totalAmount,
         remainingAmount: args.totalAmount,
@@ -72,10 +78,10 @@ export async function createOffer(args: CreateOfferArgs) {
 }
 
 /** Cancel an offer with no open trades against it. Returns locked PLS. */
-export async function cancelOffer(offerId: string, sellerId: string) {
+export async function cancelOffer(offerId: string, creatorId: string) {
   return prisma.$transaction(async (tx) => {
     const offer = await tx.p2POffer.findUnique({ where: { id: offerId } });
-    if (!offer || offer.sellerId !== sellerId) throw new P2PError('NOT_FOUND', 'Offer not found');
+    if (!offer || offer.sellerId !== creatorId) throw new P2PError('NOT_FOUND', 'Offer not found');
     if (offer.status === P2POfferStatus.CANCELLED || offer.status === P2POfferStatus.COMPLETED) {
       throw new P2PError('FINAL_STATE', 'Offer is already finished');
     }
@@ -92,9 +98,10 @@ export async function cancelOffer(offerId: string, sellerId: string) {
       where: { id: offerId },
       data: { status: P2POfferStatus.CANCELLED, remainingAmount: 0n },
     });
-    if (offer.remainingAmount > 0n) {
+    // Only SELL offers had PLS locked at creation — return it.
+    if (offer.side === P2POfferSide.SELL && offer.remainingAmount > 0n) {
       await tx.plsWallet.update({
-        where: { userId: sellerId },
+        where: { userId: creatorId },
         data: { lockedAmount: { decrement: offer.remainingAmount } },
       });
     }
@@ -104,7 +111,7 @@ export async function cancelOffer(offerId: string, sellerId: string) {
 
 interface OpenTradeArgs {
   offerId: string;
-  buyerId: string;
+  responderId: string;   // user opening the trade against the offer
   amount: bigint;
 }
 
@@ -113,7 +120,7 @@ export async function openTrade(args: OpenTradeArgs) {
     const offer = await tx.p2POffer.findUnique({ where: { id: args.offerId } });
     if (!offer) throw new P2PError('NOT_FOUND', 'Offer not found');
     if (offer.status !== P2POfferStatus.ACTIVE) throw new P2PError('NOT_ACTIVE', 'Offer is not active');
-    if (offer.sellerId === args.buyerId) throw new P2PError('SELF_TRADE', "Can't trade with yourself");
+    if (offer.sellerId === args.responderId) throw new P2PError('SELF_TRADE', "Can't trade with yourself");
     if (args.amount <= 0n) throw new P2PError('INVALID_AMOUNT', 'Amount must be positive');
     if (args.amount > offer.remainingAmount) {
       throw new P2PError('INSUFFICIENT_OFFER', `Only ${offer.remainingAmount} PLS available`);
@@ -125,13 +132,32 @@ export async function openTrade(args: OpenTradeArgs) {
       throw new P2PError('ABOVE_MAX', `Maximum is ${offer.maxTrade} PLS`);
     }
 
+    // Determine buyer/seller from offer side + who's responding.
+    // SELL offer: responder is buyer; creator is seller (PLS already locked at creation).
+    // BUY offer: responder is seller; creator is buyer; lock seller's PLS now.
+    const buyerId = offer.side === P2POfferSide.SELL ? args.responderId : offer.sellerId;
+    const sellerId = offer.side === P2POfferSide.SELL ? offer.sellerId : args.responderId;
+
+    // For BUY offers, check + lock the responder seller's PLS now.
+    if (offer.side === P2POfferSide.BUY) {
+      const wallet = await tx.plsWallet.findUnique({ where: { userId: sellerId } });
+      if (!wallet) throw new P2PError('NO_WALLET', "You don't have a PLS wallet");
+      const spendable = wallet.balance - wallet.lockedAmount;
+      if (spendable < args.amount) {
+        throw new P2PError('INSUFFICIENT_BALANCE', `Need ${args.amount} PLS, have ${spendable} spendable`);
+      }
+      await tx.plsWallet.update({
+        where: { userId: sellerId },
+        data: { lockedAmount: { increment: args.amount } },
+      });
+    }
+
     // Block opening another trade against the same offer for the same
-    // buyer if one is still pending — a single buyer with multiple
-    // pending trades can starve the offer's escrow.
+    // responder if one is still pending.
     const existing = await tx.p2PTrade.findFirst({
       where: {
         offerId: args.offerId,
-        buyerId: args.buyerId,
+        OR: [{ buyerId: args.responderId }, { sellerId: args.responderId }],
         status: { in: [P2PTradeStatus.PENDING_PAYMENT, P2PTradeStatus.PAID] },
       },
     });
@@ -143,8 +169,8 @@ export async function openTrade(args: OpenTradeArgs) {
     const trade = await tx.p2PTrade.create({
       data: {
         offerId: args.offerId,
-        buyerId: args.buyerId,
-        sellerId: offer.sellerId,
+        buyerId,
+        sellerId,
         amount: args.amount,
         totalPriceUsd,
         expiresAt,
@@ -262,11 +288,15 @@ export async function releaseTrade(tradeId: string, sellerId: string) {
 /**
  * Either party cancels a PENDING_PAYMENT trade (e.g., changed mind).
  * Returns reserved PLS to the offer's remainingAmount so a new buyer
- * can pick it up.
+ * can pick it up. For BUY offers, also unlocks the seller's wallet
+ * (lock was placed at trade open, not offer creation).
  */
 export async function cancelTrade(tradeId: string, userId: string, reason?: string) {
   return prisma.$transaction(async (tx) => {
-    const trade = await tx.p2PTrade.findUnique({ where: { id: tradeId } });
+    const trade = await tx.p2PTrade.findUnique({
+      where: { id: tradeId },
+      include: { offer: { select: { side: true } } },
+    });
     if (!trade) throw new P2PError('NOT_FOUND', 'Trade not found');
     if (trade.buyerId !== userId && trade.sellerId !== userId) {
       throw new P2PError('FORBIDDEN', 'Not your trade');
@@ -278,6 +308,13 @@ export async function cancelTrade(tradeId: string, userId: string, reason?: stri
       where: { id: trade.offerId },
       data: { remainingAmount: { increment: trade.amount } },
     });
+    if (trade.offer.side === P2POfferSide.BUY) {
+      // Unlock seller's PLS that was reserved at trade open.
+      await tx.plsWallet.update({
+        where: { userId: trade.sellerId },
+        data: { lockedAmount: { decrement: trade.amount } },
+      });
+    }
     return tx.p2PTrade.update({
       where: { id: tradeId },
       data: {

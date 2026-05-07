@@ -11,7 +11,7 @@ import {
   releaseTrade,
   P2PError,
 } from './p2p.service.js';
-import { P2POfferStatus, P2PTradeStatus } from '@prisma/client';
+import { P2POfferSide, P2POfferStatus, P2PTradeStatus } from '@prisma/client';
 
 function handle<T>(reply: any, fn: () => Promise<T>) {
   return fn().catch((err: any) => {
@@ -46,7 +46,8 @@ export async function p2pRoutes(app: FastifyInstance) {
     return {
       offers: offers.map((o) => ({
         id: o.id,
-        seller: o.seller,
+        creator: o.seller,                    // for SELL = seller, for BUY = buyer
+        side: o.side,
         pricePerPlsUsd: Number(o.pricePerPlsUsd),
         totalAmount: o.totalAmount.toString(),
         remainingAmount: o.remainingAmount.toString(),
@@ -69,6 +70,7 @@ export async function p2pRoutes(app: FastifyInstance) {
     return {
       offers: offers.map((o) => ({
         id: o.id,
+        side: o.side,
         pricePerPlsUsd: Number(o.pricePerPlsUsd),
         totalAmount: o.totalAmount.toString(),
         remainingAmount: o.remainingAmount.toString(),
@@ -84,6 +86,7 @@ export async function p2pRoutes(app: FastifyInstance) {
   // POST /p2p/offers — create new offer
   app.post<{
     Body: {
+      side?: 'SELL' | 'BUY';
       pricePerPlsUsd: number;
       totalAmount: string | number;
       minTrade?: string | number;
@@ -93,8 +96,10 @@ export async function p2pRoutes(app: FastifyInstance) {
   }>('/offers', async (request, reply) =>
     handle(reply, async () => {
       const userId = request.user!.userId;
+      const side = request.body.side === 'BUY' ? P2POfferSide.BUY : P2POfferSide.SELL;
       const offer = await createOffer({
-        sellerId: userId,
+        creatorId: userId,
+        side,
         pricePerPlsUsd: Number(request.body.pricePerPlsUsd),
         totalAmount: BigInt(request.body.totalAmount),
         minTrade: request.body.minTrade ? BigInt(request.body.minTrade) : 0n,
@@ -104,6 +109,7 @@ export async function p2pRoutes(app: FastifyInstance) {
       return reply.status(201).send({
         offer: {
           id: offer.id,
+          side: offer.side,
           status: offer.status,
           remainingAmount: offer.remainingAmount.toString(),
         },
@@ -122,7 +128,9 @@ export async function p2pRoutes(app: FastifyInstance) {
 
   // ─── TRADES ───────────────────────────────────────────
 
-  // POST /p2p/offers/:id/trades — buyer opens a trade against an offer
+  // POST /p2p/offers/:id/trades — open a trade against an offer.
+  // For SELL offers the responder becomes buyer; for BUY offers the
+  // responder becomes seller (and their PLS is escrowed).
   app.post<{
     Params: { id: string };
     Body: { amount: string | number };
@@ -131,7 +139,7 @@ export async function p2pRoutes(app: FastifyInstance) {
       const userId = request.user!.userId;
       const trade = await openTrade({
         offerId: request.params.id,
-        buyerId: userId,
+        responderId: userId,
         amount: BigInt(request.body.amount),
       });
       return reply.status(201).send({
