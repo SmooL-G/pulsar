@@ -81,6 +81,9 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 63 | Miner-storage Phase 3 — production rollout, Postgres → 24h fallback | 🔲 В очереди | — |
 | 64 | Miner-storage Phase 4 — drop Postgres OfflineMessage table | 🔲 В очереди | — |
 | 65 | Общая реферальная система (signup-бонус + % от mining-earnings) | ✅ Готово | 2026-05-05 |
+| 66 | Always-on E2E для DM + автосинк pubkey при смене браузера | ✅ Готово | 2026-05-06 |
+| 67 | Pulsar Android APK (Bubblewrap TWA + GH Actions auto-build) | ✅ Готово | 2026-05-06 |
+| 68 | **Linked devices** — multi-device E2E (envelope.from + fan-out на N pubkey'ев) | ✅ Готово | 2026-05-07 |
 
 ---
 
