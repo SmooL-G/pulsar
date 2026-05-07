@@ -81,6 +81,7 @@ model User {
   p2pOffers         P2POffer[]
   p2pBuyerTrades    P2PTrade[]         @relation("p2pBuyerTrades")
   p2pSellerTrades   P2PTrade[]         @relation("p2pSellerTrades")
+  plsPriceUpdates   PlsPriceReference[]
   botProfile        Bot?               @relation("botUser")
   ownedBots         Bot[]              @relation("botOwner")
   reports           Report[]
@@ -827,6 +828,22 @@ model P2PTrade {
   @@index([sellerId, createdAt(sort: Desc)])
   @@index([status, expiresAt])
   @@map("p2p_trades")
+}
+
+// ─── PLS PRICE REFERENCE ────────────────────────────────
+// Append-only log of admin-set "presale" rates. The latest row by
+// setAt is the active reference; older rows are kept for audit. Falls
+// back to env PLS_USD_RATE if the table is empty.
+model PlsPriceReference {
+  id              String   @id @default(uuid()) @db.Uuid
+  pricePerPlsUsd  Decimal  @map("price_per_pls_usd") @db.Decimal(18, 9)
+  setBy           String?  @map("set_by") @db.Uuid
+  setByUser       User?    @relation(fields: [setBy], references: [id], onDelete: SetNull)
+  setAt           DateTime @default(now()) @map("set_at")
+  notes           String?  @db.VarChar(500)
+
+  @@index([setAt(sort: Desc)])
+  @@map("pls_price_references")
 }
 
 // ─── E2E KEY BUNDLES ────────────────────────────────────

@@ -20,6 +20,12 @@ import { HistoryModal } from '../wallet/HistoryModal';
 import { TransferModal } from '../wallet/TransferModal';
 import { exportKeys, importKeys, hasLocalKeys } from '../../crypto/keyManager';
 import { LinkedDevicesSection } from './LinkedDevicesSection';
+import { PlsPriceAdminSection } from './PlsPriceAdminSection';
+
+function SuperAdminOnly({ children }: { children: React.ReactNode }) {
+  const role = useAuthStore((s) => (s.user as any)?.role);
+  return role === 'SUPER_ADMIN' ? <>{children}</> : null;
+}
 import { useWallet } from '@solana/wallet-adapter-react';
 import bs58 from 'bs58';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
@@ -363,6 +369,9 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
 
                 {/* Связанные устройства — multi-device E2E */}
                 <LinkedDevicesSection />
+
+                {/* Админ-курс PLS — только SUPER_ADMIN */}
+                <SuperAdminOnly><PlsPriceAdminSection /></SuperAdminOnly>
 
                 {/* E2E ключи — экспорт/импорт */}
                 <E2EKeysSection />

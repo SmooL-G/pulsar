@@ -70,7 +70,9 @@ export function PlsPriceCard({ balancePls = 0, compact = false }: Props) {
       <div className="flex items-baseline gap-1.5 mb-1">
         <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">PLS</span>
         <span className="text-[10px] text-gray-500">
-          {snap?.pls.source === 'presale' ? (ru ? 'пресейл' : 'presale') : 'live'}
+          {snap?.pls.source === 'market'
+            ? (ru ? 'рынок 7д' : 'market 7d')
+            : (ru ? 'пресейл' : 'presale')}
         </span>
       </div>
 
@@ -131,7 +133,9 @@ export function PlsPriceBadge() {
       <span className={`tabular-nums ${
         change === 0 ? 'text-gray-500' : changeUp ? 'text-emerald-400' : 'text-rose-400'
       }`}>
-        {change === 0 ? (ru ? 'пресейл' : 'presale') : `${changeUp ? '+' : ''}${change.toFixed(1)}%`}
+        {change === 0
+          ? (snap.pls.source === 'market' ? (ru ? 'рынок' : 'market') : (ru ? 'пресейл' : 'presale'))
+          : `${changeUp ? '+' : ''}${change.toFixed(1)}%`}
       </span>
     </div>
   );

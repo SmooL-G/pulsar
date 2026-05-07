@@ -14,7 +14,14 @@ export const CURRENCIES: { code: Currency; symbol: string; name: string }[] = [
 ];
 
 export interface PriceSnapshot {
-  pls: { usd: number; change24h: number; source: 'presale' | 'dex' };
+  pls: {
+    usd: number;
+    change24h: number;
+    source: 'presale' | 'market' | 'dex';
+    reference?: number;
+    market?: { price: number; volumePls: string; trades: number } | null;
+    clamped?: boolean;
+  };
   fx: Record<Currency, number>;
   updatedAt: string;
 }

@@ -1,22 +1,18 @@
 import type { FastifyInstance } from 'fastify';
 import { redis } from '../../config/redis.js';
+import { authMiddleware } from '../../middleware/auth.js';
+import { getEffectivePrice, setReferencePrice, getReferenceHistory } from './price.service.js';
 
 /**
- * GET /api/v1/price — current PLS rate + FX rates for the supported
- * display currencies. Public endpoint (no auth) so the login page can
- * read it before sign-in.
+ * Public + admin price API.
  *
- * Source today: PLS isn't on a DEX yet, so we publish a fixed
- * "presale" rate set via env (PLS_USD_RATE). When the token launches
- * on a DEX, swap this for a Jupiter/Birdeye fetch — clients keep
- * working without changes.
+ * GET  /price            — public; effective price + FX rates (cached 60s)
+ * GET  /price/admin      — SUPER_ADMIN only; current reference + history
+ * POST /price/admin      — SUPER_ADMIN only; set new reference (appended)
  *
- * FX (USD → RUB/EUR/UAH) is fetched from open.er-api.com (no key
- * needed) and cached in Redis for 1h. Total upstream traffic under
- * 24 calls/day across the whole platform.
+ * Effective price layers reference + market — see price.service.ts.
  */
 
-const PLS_USD = Number(process.env.PLS_USD_RATE ?? '0.001');
 const FX_TTL_SEC = 60 * 60;
 const FX_CACHE_KEY = 'price:fx:usd';
 const PLS_CACHE_KEY = 'price:pls:snapshot';
@@ -43,10 +39,7 @@ async function getFxRates(): Promise<FxRates> {
   if (cached) {
     try { return JSON.parse(cached) as FxRates; } catch { /* fallthrough */ }
   }
-
   try {
-    // 5s timeout via AbortController so a stalled FX upstream can't
-    // hang client requests (route falls back to static rates).
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), 5_000);
     const res = await fetch('https://open.er-api.com/v6/latest/USD', { signal: ac.signal });
@@ -69,20 +62,21 @@ async function getFxRates(): Promise<FxRates> {
 }
 
 export async function priceRoutes(app: FastifyInstance) {
+  // Public — no auth.
   app.get('/', async () => {
     const cached = await redis.get(PLS_CACHE_KEY);
     if (cached) {
       try { return JSON.parse(cached); } catch { /* fallthrough */ }
     }
-
-    const fx = await getFxRates();
+    const [fx, eff] = await Promise.all([getFxRates(), getEffectivePrice()]);
     const snapshot = {
-      // PLS price quoted in USD. When PLS lists on a DEX, replace the
-      // env-driven constant with a Jupiter/Birdeye fetch.
       pls: {
-        usd: PLS_USD,
-        change24h: 0,        // no historical data while pre-DEX
-        source: 'presale' as const,
+        usd: eff.pricePerPlsUsd,
+        change24h: 0,
+        source: eff.source,
+        reference: eff.reference,
+        market: eff.market,
+        clamped: eff.clamped,
       },
       fx: {
         USD: 1,
@@ -96,5 +90,48 @@ export async function priceRoutes(app: FastifyInstance) {
     };
     await redis.set(PLS_CACHE_KEY, JSON.stringify(snapshot), 'EX', PLS_TTL_SEC);
     return snapshot;
+  });
+
+  // Admin endpoints — SUPER_ADMIN only.
+  app.register(async (admin) => {
+    admin.addHook('preHandler', authMiddleware);
+    admin.addHook('preHandler', async (request, reply) => {
+      if (request.user?.role !== 'SUPER_ADMIN') {
+        return reply.status(403).send({ error: 'FORBIDDEN' });
+      }
+    });
+
+    admin.get('/admin', async () => {
+      const [eff, history] = await Promise.all([getEffectivePrice(), getReferenceHistory(20)]);
+      return {
+        effective: eff,
+        history: history.map((h) => ({
+          id: h.id,
+          pricePerPlsUsd: Number(h.pricePerPlsUsd),
+          setAt: h.setAt.toISOString(),
+          notes: h.notes,
+          setByUser: h.setByUser ? { username: h.setByUser.username, displayName: h.setByUser.displayName } : null,
+        })),
+      };
+    });
+
+    admin.post<{ Body: { pricePerPlsUsd: number; notes?: string } }>('/admin', async (request, reply) => {
+      const { pricePerPlsUsd, notes } = request.body;
+      if (!pricePerPlsUsd || !Number.isFinite(pricePerPlsUsd) || pricePerPlsUsd <= 0) {
+        return reply.status(400).send({ error: 'INVALID_PRICE' });
+      }
+      const row = await setReferencePrice({
+        pricePerPlsUsd,
+        setBy: request.user!.userId,
+        notes,
+      });
+      // Bust the public snapshot cache so the new value is visible
+      // immediately, not after the 60s TTL.
+      await redis.del(PLS_CACHE_KEY);
+      return {
+        success: true,
+        reference: { id: row.id, pricePerPlsUsd: Number(row.pricePerPlsUsd), setAt: row.setAt.toISOString() },
+      };
+    });
   });
 }
