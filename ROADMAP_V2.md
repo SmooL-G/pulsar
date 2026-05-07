@@ -84,6 +84,8 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 66 | Always-on E2E для DM + автосинк pubkey при смене браузера | ✅ Готово | 2026-05-06 |
 | 67 | Pulsar Android APK (Bubblewrap TWA + GH Actions auto-build) | ✅ Готово | 2026-05-06 |
 | 68 | **Linked devices** — multi-device E2E (envelope.from + fan-out на N pubkey'ев) | ✅ Готово | 2026-05-07 |
+| 69 | Android: кросс-публикация APK в публичный pulsar-node (приватный pulsar → публичный download) | ✅ Готово | 2026-05-07 |
+| 70 | Первый публичный релиз `android-v0.1.0` (виден на pulsar-chat.fun/download) | ✅ Готово | 2026-05-07 |
 
 ---
 
