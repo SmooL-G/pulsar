@@ -9,21 +9,27 @@ import {
   type Currency,
 } from '../../hooks/usePlsPrice';
 import { useI18n } from '../../i18n';
+import { PriceSparkline } from './PriceSparkline';
+
+type SparkWindow = '24h' | '7d' | '30d';
 
 interface Props {
   /** PLS balance to convert into fiat. Pass 0 to show only the rate. */
   balancePls?: number | bigint;
   /** Compact mode hides the balance line and shrinks paddings. */
   compact?: boolean;
+  /** Hide the embedded sparkline (e.g., when card is used inline somewhere tight). */
+  hideChart?: boolean;
 }
 
-export function PlsPriceCard({ balancePls = 0, compact = false }: Props) {
+export function PlsPriceCard({ balancePls = 0, compact = false, hideChart = false }: Props) {
   const { locale } = useI18n();
   const ru = locale === 'ru';
   const snap = usePlsPrice();
   const currency = useDisplayCurrency((s) => s.currency);
   const setCurrency = useDisplayCurrency((s) => s.setCurrency);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [sparkWindow, setSparkWindow] = useState<SparkWindow>('24h');
 
   const balance = typeof balancePls === 'bigint' ? Number(balancePls) : balancePls;
   const fiatBalance = plsToFiat(balance, snap, currency);
@@ -93,6 +99,28 @@ export function PlsPriceCard({ balancePls = 0, compact = false }: Props) {
         )}
       </div>
       <p className="text-[10px] text-gray-500 mt-0.5">{ru ? 'за 1 PLS · 24ч' : 'per 1 PLS · 24h'}</p>
+
+      {/* Sparkline + window switcher */}
+      {!hideChart && !compact && (
+        <div className="mt-3">
+          <PriceSparkline window={sparkWindow} color={changeUp ? '#10b981' : change < 0 ? '#f43f5e' : '#5c7cfa'} />
+          <div className="mt-1 flex justify-end gap-1">
+            {(['24h', '7d', '30d'] as SparkWindow[]).map((w) => (
+              <button
+                key={w}
+                onClick={() => setSparkWindow(w)}
+                className={`text-[9px] px-1.5 py-0.5 rounded font-semibold transition-colors ${
+                  sparkWindow === w
+                    ? 'bg-primary-500/30 text-primary-200'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {w}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Balance worth */}
       {!compact && balance > 0 && fiatBalance !== null && (

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { redis } from '../../config/redis.js';
 import { authMiddleware } from '../../middleware/auth.js';
+import { prisma } from '../../config/database.js';
 import { getEffectivePrice, setReferencePrice, getReferenceHistory } from './price.service.js';
 
 /**
@@ -62,6 +63,26 @@ async function getFxRates(): Promise<FxRates> {
 }
 
 export async function priceRoutes(app: FastifyInstance) {
+  // GET /price/history?window=24h|7d|30d — returns sparkline points.
+  // Public so the login page can show the chart before auth.
+  app.get<{ Querystring: { window?: '24h' | '7d' | '30d' } }>('/history', async (request) => {
+    const win = request.query.window === '7d' ? 7 : request.query.window === '30d' ? 30 : 1;
+    const since = new Date(Date.now() - win * 24 * 60 * 60 * 1000);
+    const rows = await prisma.plsPriceSnapshot.findMany({
+      where: { createdAt: { gte: since } },
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true, pricePerPlsUsd: true, source: true },
+    });
+    return {
+      window: request.query.window ?? '24h',
+      points: rows.map((r) => ({
+        ts: r.createdAt.toISOString(),
+        price: Number(r.pricePerPlsUsd),
+        source: r.source,
+      })),
+    };
+  });
+
   // Public — no auth.
   app.get('/', async () => {
     const cached = await redis.get(PLS_CACHE_KEY);

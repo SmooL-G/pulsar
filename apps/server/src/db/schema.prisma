@@ -830,6 +830,20 @@ model P2PTrade {
   @@map("p2p_trades")
 }
 
+// ─── PLS PRICE TIMESERIES ───────────────────────────────
+// Hourly snapshots of the effective price (reference vs market) so we
+// can draw 24h/7d/30d sparklines. Worker appends one row per hour.
+model PlsPriceSnapshot {
+  id              String   @id @default(uuid()) @db.Uuid
+  pricePerPlsUsd  Decimal  @map("price_per_pls_usd") @db.Decimal(18, 9)
+  source          String   @db.VarChar(16)             // 'presale' | 'market'
+  marketVolumePls BigInt?  @map("market_volume_pls")   // PLS in 7d window at snapshot time, null when source=presale
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt(sort: Desc)])
+  @@map("pls_price_snapshots")
+}
+
 // ─── PLS PRICE REFERENCE ────────────────────────────────
 // Append-only log of admin-set "presale" rates. The latest row by
 // setAt is the active reference; older rows are kept for audit. Falls

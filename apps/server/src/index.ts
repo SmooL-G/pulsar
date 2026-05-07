@@ -15,6 +15,7 @@ import { adminWs } from './modules/messages/admin-ws-client.js';
 import { startStorageChallengeWorker } from './modules/messages/storage-challenge.worker.js';
 import { backfillDevicesFromBundles } from './modules/keys/devices-backfill.js';
 import { startP2PWorker } from './modules/p2p/p2p.worker.js';
+import { startPriceSnapshotWorker } from './modules/price/price.worker.js';
 
 async function main() {
   const app = await buildApp();
@@ -74,6 +75,9 @@ async function main() {
 
   // Auto-cancel P2P trades whose payment window expired (every 60s).
   startP2PWorker();
+
+  // Hourly snapshot of effective PLS price for the chart sparkline.
+  startPriceSnapshotWorker();
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {
