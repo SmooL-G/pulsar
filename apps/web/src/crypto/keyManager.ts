@@ -75,13 +75,32 @@ export async function getPreKeyPair(): Promise<KeyPairData> {
   return keyPair;
 }
 
+/** Heuristic device label so the Settings list reads as "Chrome on
+ * Windows" instead of just a UUID. Best-effort — falls back to "Web". */
+function detectDeviceName(): string {
+  if (typeof navigator === 'undefined') return 'Web';
+  const ua = navigator.userAgent;
+  let os = 'Web';
+  if (/iPhone|iPad|iPod/.test(ua)) os = 'iOS';
+  else if (/Android/.test(ua)) os = 'Android';
+  else if (/Windows/.test(ua)) os = 'Windows';
+  else if (/Mac OS X|Macintosh/.test(ua)) os = 'macOS';
+  else if (/Linux/.test(ua)) os = 'Linux';
+  let browser = 'Browser';
+  if (/Edg\//.test(ua)) browser = 'Edge';
+  else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//.test(ua)) browser = 'Firefox';
+  else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = 'Safari';
+  return `${browser} on ${os}`;
+}
+
 /**
  * Инициализация: установить userId, сгенерировать ключи если нет, загрузить на сервер.
+ * Каждый браузер/install регистрирует свою пару как отдельное устройство.
  * Ключи НЕ удаляются при logout — они привязаны к userId.
  */
 export async function initializeE2EKeys(userId?: string): Promise<void> {
   try {
-    // Определяем userId из параметра или из API
     if (userId) {
       currentUserId = userId;
     } else if (!currentUserId) {
@@ -89,44 +108,45 @@ export async function initializeE2EKeys(userId?: string): Promise<void> {
       currentUserId = data.id;
     }
 
-    // Берём (или генерируем) локальные ключи
     const identityKP = await getIdentityKeyPair();
     const preKP = await getPreKeyPair();
 
     const localIdentityPubB64 = toBase64(identityKP.publicKey);
     const localPreKeyPubB64 = toBase64(preKP.publicKey);
 
-    // Сверяем с тем что лежит на сервере. Если на сервере другой pubkey
-    // (например юзер заходит из браузера где IndexedDB ещё не публиковался,
-    // или старая запись осталась) — перезаливаем, иначе отправители будут
-    // шифровать на чужой pubkey и расшифровка упадёт.
-    try {
-      const { data } = await api.get('/keys/my-bundle');
-      if (data.hasBundle && data.bundle?.identityKeyPub === localIdentityPubB64
-          && data.bundle?.preKeyPub === localPreKeyPubB64) {
-        return; // всё синхронизировано
-      }
-    } catch {
-      // если запрос упал — на всякий случай попробуем загрузить
-    }
-
-    // Подписываем pre-key identity-ключом для верификации
     const signKeyPair = nacl.sign.keyPair.fromSeed(identityKP.secretKey.slice(0, 32));
     const preKeySignature = nacl.sign.detached(preKP.publicKey, signKeyPair.secretKey);
 
-    await api.post('/keys/bundle', {
+    // POST /keys/devices is idempotent on (userId, identityKeyPub) — safe
+    // to call on every boot. Bumps lastSeenAt so dormant devices fall to
+    // the bottom of the Settings list.
+    await api.post('/keys/devices', {
       identityKeyPub: localIdentityPubB64,
       preKeyPub: localPreKeyPubB64,
       preKeySignature: toBase64(preKeySignature),
+      deviceName: detectDeviceName(),
     });
-    console.log('[e2e] Key bundle synced to server');
+    console.log('[e2e] Device registered/refreshed on server');
   } catch (err) {
     console.error('E2E key init error:', err);
   }
 }
 
+/** Returns this browser's identity public key (base64), null if not yet generated. */
+export async function getLocalIdentityPubB64(): Promise<string | null> {
+  const stored = await get<string>(identityKey());
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored).publicKey as string;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Получить публичные ключи другого пользователя.
+ * Получить публичные ключи другого пользователя (legacy, single-device).
+ * Used by callers that only need one bundle (Saved Messages decryption,
+ * legacy code paths). New code should use getRecipientDevices().
  */
 export async function getRecipientKeys(userId: string): Promise<{
   identityKeyPub: Uint8Array;
@@ -140,6 +160,48 @@ export async function getRecipientKeys(userId: string): Promise<{
     };
   } catch {
     return null;
+  }
+}
+
+export interface RecipientDevice {
+  identityKeyPub: string;   // base64
+  preKeyPub: string;        // base64
+}
+
+/**
+ * Multi-device: returns every linked device's pubkey for a recipient.
+ * Senders encrypt one ciphertext per device. Empty array means the
+ * user has no E2E-capable devices (e.g. fresh account, no PWA install).
+ */
+export async function getRecipientDevices(userId: string): Promise<RecipientDevice[]> {
+  try {
+    const { data } = await api.get(`/keys/devices/${userId}`);
+    return (data.devices ?? []).map((d: any) => ({
+      identityKeyPub: d.identityKeyPub,
+      preKeyPub: d.preKeyPub,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Returns the current user's other linked devices (not just this one).
+ * Senders include these when fanning out a ciphertext so the user can
+ * read what they sent from any of their own sessions.
+ */
+export async function getMyDevices(): Promise<RecipientDevice[]> {
+  try {
+    const { data } = await api.get('/keys/my-devices');
+    return (data.devices ?? []).map((d: any) => ({
+      identityKeyPub: d.identityKeyPub,
+      // /keys/my-devices doesn't expose preKeyPub (no need on the
+      // settings UI); for fan-out we don't need it either — encryption
+      // only uses identityKeyPub.
+      preKeyPub: '',
+    }));
+  } catch {
+    return [];
   }
 }
 
