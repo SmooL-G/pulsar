@@ -164,6 +164,28 @@ export function NewsFeed() {
           </button>
         </div>
 
+        {/* P2P exchange tile — sell/buy PLS for fiat */}
+        <a
+          href="/p2p"
+          className="group bg-gradient-to-br from-amber-500/10 to-emerald-500/10 dark:from-amber-500/15 dark:to-emerald-500/15 rounded-2xl p-5 border border-amber-500/30 hover:border-amber-400 hover:shadow-md transition-all flex items-center gap-4"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-emerald-500 flex items-center justify-center shrink-0">
+            <span className="text-2xl">💱</span>
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-sm text-gray-700 dark:text-gray-100">P2P Exchange</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {(window as any).__I18N_RU__ !== false
+                ? 'Продай или купи PLS у других пользователей'
+                : 'Buy or sell PLS with other users'}
+            </p>
+          </div>
+          <span className="text-[10px] px-2 py-1 bg-emerald-500/15 text-emerald-500 rounded-full font-bold shrink-0">
+            beta
+          </span>
+          <ArrowUpRight size={16} className="text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </a>
+
         {/* Marketplace placeholder tile */}
         <div className="bg-white dark:bg-dark-700 rounded-2xl p-5 border border-dashed border-gray-200 dark:border-dark-500 flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center shrink-0">

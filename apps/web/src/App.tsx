@@ -16,6 +16,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ProfileSharePage } from './pages/ProfileSharePage';
 import { MiningPage } from './pages/MiningPage';
 import { DownloadPage } from './pages/DownloadPage';
+import { P2PPage } from './pages/P2PPage';
 import { DevelopersPage } from './pages/DevelopersPage';
 import { InfoPage } from './pages/InfoPage';
 import { DonatePage } from './pages/DonatePage';
@@ -84,6 +85,7 @@ export function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/mining" element={<MiningPage />} />
               <Route path="/download" element={<DownloadPage />} />
+              <Route path="/p2p" element={<ProtectedRoute><P2PPage /></ProtectedRoute>} />
               {/* Universal share-link landing for any user/bot username.
                   Reserved system paths above match first; anything else falls
                   through here and gets resolved by GET /api/v1/u/:username. */}
