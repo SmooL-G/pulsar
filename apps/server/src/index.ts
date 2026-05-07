@@ -13,6 +13,7 @@ import { startTreasuryWorker } from './modules/treasury/treasuryWorker.js';
 import { startNodesWorker } from './modules/nodes/nodesWorker.js';
 import { adminWs } from './modules/messages/admin-ws-client.js';
 import { startStorageChallengeWorker } from './modules/messages/storage-challenge.worker.js';
+import { backfillDevicesFromBundles } from './modules/keys/devices-backfill.js';
 
 async function main() {
   const app = await buildApp();
@@ -62,6 +63,13 @@ async function main() {
   // Persistent admin-ws to relay container (Phase 1+ miner-storage)
   adminWs.start();
   startStorageChallengeWorker();
+
+  // One-shot backfill: copy each UserKeyBundle into UserDevice so
+  // existing single-keypair users immediately appear as one linked
+  // device. No-op once every bundle has a matching device row.
+  backfillDevicesFromBundles().catch((err) => {
+    console.error('[devices-backfill] failed:', err);
+  });
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

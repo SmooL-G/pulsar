@@ -77,6 +77,7 @@ model User {
   receivedRequests  Friendship[]       @relation("addressee")
   plsWallet         PlsWallet?
   keyBundle         UserKeyBundle?
+  devices           UserDevice[]
   botProfile        Bot?               @relation("botUser")
   ownedBots         Bot[]              @relation("botOwner")
   reports           Report[]
@@ -749,6 +750,34 @@ model UserKeyBundle {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_key_bundles")
+}
+
+// One row per linked device. Replaces the single-bundle-per-user model
+// so a user can have e.g. desktop + iPhone + Android with independent
+// keypairs. Senders fetch every device's pubkey and encrypt N copies;
+// each receiving device decrypts only its own copy.
+model UserDevice {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  // Stable per-device label shown in Settings (e.g. "Chrome on Windows",
+  // "iPhone 15 / Safari"). Best-effort, derived from User-Agent.
+  deviceName      String?  @map("device_name") @db.VarChar(64)
+  identityKeyPub  String   @map("identity_key_pub")
+  preKeyPub       String   @map("pre_key_pub")
+  preKeySignature String   @map("pre_key_signature")
+  createdAt       DateTime @default(now()) @map("created_at")
+  // Bumped on every E2E init / sign-in handshake so the Settings list
+  // can sort by recency and the UI can flag dormant devices.
+  lastSeenAt      DateTime @default(now()) @map("last_seen_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // identityKeyPub is the natural key for a device. Keeps re-registration
+  // idempotent (upsert on duplicate) and prevents a device from
+  // accidentally registering twice.
+  @@unique([userId, identityKeyPub])
+  @@index([userId])
+  @@map("user_devices")
 }
 
 // ─── NFT CACHE ──────────────────────────────────────────

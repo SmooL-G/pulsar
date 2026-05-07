@@ -32,7 +32,7 @@ jobs:
               - 'package.json'
               - 'pnpm-lock.yaml'
             schema:
-              - 'apps/server/prisma/**'
+              - 'apps/server/src/db/schema.prisma'
             compose:
               - 'docker-compose.prod.yml'
               - 'apps/*/Dockerfile*'
