@@ -26,11 +26,19 @@ import {
 
 interface EnvelopeV2 {
   v: 2;
+  // Pubkey of the device that sent this message. Receivers verify the
+  // box auth tag against this exact key — without it, we'd guess the
+  // sender's pubkey via "most-recent device on server", which breaks
+  // when the sender has multiple devices.
+  from: string;
   ct: Record<string, string>;
 }
 
 function isEnvelopeV2(value: unknown): value is EnvelopeV2 {
-  return !!value && typeof value === 'object' && (value as any).v === 2 && typeof (value as any).ct === 'object';
+  return !!value && typeof value === 'object'
+    && (value as any).v === 2
+    && typeof (value as any).from === 'string'
+    && typeof (value as any).ct === 'object';
 }
 
 function tryParseEnvelope(input: string): EnvelopeV2 | null {
@@ -89,7 +97,7 @@ export async function encryptMessage(
     }
 
     if (Object.keys(ct).length === 0) return null;
-    return JSON.stringify({ v: 2, ct } satisfies EnvelopeV2);
+    return JSON.stringify({ v: 2, from: myPubB64, ct } satisfies EnvelopeV2);
   } catch (err) {
     console.error('E2E encrypt error:', err);
     return null;
@@ -117,15 +125,17 @@ export async function decryptMessage(
       if (!myPubB64) return null;
       const slice = envelope.ct[myPubB64];
       if (!slice) return null; // not addressed to this device
-      const senderKeys = await getRecipientKeys(senderUserId);
-      if (!senderKeys) return null;
+      // Use the sender pubkey carried INSIDE the envelope, not whatever
+      // /keys/bundle/:senderUserId currently returns. The latter could
+      // have rotated to a newer device, breaking the box auth tag.
+      const senderPub = fromBase64(envelope.from);
       const combined = fromBase64(slice);
       const nonce = combined.slice(0, nacl.box.nonceLength);
       const ciphertext = combined.slice(nacl.box.nonceLength);
       const decrypted = nacl.box.open(
         ciphertext,
         nonce,
-        senderKeys.identityKeyPub,
+        senderPub,
         myKeyPair.secretKey,
       );
       if (!decrypted) return null;
