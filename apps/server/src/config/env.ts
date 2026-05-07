@@ -43,6 +43,11 @@ export const env = cleanEnv(process.env, {
   YOOKASSA_SHOP_ID: str({ default: '' }),
   YOOKASSA_SECRET_KEY: str({ default: '' }),
 
+  // PLS price quoted in USD. Used by /api/v1/price for the in-app
+  // informer cards. Currently a fixed presale value; swap to a DEX
+  // fetch once PLS lists.
+  PLS_USD_RATE: str({ default: '0.001' }),
+
   // OpenAI (Whisper for voice message transcription — Premium feature)
   // OPENAI_API_KEY is no longer used directly: jino is geo-blocked by
   // OpenAI, so we proxy through a relay running on a non-RU VPS.

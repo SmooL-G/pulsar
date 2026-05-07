@@ -7,6 +7,7 @@ import { useI18n } from '../../i18n';
 import { DepositModal } from './DepositModal';
 import { TransferModal } from './TransferModal';
 import { PulsarBadge } from '../ui/PulsarBadge';
+import { PlsPriceCard } from '../price/PlsPriceCard';
 import toast from 'react-hot-toast';
 
 interface WalletPanelProps {
@@ -69,6 +70,9 @@ export function WalletPanel({ onClose }: WalletPanelProps) {
         </div>
 
         <div className="p-5 space-y-4">
+          {/* PLS price + fiat-equivalent of current balance */}
+          <PlsPriceCard balancePls={plsBalance} />
+
           {/* PLS Balance */}
           <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-1">
