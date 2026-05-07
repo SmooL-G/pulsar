@@ -64,6 +64,11 @@ try {
   await generator.createTwaProject(projectDir, manifest, console);
 
   console.log('[gen] done — gradle project ready');
-} finally {
-  server.close();
+  // fetch-h2 (used by bubblewrap) holds idle HTTP/2 connections in a
+  // pool, so server.close() blocks indefinitely waiting for them. Force
+  // exit — there's nothing else to do at this point.
+  process.exit(0);
+} catch (err) {
+  console.error('[gen] error:', err);
+  process.exit(1);
 }
