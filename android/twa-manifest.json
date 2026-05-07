@@ -32,6 +32,7 @@
   "minSdkVersion": 23,
   "appVersionName": "0.1.0",
   "appVersionCode": 1,
+  "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
     "alias": "pulsar"
