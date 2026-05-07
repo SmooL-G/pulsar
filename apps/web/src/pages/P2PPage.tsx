@@ -17,6 +17,7 @@ import {
   type Currency,
 } from '../hooks/usePlsPrice';
 import { TradeDetailModal } from '../components/p2p/TradeDetailModal';
+import { RiskWarningModal, hasAcknowledgedP2PRisks } from '../components/p2p/RiskWarningModal';
 
 type OfferSide = 'SELL' | 'BUY';
 
@@ -111,6 +112,20 @@ export function P2PPage() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6">
+        {/* Always-visible disclaimer with link to full terms */}
+        <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-start gap-2 text-xs text-amber-200/90">
+          <AlertTriangle size={14} className="shrink-0 mt-0.5 text-amber-400" />
+          <div>
+            {tx(
+              'Pulsar только сводит покупателя и продавца — переводы фиата идут напрямую между вами. Совершай сделки только с проверенными пользователями. ',
+              'Pulsar only matches buyers and sellers — fiat transfers happen directly between you. Trade only with verified users. ',
+            )}
+            <Link to="/p2p/terms" className="underline hover:text-amber-100 font-medium">
+              {tx('Условия и риски', 'Terms & risks')}
+            </Link>
+          </div>
+        </div>
+
         {eligibility && !eligibility.allowed && <EligibilityGate eligibility={eligibility} ru={ru} />}
         {(!eligibility || eligibility.allowed) && (
           <>
@@ -176,7 +191,29 @@ function BrowseTab({ onOpenTrade, ru }: { onOpenTrade: (id: string) => void; ru:
   const [openTradeFor, setOpenTradeFor] = useState<Offer | null>(null);
   const [createSide, setCreateSide] = useState<OfferSide | null>(null);
   const [filter, setFilter] = useState<'ALL' | OfferSide>('ALL');
+  // Pending action while the user goes through the first-time risk modal.
+  // Once accepted, dispatches into setOpenTradeFor / setCreateSide.
+  const [pendingAction, setPendingAction] = useState<
+    | { kind: 'create'; side: OfferSide }
+    | { kind: 'trade'; offer: Offer }
+    | null
+  >(null);
   const tx = (r: string, e: string) => (ru ? r : e);
+
+  // Routes risk-checked actions through the modal when user hasn't yet
+  // acknowledged. After acceptance the original action runs.
+  const guard = (action: NonNullable<typeof pendingAction>) => {
+    if (hasAcknowledgedP2PRisks()) {
+      runPending(action);
+    } else {
+      setPendingAction(action);
+    }
+  };
+  const runPending = (action: NonNullable<typeof pendingAction>) => {
+    if (action.kind === 'create') setCreateSide(action.side);
+    else setOpenTradeFor(action.offer);
+    setPendingAction(null);
+  };
 
   const load = async () => {
     try {
@@ -194,14 +231,14 @@ function BrowseTab({ onOpenTrade, ru }: { onOpenTrade: (id: string) => void; ru:
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => setCreateSide('SELL')}
+          onClick={() => guard({ kind: 'create', side: 'SELL' })}
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 rounded-lg text-sm font-medium transition-colors"
         >
           <Plus size={14} />
           {tx('Продать PLS', 'Sell PLS')}
         </button>
         <button
-          onClick={() => setCreateSide('BUY')}
+          onClick={() => guard({ kind: 'create', side: 'BUY' })}
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-lg text-sm font-medium transition-colors"
         >
           <Plus size={14} />
@@ -245,10 +282,16 @@ function BrowseTab({ onOpenTrade, ru }: { onOpenTrade: (id: string) => void; ru:
 
       {visible && visible.length > 0 && (
         <div className="space-y-2">
-          {visible.map((o) => <OfferCard key={o.id} offer={o} onAct={() => setOpenTradeFor(o)} ru={ru} />)}
+          {visible.map((o) => <OfferCard key={o.id} offer={o} onAct={() => guard({ kind: 'trade', offer: o })} ru={ru} />)}
         </div>
       )}
 
+      {pendingAction && (
+        <RiskWarningModal
+          onClose={() => setPendingAction(null)}
+          onAccept={() => runPending(pendingAction)}
+        />
+      )}
       {createSide && <CreateOfferModal side={createSide} onClose={() => { setCreateSide(null); load(); }} ru={ru} />}
       {openTradeFor && (
         <OpenTradeModal
