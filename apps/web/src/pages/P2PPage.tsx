@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Coins, Plus, Loader2, Tag, Trash2, ChevronRight,
-  AlertTriangle, CheckCircle2, XCircle, Clock, Sparkles,
+  AlertTriangle, CheckCircle2, XCircle, Clock, Sparkles, Lock as LockIcon, ShieldCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../services/api';
@@ -72,6 +72,11 @@ export function P2PPage() {
   const user = useAuthStore((s) => s.user);
   const [tab, setTab] = useState<Tab>('browse');
   const [openTradeId, setOpenTradeId] = useState<string | null>(null);
+  const [eligibility, setEligibility] = useState<{ allowed: boolean; level: number; minLevel: number } | null>(null);
+
+  useEffect(() => {
+    api.get('/p2p/eligibility').then(({ data }) => setEligibility(data)).catch(() => setEligibility({ allowed: false, level: 0, minLevel: 2 }));
+  }, []);
 
   return (
     <div className="bg-dark-900 text-white min-h-screen">
@@ -106,9 +111,14 @@ export function P2PPage() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6">
-        {tab === 'browse' && <BrowseTab onOpenTrade={(id) => setOpenTradeId(id)} ru={ru} />}
-        {tab === 'mine' && <MyOffersTab ru={ru} />}
-        {tab === 'trades' && <MyTradesTab onOpen={(id) => setOpenTradeId(id)} ru={ru} />}
+        {eligibility && !eligibility.allowed && <EligibilityGate eligibility={eligibility} ru={ru} />}
+        {(!eligibility || eligibility.allowed) && (
+          <>
+            {tab === 'browse' && <BrowseTab onOpenTrade={(id) => setOpenTradeId(id)} ru={ru} />}
+            {tab === 'mine' && <MyOffersTab ru={ru} />}
+            {tab === 'trades' && <MyTradesTab onOpen={(id) => setOpenTradeId(id)} ru={ru} />}
+          </>
+        )}
       </div>
 
       {openTradeId && (
@@ -117,6 +127,44 @@ export function P2PPage() {
           onClose={() => setOpenTradeId(null)}
         />
       )}
+    </div>
+  );
+}
+
+// ─── ELIGIBILITY GATE ───────────────────────────────────
+
+function EligibilityGate({ eligibility, ru }: { eligibility: { level: number; minLevel: number }; ru: boolean }) {
+  const tx = (r: string, e: string) => (ru ? r : e);
+  return (
+    <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-rose-500/10 p-6 text-center">
+      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/20 mb-3">
+        <LockIcon size={26} className="text-amber-400" />
+      </div>
+      <h2 className="text-xl font-bold mb-2">
+        {tx('Доступ ограничен', 'Access restricted')}
+      </h2>
+      <p className="text-sm text-gray-300 max-w-md mx-auto mb-4">
+        {tx(
+          `P2P-биржа доступна только пользователям с уровнем верификации L${eligibility.minLevel} или выше. Это защищает добросовестных пользователей от мошеннических объявлений.`,
+          `The P2P marketplace is available to users with verification level L${eligibility.minLevel}+. Keeps honest users safe from throwaway-account scammers.`,
+        )}
+      </p>
+      <div className="inline-flex items-center gap-2 rounded-xl bg-dark-800 border border-dark-500 px-3 py-2 mb-5 text-sm">
+        <ShieldCheck size={14} className="text-gray-400" />
+        <span className="text-gray-400">{tx('Твой уровень', 'Your level')}:</span>
+        <span className="font-bold tabular-nums">L{eligibility.level}</span>
+        <span className="text-gray-500">→</span>
+        <span className="font-bold text-amber-300 tabular-nums">L{eligibility.minLevel}</span>
+      </div>
+      <div>
+        <Link
+          to="/?settings=verification"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-sm font-bold"
+        >
+          {tx('Повысить уровень', 'Increase level')}
+          <ChevronRight size={14} />
+        </Link>
+      </div>
     </div>
   );
 }

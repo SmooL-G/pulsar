@@ -10,6 +10,7 @@ import {
   openTrade,
   releaseTrade,
   P2PError,
+  P2P_MIN_VERIFICATION_LEVEL,
 } from './p2p.service.js';
 import { P2POfferSide, P2POfferStatus, P2PTradeStatus } from '@prisma/client';
 
@@ -32,6 +33,22 @@ const userPickFields = {
 
 export async function p2pRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authMiddleware);
+
+  // GET /p2p/eligibility — UI gate. Returns minLevel + whether the
+  // current user qualifies. Cheap, no auth-side branching needed.
+  app.get('/eligibility', async (request) => {
+    const userId = request.user!.userId;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { verificationLevel: true },
+    });
+    const level = user?.verificationLevel ?? 0;
+    return {
+      minLevel: P2P_MIN_VERIFICATION_LEVEL,
+      level,
+      allowed: level >= P2P_MIN_VERIFICATION_LEVEL,
+    };
+  });
 
   // ─── OFFERS ───────────────────────────────────────────
 

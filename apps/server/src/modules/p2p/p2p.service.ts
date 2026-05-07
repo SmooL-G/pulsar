@@ -19,12 +19,37 @@ import { Prisma, P2POfferSide, P2POfferStatus, P2PTradeStatus, PlsTransactionTyp
 const TRADE_TTL_MIN = 30;
 const PLATFORM_FEE_BPS = 100n; // 1.00%
 
+/**
+ * Minimum verification level to use the P2P marketplace.
+ * L2 means the user passed at least one identity-anchor step (e.g.
+ * staked PLS, email-verified account ≥ 30 days old, etc) — meaningfully
+ * harder to sybil-spam than fresh L0/L1 accounts. Cuts the worst class
+ * of "throwaway scammer" listings without locking out real users.
+ */
+const MIN_VERIFICATION_LEVEL = 2;
+
 export class P2PError extends Error {
   constructor(public code: string, message: string) {
     super(message);
     this.name = 'P2PError';
   }
 }
+
+async function assertEligible(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { verificationLevel: true },
+  });
+  if (!user) throw new P2PError('NOT_FOUND', 'User not found');
+  if ((user.verificationLevel ?? 0) < MIN_VERIFICATION_LEVEL) {
+    throw new P2PError(
+      'VERIFICATION_REQUIRED',
+      `P2P marketplace requires verification level ${MIN_VERIFICATION_LEVEL}+`,
+    );
+  }
+}
+
+export const P2P_MIN_VERIFICATION_LEVEL = MIN_VERIFICATION_LEVEL;
 
 interface CreateOfferArgs {
   creatorId: string;
@@ -43,6 +68,7 @@ export async function createOffer(args: CreateOfferArgs) {
   if (args.maxTrade && args.maxTrade > args.totalAmount) {
     throw new P2PError('MAX_TOO_HIGH', 'Per-trade max cannot exceed total amount');
   }
+  await assertEligible(args.creatorId);
 
   return prisma.$transaction(async (tx) => {
     // Only SELL offers escrow PLS at creation. For BUY offers the
@@ -116,6 +142,7 @@ interface OpenTradeArgs {
 }
 
 export async function openTrade(args: OpenTradeArgs) {
+  await assertEligible(args.responderId);
   return prisma.$transaction(async (tx) => {
     const offer = await tx.p2POffer.findUnique({ where: { id: args.offerId } });
     if (!offer) throw new P2PError('NOT_FOUND', 'Offer not found');
