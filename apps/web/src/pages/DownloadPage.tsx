@@ -62,12 +62,26 @@ export function DownloadPage() {
   const platform = useMemo(() => detectPlatform(), []);
 
   useEffect(() => {
-    fetch('https://api.github.com/repos/SmooL-G/pulsar-node/releases?per_page=50')
-      .then((r) => {
-        if (!r.ok) throw new Error('GitHub API ' + r.status);
-        return r.json();
+    // Two source repos: pulsar-node hosts the desktop mining app, and
+    // pulsar-android hosts the APK. Kept separate so an android tag
+    // can never be promoted to "latest" of pulsar-node and break the
+    // Tauri updater on every running miner node.
+    Promise.all([
+      fetch('https://api.github.com/repos/SmooL-G/pulsar-node/releases?per_page=50')
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
+      fetch('https://api.github.com/repos/SmooL-G/pulsar-android/releases?per_page=50')
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
+    ])
+      .then(([desktop, android]: [Release[], Release[]]) => {
+        const merged = [...desktop, ...android].filter((r) => !r.draft);
+        if (merged.length === 0) {
+          setError('Both release repos returned empty');
+          return;
+        }
+        setReleases(merged);
       })
-      .then((data: Release[]) => setReleases(data.filter((r) => !r.draft)))
       .catch((e) => setError(String(e.message || e)));
   }, []);
 
