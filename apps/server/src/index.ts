@@ -14,6 +14,7 @@ import { startNodesWorker } from './modules/nodes/nodesWorker.js';
 import { adminWs } from './modules/messages/admin-ws-client.js';
 import { startStorageChallengeWorker } from './modules/messages/storage-challenge.worker.js';
 import { backfillDevicesFromBundles } from './modules/keys/devices-backfill.js';
+import { startP2PWorker } from './modules/p2p/p2p.worker.js';
 
 async function main() {
   const app = await buildApp();
@@ -70,6 +71,9 @@ async function main() {
   backfillDevicesFromBundles().catch((err) => {
     console.error('[devices-backfill] failed:', err);
   });
+
+  // Auto-cancel P2P trades whose payment window expired (every 60s).
+  startP2PWorker();
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

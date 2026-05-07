@@ -78,6 +78,9 @@ model User {
   plsWallet         PlsWallet?
   keyBundle         UserKeyBundle?
   devices           UserDevice[]
+  p2pOffers         P2POffer[]
+  p2pBuyerTrades    P2PTrade[]         @relation("p2pBuyerTrades")
+  p2pSellerTrades   P2PTrade[]         @relation("p2pSellerTrades")
   botProfile        Bot?               @relation("botUser")
   ownedBots         Bot[]              @relation("botOwner")
   reports           Report[]
@@ -696,6 +699,11 @@ model PlsWallet {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @unique @map("user_id") @db.Uuid
   balance   BigInt   @default(0)
+  // PLS held in P2P escrow (active SELL offers + open trades). Spendable
+  // balance = balance - lockedAmount. Always increases when an offer is
+  // posted or trade opened; decreases on cancel (returned) or release
+  // (transferred to buyer).
+  lockedAmount BigInt @default(0) @map("locked_amount")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -734,6 +742,80 @@ enum PlsTransactionStatus {
   PENDING
   COMPLETED
   FAILED
+}
+
+// ─── P2P MARKETPLACE ────────────────────────────────────
+// Internal exchange where users sell PLS to other users for off-platform
+// fiat (СБП / USDT / PayPal / etc). Seller's PLS is escrowed until the
+// buyer marks payment received and the seller confirms.
+
+enum P2POfferStatus {
+  ACTIVE      // listed, accepting trades
+  PAUSED      // hidden from marketplace, can be resumed
+  COMPLETED   // remainingAmount = 0
+  CANCELLED   // cancelled by seller; remaining returned to wallet
+}
+
+enum P2PTradeStatus {
+  PENDING_PAYMENT  // PLS escrowed; waiting for buyer to pay off-platform
+  PAID             // buyer marked paid; waiting for seller confirmation
+  RELEASED         // seller confirmed; PLS transferred to buyer
+  CANCELLED        // expired, or cancelled before payment
+  DISPUTED         // admin reviewing
+}
+
+model P2POffer {
+  id              String           @id @default(uuid()) @db.Uuid
+  sellerId        String           @map("seller_id") @db.Uuid
+  // Price seller wants per 1 PLS, in USD. UI converts to user's display
+  // currency via the live FX rates from /api/v1/price.
+  pricePerPlsUsd  Decimal          @map("price_per_pls_usd") @db.Decimal(18, 9)
+  totalAmount     BigInt           @map("total_amount")
+  remainingAmount BigInt           @map("remaining_amount")
+  // Per-trade limits. 0 means no limit.
+  minTrade        BigInt           @default(0) @map("min_trade")
+  maxTrade        BigInt           @default(0) @map("max_trade")
+  // Free-form text: payment instructions, requisites, terms.
+  // Buyer reads this before opening a trade.
+  terms           String           @db.VarChar(800)
+  status          P2POfferStatus   @default(ACTIVE)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  seller User       @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  trades P2PTrade[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([sellerId])
+  @@map("p2p_offers")
+}
+
+model P2PTrade {
+  id            String         @id @default(uuid()) @db.Uuid
+  offerId       String         @map("offer_id") @db.Uuid
+  buyerId       String         @map("buyer_id") @db.Uuid
+  sellerId      String         @map("seller_id") @db.Uuid
+  amount        BigInt
+  // Total fiat owed by buyer (USD); locked at the offer's price at open.
+  totalPriceUsd Decimal        @map("total_price_usd") @db.Decimal(18, 9)
+  status        P2PTradeStatus @default(PENDING_PAYMENT)
+  // Free-form note from buyer when marking paid (e.g., transaction id).
+  paymentNote   String?        @db.VarChar(500) @map("payment_note")
+  paidAt        DateTime?      @map("paid_at")
+  releasedAt    DateTime?      @map("released_at")
+  cancelledAt   DateTime?      @map("cancelled_at")
+  // Auto-cancel deadline if buyer hasn't paid (default +30 min).
+  expiresAt     DateTime       @map("expires_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  offer  P2POffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  buyer  User     @relation("p2pBuyerTrades", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller User     @relation("p2pSellerTrades", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([buyerId, createdAt(sort: Desc)])
+  @@index([sellerId, createdAt(sort: Desc)])
+  @@index([status, expiresAt])
+  @@map("p2p_trades")
 }
 
 // ─── E2E KEY BUNDLES ────────────────────────────────────
