@@ -91,6 +91,7 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 73 | P2P L2-гейт (защита от throwaway-сибилов) | ✅ Готово | 2026-05-07 |
 | 74 | **Гибридный курс PLS** — admin-референс + 7д volume-weighted market со clamp ±50% | ✅ Готово | 2026-05-07 |
 | 75 | PLS sparkline (24h/7d/30d) на карточке курса — hourly snapshot worker + SVG-чарт без зависимостей | ✅ Готово | 2026-05-07 |
+| 76 | P2P risk warning + /p2p/terms (двуязычная страница условий, чекбокс-acknowledgement, всегда-видимый disclaimer) | ✅ Готово | 2026-05-07 |
 
 ---
 
