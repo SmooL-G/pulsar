@@ -88,7 +88,11 @@ jobs:
             if [ "$SCHEMA" = "true" ]; then
               echo "[deploy] schema changed → prisma db push"
               sleep 5
-              docker compose -f docker-compose.prod.yml exec -T server npx prisma db push --skip-generate --schema=prisma/schema.prisma
+              # NODE_OPTIONS heap bump: prisma engine OOM-killed (exit 137)
+              # on bigger schema diffs with the default 1.5G ceiling.
+              docker compose -f docker-compose.prod.yml exec -T \
+                -e NODE_OPTIONS=--max-old-space-size=4096 \
+                server npx prisma db push --skip-generate --schema=prisma/schema.prisma
             fi
 
             echo "[deploy] done $(date -u +%FT%TZ)"
