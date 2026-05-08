@@ -282,7 +282,14 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
             {message.attachments && message.attachments.length > 0 && (
               <div className="mb-1 space-y-1">
                 {message.attachments.map((file) => {
-                  const url = (file as any).url || (file as any).s3Key || '';
+                  let url = (file as any).url || (file as any).s3Key || '';
+                  // Anchor clicks don't send Authorization headers, so for our
+                  // own streaming endpoint we append the access token as ?t=.
+                  // Skips legacy direct-MinIO URLs that don't need auth.
+                  if (url.startsWith('/api/v1/files/dl')) {
+                    const token = localStorage.getItem('accessToken');
+                    if (token) url += (url.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(token);
+                  }
                   const isImage = file.mimeType?.startsWith('image/');
                   const isAudio = file.mimeType?.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac|aac|opus|webm)$/i.test(file.fileName || '');
 

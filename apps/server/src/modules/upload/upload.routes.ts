@@ -97,9 +97,10 @@ export async function uploadRoutes(app: FastifyInstance) {
       })
     );
 
-    const url = env.S3_PUBLIC_URL
-      ? `${env.S3_PUBLIC_URL}/${key}`
-      : `/s3/${env.S3_BUCKET}/${key}`;
+    // Streaming download endpoint instead of direct MinIO. Cloudflare /
+    // Nginx kept timing out on slow connections (3MB files stalled at
+    // ~50%); see modules/files/files.routes.ts for rationale.
+    const url = `/api/v1/files/dl?k=${encodeURIComponent(key)}&n=${encodeURIComponent(data.filename)}`;
     return {
       url,
       fileName: data.filename,
