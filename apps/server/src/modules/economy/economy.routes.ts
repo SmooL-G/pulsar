@@ -11,6 +11,8 @@ import {
   HALVING_ANCHOR_MS,
   HALVING_INTERVAL_DAYS,
 } from '../nodes/nodes.service.js';
+import { getTypingNow } from '../../socket/handlers/typingHandler.js';
+import { prisma } from '../../config/database.js';
 
 /**
  * Public read-only economy stats. Powers the "X PLS burned" widget on
@@ -25,6 +27,27 @@ const CACHE_KEY = 'economy:stats';
 const CACHE_TTL_SEC = 60;
 
 export async function economyRoutes(app: FastifyInstance) {
+  // GET /economy/pulse — public proof-of-life snapshot. "X людей сейчас
+  // печатают, Y онлайн" — для виджета на login / dashboard. Кеш 5с,
+  // чтобы вирусный момент не положил Redis.
+  app.get('/pulse', async () => {
+    const cached = await redis.get('economy:pulse');
+    if (cached) {
+      try { return JSON.parse(cached); } catch { /* fallthrough */ }
+    }
+    const [typingNow, onlineNow] = await Promise.all([
+      getTypingNow(),
+      prisma.user.count({ where: { isOnline: true } }),
+    ]);
+    const snapshot = {
+      typingNow,
+      onlineNow,
+      updatedAt: new Date().toISOString(),
+    };
+    await redis.set('economy:pulse', JSON.stringify(snapshot), 'EX', 5);
+    return snapshot;
+  });
+
   // GET /economy/halving — current era + next halving date + live rates.
   // Used by the desktop miner / dashboard to show "next halving in X days".
   app.get('/halving', async () => {

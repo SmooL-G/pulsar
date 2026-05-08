@@ -7,6 +7,7 @@ import { LANGUAGES } from '../components/settings/LanguageSelector';
 import { UserCountInformer } from '../components/auth/UserCountInformer';
 import { SplashScreen } from '../components/auth/SplashScreen';
 import { PlsPriceBadge } from '../components/price/PlsPriceCard';
+import { LiveActivityPulse } from '../components/economy/LiveActivityPulse';
 import { ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 function navigateAfterLogin(navigate: ReturnType<typeof useNavigate>) {
@@ -101,8 +102,9 @@ export function LoginPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">{t('auth.title')}</h1>
           <p className="text-gray-400">{t('auth.subtitle')}</p>
-          <div className="mt-3 flex justify-center">
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
             <PlsPriceBadge />
+            <LiveActivityPulse compact />
           </div>
         </div>
 

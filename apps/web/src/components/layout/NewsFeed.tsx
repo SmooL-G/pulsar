@@ -10,6 +10,7 @@ import { WalletPanel } from '../wallet/WalletPanel';
 import { ShieldCheck, Award, Wallet, ArrowUpRight, ArrowDownLeft, Copy, Check } from 'lucide-react';
 import { PlsPriceCard } from '../price/PlsPriceCard';
 import { BurnedSupplyCard } from '../economy/BurnedSupplyCard';
+import { LiveActivityPulse } from '../economy/LiveActivityPulse';
 import toast from 'react-hot-toast';
 
 export function NewsFeed() {
@@ -149,6 +150,9 @@ export function NewsFeed() {
 
         {/* Burn ledger — total PLS permanently removed from supply */}
         <BurnedSupplyCard />
+
+        {/* Live pulse — typing now / online now (proof-of-life) */}
+        <LiveActivityPulse />
 
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-3">
