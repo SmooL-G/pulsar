@@ -10,7 +10,8 @@ import {
   recomputeTrustedTier,
   MerchantError,
   APPLICATION_FEE_PLS,
-  ANNUAL_SUBSCRIPTION_PLS,
+  SUBSCRIPTION_PRICES,
+  SUBSCRIPTION_MONTHS,
 } from './merchant.service.js';
 import { MerchantApplicationStatus } from '@prisma/client';
 
@@ -45,13 +46,18 @@ export async function merchantRoutes(app: FastifyInstance) {
       verificationLevel: user?.verificationLevel ?? 0,
       pricing: {
         applicationFeePls: APPLICATION_FEE_PLS.toString(),
-        annualSubscriptionPls: ANNUAL_SUBSCRIPTION_PLS.toString(),
+        // Map of period (months) → PLS price for the month-selector.
+        subscriptionTiers: SUBSCRIPTION_MONTHS.map((m) => ({
+          months: m,
+          pricePls: SUBSCRIPTION_PRICES[m].toString(),
+        })),
       },
       latestApplication: latestApp ? {
         id: latestApp.id,
         status: latestApp.status,
         description: latestApp.description,
         contactInfo: latestApp.contactInfo,
+        requestedMonths: latestApp.requestedMonths,
         reviewNotes: latestApp.reviewNotes,
         createdAt: latestApp.createdAt.toISOString(),
         reviewedAt: latestApp.reviewedAt?.toISOString() ?? null,
@@ -60,23 +66,25 @@ export async function merchantRoutes(app: FastifyInstance) {
   });
 
   // POST /merchant/apply — submit application + pay fee
-  app.post<{ Body: { description: string; contactInfo?: string } }>('/apply', async (request, reply) =>
+  app.post<{ Body: { description: string; contactInfo?: string; months?: number } }>('/apply', async (request, reply) =>
     handle(reply, async () => {
       const userId = request.user!.userId;
       const application = await submitApplication({
         userId,
         description: request.body.description,
         contactInfo: request.body.contactInfo,
+        months: request.body.months,
       });
       return reply.status(201).send({ success: true, applicationId: application.id });
     }),
   );
 
-  // POST /merchant/renew — pay for another year
-  app.post('/renew', async (request, reply) =>
+  // POST /merchant/renew — pay for another N months (1 / 3 / 6 / 12)
+  app.post<{ Body?: { months?: number } }>('/renew', async (request, reply) =>
     handle(reply, async () => {
       const userId = request.user!.userId;
-      const updated = await renewSubscription(userId);
+      const months = request.body?.months ?? 12;
+      const updated = await renewSubscription(userId, months);
       return { success: true, expiresAt: updated.merchantExpiresAt?.toISOString() };
     }),
   );
@@ -124,6 +132,7 @@ export async function merchantRoutes(app: FastifyInstance) {
           description: a.description,
           contactInfo: a.contactInfo,
           applicationFeePls: a.applicationFeePls.toString(),
+          requestedMonths: a.requestedMonths,
           createdAt: a.createdAt.toISOString(),
           reviewedAt: a.reviewedAt?.toISOString() ?? null,
           reviewNotes: a.reviewNotes,
@@ -133,12 +142,13 @@ export async function merchantRoutes(app: FastifyInstance) {
       };
     });
 
-    admin.post<{ Params: { id: string }; Body: { notes?: string } | undefined }>('/admin/applications/:id/approve', async (request, reply) =>
+    admin.post<{ Params: { id: string }; Body: { notes?: string; months?: number } | undefined }>('/admin/applications/:id/approve', async (request, reply) =>
       handle(reply, async () => {
         await approveApplication({
           applicationId: request.params.id,
           reviewerId: request.user!.userId,
           notes: request.body?.notes,
+          months: request.body?.months,
         });
         return { success: true };
       }),

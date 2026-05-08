@@ -783,6 +783,9 @@ model MerchantApplication {
   // PLS paid as application fee — non-refundable, kept by treasury
   // even if rejected (filters serial spam applications).
   applicationFeePls BigInt                    @default(0) @map("application_fee_pls")
+  // Subscription period the user requested at apply time (1 / 3 / 6 / 12).
+  // Admin can override at approval, but stored here as the default.
+  requestedMonths   Int                       @default(12) @map("requested_months") @db.SmallInt
   // Free-form: business description, expected volume, payment methods,
   // public name to appear next to the badge, links to socials/proof.
   description       String                    @db.VarChar(2000)

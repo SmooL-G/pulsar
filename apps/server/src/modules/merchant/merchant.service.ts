@@ -29,11 +29,30 @@ import {
  */
 
 export const APPLICATION_FEE_PLS = 500n;
-export const ANNUAL_SUBSCRIPTION_PLS = 50_000n;
+
+// Tiered subscription pricing — longer commits get a discount.
+// Keys are months; values are PLS price for that period.
+export const SUBSCRIPTION_PRICES: Record<number, bigint> = {
+  1: 5_000n,
+  3: 14_000n,
+  6: 26_000n,
+  12: 48_000n,
+};
+export const SUBSCRIPTION_MONTHS = [1, 3, 6, 12] as const;
+export type SubscriptionMonths = (typeof SUBSCRIPTION_MONTHS)[number];
+
+/** Back-compat name for callers that haven't migrated to the tier table. */
+export const ANNUAL_SUBSCRIPTION_PLS = SUBSCRIPTION_PRICES[12];
+
+function priceFor(months: number): bigint {
+  const price = SUBSCRIPTION_PRICES[months];
+  if (!price) throw new MerchantError('INVALID_PERIOD', `Unsupported period: ${months} months`);
+  return price;
+}
+
 const TRUSTED_MIN_ACCOUNT_AGE_DAYS = 60;
 const TRUSTED_MIN_TRADES = 10;
 const TRUSTED_DISPUTE_WINDOW_DAYS = 30;
-const SUBSCRIPTION_DURATION_DAYS = 365;
 
 export class MerchantError extends Error {
   constructor(public code: string, message: string) {
@@ -69,10 +88,15 @@ export async function submitApplication(args: {
   userId: string;
   description: string;
   contactInfo?: string;
+  /** Desired subscription length. Validated against SUBSCRIPTION_PRICES. */
+  months?: number;
 }) {
   if (args.description.trim().length < 30) {
     throw new MerchantError('DESCRIPTION_TOO_SHORT', 'Describe your business in at least 30 characters');
   }
+  const requestedMonths = args.months ?? 12;
+  // Validate the period upfront — no point storing 7 months if approval will fail.
+  priceFor(requestedMonths);
 
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({
@@ -100,16 +124,22 @@ export async function submitApplication(args: {
         description: args.description.slice(0, 2000),
         contactInfo: args.contactInfo?.slice(0, 500) ?? null,
         applicationFeePls: APPLICATION_FEE_PLS,
+        requestedMonths,
       },
     });
   });
 }
 
-/** Admin approves an application. Charges the annual subscription. */
+/**
+ * Admin approves an application. Charges the user for `months` of
+ * subscription (1, 3, 6 or 12) — the user picked this when applying.
+ */
 export async function approveApplication(args: {
   applicationId: string;
   reviewerId: string;
   notes?: string;
+  /** Override the months stored on the application (admin can shorten). */
+  months?: number;
 }) {
   return prisma.$transaction(async (tx) => {
     const app = await tx.merchantApplication.findUnique({ where: { id: args.applicationId } });
@@ -117,10 +147,12 @@ export async function approveApplication(args: {
     if (app.status !== MerchantApplicationStatus.PENDING) {
       throw new MerchantError('BAD_STATE', 'Application already reviewed');
     }
-    await debitPls(tx, app.userId, ANNUAL_SUBSCRIPTION_PLS, 'Merchant subscription (1 year)');
+    const months = args.months ?? Number(app.requestedMonths ?? 12);
+    const price = priceFor(months);
+    await debitPls(tx, app.userId, price, `Merchant subscription (${months} mo)`);
 
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + SUBSCRIPTION_DURATION_DAYS * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(now.getTime() + months * 30 * 24 * 60 * 60 * 1000);
     await tx.user.update({
       where: { id: app.userId },
       data: {
@@ -163,8 +195,9 @@ export async function rejectApplication(args: {
   });
 }
 
-/** Existing OFFICIAL merchant pays for another year. */
-export async function renewSubscription(userId: string) {
+/** Existing OFFICIAL merchant pays for another N months (1/3/6/12). */
+export async function renewSubscription(userId: string, months: number = 12) {
+  const price = priceFor(months);
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({
       where: { id: userId },
@@ -174,12 +207,12 @@ export async function renewSubscription(userId: string) {
     if (user.merchantTier !== MerchantTier.OFFICIAL) {
       throw new MerchantError('NOT_OFFICIAL', 'Only OFFICIAL merchants can renew');
     }
-    await debitPls(tx, userId, ANNUAL_SUBSCRIPTION_PLS, 'Merchant subscription renewal');
+    await debitPls(tx, userId, price, `Merchant subscription renewal (${months} mo)`);
     // Extend from existing expiry if still valid; otherwise from now.
     const base = (user.merchantExpiresAt && user.merchantExpiresAt > new Date())
       ? user.merchantExpiresAt
       : new Date();
-    const newExpiry = new Date(base.getTime() + SUBSCRIPTION_DURATION_DAYS * 24 * 60 * 60 * 1000);
+    const newExpiry = new Date(base.getTime() + months * 30 * 24 * 60 * 60 * 1000);
     return tx.user.update({
       where: { id: userId },
       data: { merchantExpiresAt: newExpiry },

@@ -4,17 +4,19 @@ import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useI18n } from '../../i18n';
 
+interface SubscriptionTier { months: number; pricePls: string }
 interface MerchantInfo {
   merchantTier: 'NONE' | 'TRUSTED' | 'OFFICIAL';
   merchantExpiresAt: string | null;
   merchantSince: string | null;
   verificationLevel: number;
-  pricing: { applicationFeePls: string; annualSubscriptionPls: string };
+  pricing: { applicationFeePls: string; subscriptionTiers: SubscriptionTier[] };
   latestApplication: null | {
     id: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
     description: string;
     contactInfo: string | null;
+    requestedMonths: number;
     reviewNotes: string | null;
     createdAt: string;
     reviewedAt: string | null;
@@ -35,14 +37,16 @@ export function MerchantSection() {
 
   if (!info) return null;
 
-  const renew = async () => {
+  const [renewOpen, setRenewOpen] = useState(false);
+  const renew = async (months: number, pricePls: string) => {
     if (!confirm(tx(
-      `Продлить подписку Official Merchant ещё на 1 год за ${BigInt(info.pricing.annualSubscriptionPls).toLocaleString()} PLS?`,
-      `Renew Official Merchant subscription for another year (${BigInt(info.pricing.annualSubscriptionPls).toLocaleString()} PLS)?`,
+      `Продлить подписку на ${months} мес за ${BigInt(pricePls).toLocaleString()} PLS?`,
+      `Renew subscription for ${months} mo at ${BigInt(pricePls).toLocaleString()} PLS?`,
     ))) return;
     try {
-      await api.post('/merchant/renew');
-      toast.success(tx('Продлено на 1 год', 'Renewed for 1 year'));
+      await api.post('/merchant/renew', { months });
+      toast.success(tx(`Продлено на ${months} мес`, `Renewed for ${months} mo`));
+      setRenewOpen(false);
       load();
     } catch (e: any) {
       toast.error(e?.response?.data?.message ?? tx('Ошибка', 'Error'));
@@ -70,9 +74,28 @@ export function MerchantSection() {
           </p>
         )}
         {info.merchantTier === 'OFFICIAL' && (
-          <button onClick={renew} className="mt-2 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-xs font-bold">
-            {tx('Продлить на 1 год', 'Renew 1 year')} ({BigInt(info.pricing.annualSubscriptionPls).toLocaleString()} PLS)
-          </button>
+          <>
+            <button
+              onClick={() => setRenewOpen((v) => !v)}
+              className="mt-2 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-black rounded-lg text-xs font-bold"
+            >
+              {renewOpen ? tx('Свернуть', 'Hide') : tx('Продлить', 'Renew')}
+            </button>
+            {renewOpen && (
+              <div className="mt-2 grid grid-cols-2 gap-1.5">
+                {info.pricing.subscriptionTiers.map((tier) => (
+                  <button
+                    key={tier.months}
+                    onClick={() => renew(tier.months, tier.pricePls)}
+                    className="px-2 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-[11px]"
+                  >
+                    <div className="font-bold text-amber-300">{tier.months} {tx('мес', 'mo')}</div>
+                    <div className="text-gray-300 tabular-nums">{BigInt(tier.pricePls).toLocaleString()} PLS</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -102,8 +125,8 @@ export function MerchantSection() {
             </ul>
             <p className="text-[10px] text-gray-400">
               {tx(
-                `Стоимость: ${BigInt(info.pricing.applicationFeePls).toLocaleString()} PLS заявка (невозвратно) + ${BigInt(info.pricing.annualSubscriptionPls).toLocaleString()} PLS подписка на 1 год при одобрении.`,
-                `Cost: ${BigInt(info.pricing.applicationFeePls).toLocaleString()} PLS application (non-refundable) + ${BigInt(info.pricing.annualSubscriptionPls).toLocaleString()} PLS subscription on approval.`,
+                `Стоимость: ${BigInt(info.pricing.applicationFeePls).toLocaleString()} PLS заявка (невозвратно). Подписку выберешь при подаче — от ${BigInt(info.pricing.subscriptionTiers[0].pricePls).toLocaleString()} PLS за месяц до ${BigInt(info.pricing.subscriptionTiers[info.pricing.subscriptionTiers.length - 1].pricePls).toLocaleString()} PLS за год (списывается при одобрении).`,
+                `Cost: ${BigInt(info.pricing.applicationFeePls).toLocaleString()} PLS application (non-refundable). You'll pick a subscription length when applying — from ${BigInt(info.pricing.subscriptionTiers[0].pricePls).toLocaleString()} PLS for 1 month to ${BigInt(info.pricing.subscriptionTiers[info.pricing.subscriptionTiers.length - 1].pricePls).toLocaleString()} PLS for 1 year (charged on approval).`,
               )}
             </p>
           </div>
@@ -176,7 +199,10 @@ function ApplyModal({ onClose, pricing, ru }: { onClose: () => void; pricing: Me
   const tx = (r: string, e: string) => (ru ? r : e);
   const [description, setDescription] = useState('');
   const [contactInfo, setContactInfo] = useState('');
+  const [months, setMonths] = useState<number>(12);
   const [busy, setBusy] = useState(false);
+
+  const tier = pricing.subscriptionTiers.find((t) => t.months === months) ?? pricing.subscriptionTiers[pricing.subscriptionTiers.length - 1];
 
   const submit = async () => {
     if (description.trim().length < 30) {
@@ -185,7 +211,7 @@ function ApplyModal({ onClose, pricing, ru }: { onClose: () => void; pricing: Me
     }
     setBusy(true);
     try {
-      await api.post('/merchant/apply', { description, contactInfo });
+      await api.post('/merchant/apply', { description, contactInfo, months });
       toast.success(tx('Заявка отправлена', 'Application submitted'));
       onClose();
     } catch (e: any) {
@@ -201,10 +227,34 @@ function ApplyModal({ onClose, pricing, ru }: { onClose: () => void; pricing: Me
         <h3 className="text-lg font-bold mb-1">{tx('Заявка на Official Merchant', 'Official Merchant application')}</h3>
         <p className="text-xs text-gray-400 mb-4">
           {tx(
-            `Заявочный взнос ${BigInt(pricing.applicationFeePls).toLocaleString()} PLS спишется сразу. После одобрения админом — ещё ${BigInt(pricing.annualSubscriptionPls).toLocaleString()} PLS за 1 год подписки.`,
-            `Application fee ${BigInt(pricing.applicationFeePls).toLocaleString()} PLS charges immediately. On approval, ${BigInt(pricing.annualSubscriptionPls).toLocaleString()} PLS for 1-year subscription is charged.`,
+            `Заявочный взнос ${BigInt(pricing.applicationFeePls).toLocaleString()} PLS спишется сразу. После одобрения админом — выбранная подписка ниже.`,
+            `Application fee ${BigInt(pricing.applicationFeePls).toLocaleString()} PLS charges immediately. On approval, the selected subscription below is charged.`,
           )}
         </p>
+
+        <div className="mb-3">
+          <span className="text-xs text-gray-400 mb-1.5 block">{tx('Срок подписки', 'Subscription length')}</span>
+          <div className="grid grid-cols-4 gap-1.5">
+            {pricing.subscriptionTiers.map((t) => (
+              <button
+                key={t.months}
+                type="button"
+                onClick={() => setMonths(t.months)}
+                className={`px-2 py-2 rounded-lg text-[11px] border transition-colors ${
+                  months === t.months
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-200'
+                    : 'border-dark-500 hover:border-amber-500/40 text-gray-300'
+                }`}
+              >
+                <div className="font-bold">{t.months} {tx('мес', 'mo')}</div>
+                <div className="text-[10px] tabular-nums opacity-80">{BigInt(t.pricePls).toLocaleString()}</div>
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-gray-500 mt-1.5">
+            {tx('Итог при одобрении', 'On approval')}: <span className="text-amber-300 font-semibold">{BigInt(tier.pricePls).toLocaleString()} PLS</span>
+          </p>
+        </div>
 
         <label className="block mb-3">
           <span className="text-xs text-gray-400 mb-1 block">{tx('О бизнесе (мин. 30 символов)', 'About your business (min 30 chars)')}</span>

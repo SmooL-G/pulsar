@@ -10,6 +10,7 @@ interface PendingApp {
   description: string;
   contactInfo: string | null;
   applicationFeePls: string;
+  requestedMonths?: number;
   createdAt: string;
   user: {
     id: string;
@@ -100,6 +101,9 @@ export function MerchantAdminSection() {
           <p className="text-[10px] text-gray-500">
             {tx('Аккаунт с', 'Account from')} {new Date(a.user.createdAt).toLocaleDateString()} ·
             {tx(' взнос ', ' fee ')}{BigInt(a.applicationFeePls).toLocaleString()} PLS
+            {a.requestedMonths && (
+              <> · <span className="text-amber-300 font-semibold">{tx('хочет', 'wants')} {a.requestedMonths} {tx('мес', 'mo')}</span></>
+            )}
           </p>
           <div className="flex gap-2">
             <button
