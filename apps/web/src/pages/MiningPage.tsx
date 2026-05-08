@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Cpu, Wifi, HardDrive, Zap, Lock, Coins, ArrowLeft, Terminal, Download, Shield, MemoryStick, BatteryCharging } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { HalvingCountdown } from '../components/economy/HalvingCountdown';
+import { BurnedSupplyCard } from '../components/economy/BurnedSupplyCard';
 
 /**
  * Public docs page for users who want to run a Pulsar relay node and
@@ -163,6 +165,12 @@ export function MiningPage() {
               {tx('Купить можно в Настройки → Профиль → Верификация.', 'Buy via Settings → Profile → Verification.')}
             </p>
           </div>
+        </section>
+
+        {/* Token health: halving countdown + burned supply */}
+        <section className="grid sm:grid-cols-2 gap-3">
+          <HalvingCountdown />
+          <BurnedSupplyCard />
         </section>
 
         {/* What you contribute */}
