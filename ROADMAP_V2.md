@@ -93,6 +93,9 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 75 | PLS sparkline (24h/7d/30d) на карточке курса — hourly snapshot worker + SVG-чарт без зависимостей | ✅ Готово | 2026-05-07 |
 | 76 | P2P risk warning + /p2p/terms (двуязычная страница условий, чекбокс-acknowledgement, всегда-видимый disclaimer) | ✅ Готово | 2026-05-07 |
 | 77 | Merchant tiers — TRUSTED auto + OFFICIAL paid (500 PLS заявка + 50k/год подписка), 0.5% fee, sorted-on-top, золотая обводка | ✅ Готово | 2026-05-08 |
+| 78 | Гибкие сроки merchant-подписки (1/3/6/12 мес со скидкой до 20%), админ видит запрошенный срок | ✅ Готово | 2026-05-08 |
+| 79 | Streaming-download файлов через Fastify (Range support, фикс залипания на 50% из-за Cloudflare timeout) | ✅ Готово | 2026-05-08 |
+| 80 | Десктоп v0.1.35 — переключатель валют (6 фиатов) + фиат-сумма рядом с PLS в Earnings tile | ✅ Готово | 2026-05-08 |
 
 ---
 
@@ -328,7 +331,99 @@ encryptionType   String? @map("encryption_type") @db.VarChar(32)
 
 ---
 
-## 🔲 16. IPFS/Arweave хранение (опционально)
+## ✅ 17. Экономика: курс PLS, P2P-биржа, мерчанты (76→80)
+
+Самостоятельная подсистема для **вывода и обмена PLS**, поверх существующего внутреннего токена. Состоит из четырёх связанных частей:
+
+### 17.1. Цена и информер
+
+**Реализовано:**
+- `GET /api/v1/price` — публичный endpoint, возвращает effective PLS-курс в USD + FX-курсы (RUB/EUR/UAH/KZT/BYN), кеш 60с в Redis. Источник FX — `open.er-api.com` (бесплатно, без ключа), 1ч-кеш с фоллбеком.
+- **Гибридный курс**: admin-задаваемый референс + 7-дневный volume-weighted average по RELEASED P2P-сделкам со clamp ±50% от референса. Анти-манипуляция: сделки <1000 PLS игнорируются, ≤5 сделок одной пары в окне.
+- Admin Settings → «Курс PLS (админ)» (только SUPER_ADMIN): текущий effective + breakdown (референс vs market) + поле «Установить новый» с журналом изменений (`PlsPriceReference` append-only).
+- `useDisplayCurrency` Zustand-store с авто-выбором по `navigator.language`, persist в localStorage. Доступен из любой точки UI.
+- `<PlsPriceCard />` — карточка с курсом, 24h-дельтой, мини-чартом, дропдауном валюты, опциональным фиат-эквивалентом баланса. Стоит на dashboard, в кошельке и на login (через `<PlsPriceBadge />`).
+- `<PriceSparkline />` — SVG-чарт без зависимостей, окна 24h/7d/30d. Источник — hourly snapshot worker (`PlsPriceSnapshot`, 90д ретеншн).
+
+**Файлы:**
+- `apps/server/src/modules/price/price.routes.ts` — `/`, `/history`, `/admin`
+- `apps/server/src/modules/price/price.service.ts` — `getEffectivePrice`, `setReferencePrice`
+- `apps/server/src/modules/price/price.worker.ts` — hourly snapshot
+- `apps/web/src/hooks/usePlsPrice.ts` — fetch+cache, currency store, helpers
+- `apps/web/src/components/price/PlsPriceCard.tsx`, `PriceSparkline.tsx`
+- `apps/web/src/components/settings/PlsPriceAdminSection.tsx`
+
+### 17.2. P2P-биржа
+
+**Реализовано:**
+- Двухсторонний marketplace: SELL (продавец залочивает PLS при создании) и BUY (продавец залочивает при отклике на заявку покупателя). Симметричный API.
+- Trade lifecycle: `PENDING_PAYMENT` (30-мин таймер) → `PAID` (покупатель отметил) → `RELEASED` (продавец подтвердил, PLS уходят покупателю минус комиссия) → опционально `DISPUTED` (админ-арбитраж) или `CANCELLED` (любой стороной до оплаты или авто после таймера).
+- Эскроу через `PlsWallet.lockedAmount` (spendable = balance − lockedAmount). Worker раз в минуту авто-отменяет просроченные `PENDING_PAYMENT`.
+- Платформенная комиссия: 1% по умолчанию, **0.5% для OFFICIAL мерчантов**.
+- L2-гейт: `assertEligible()` блокирует createOffer/openTrade для уровней <2, защищает от throwaway-сибилов. UI рендерит EligibilityGate с CTA на повышение уровня.
+- Risk-warning модалка перед первым действием (localStorage-acknowledgement, версионируется), всегда-видимый disclaimer в шапке `/p2p`, полная двуязычная страница `/p2p/terms`.
+- Сортировка marketplace: OFFICIAL → TRUSTED → NONE → date desc. OFFICIAL карточки получают золотую обводку и свечение.
+
+**Файлы:**
+- `apps/server/src/modules/p2p/p2p.routes.ts`, `p2p.service.ts`, `p2p.worker.ts`
+- `apps/web/src/pages/P2PPage.tsx`, `P2PTermsPage.tsx`
+- `apps/web/src/components/p2p/TradeDetailModal.tsx`, `RiskWarningModal.tsx`
+
+### 17.3. Merchant-программа
+
+**Реализовано:**
+- Три тира на `User.merchantTier`: `NONE` (обычный), `TRUSTED` (auto), `OFFICIAL` (paid).
+- **TRUSTED** — авто-промоушен hourly worker'ом: ≥10 RELEASED-сделок, 0 disputes за 30 дней, аккаунт ≥60 дней. Бесплатно. Демоушен при выходе из критериев.
+- **OFFICIAL** — заявка через `/merchant/apply` (500 PLS невозвратно, фильтрует спам) + ручное одобрение админом + платная подписка. Гибкие сроки: **1 / 3 / 6 / 12 мес** со скидкой до 20% за длинный коммит. Daily worker downgrade'ит истёкших.
+- Цены в `SUBSCRIPTION_PRICES` map (5k / 14k / 26k / 48k PLS). Менять без рестарта — через прямую правку константы и redeploy.
+- Бенефиты OFFICIAL: золотая корона на карточках, прикреплён вверху marketplace, 0.5% fee, приоритет в спорах. `requestedMonths` сохраняется на заявке для админа.
+- Settings → «Статус мерчанта» (всем) + «Заявки мерчантов (админ)» (SUPER_ADMIN) с одним кликом одобрить/отклонить.
+
+**Файлы:**
+- `apps/server/src/modules/merchant/merchant.service.ts` — apply/approve/reject/renew/sweep
+- `apps/server/src/modules/merchant/merchant.routes.ts`
+- `apps/server/src/modules/merchant/merchant.worker.ts` — hourly trusted sweep + daily expiry
+- `apps/web/src/components/settings/MerchantSection.tsx`, `MerchantAdminSection.tsx`
+
+### 17.4. Десктоп (pulsar-node v0.1.35)
+
+**Реализовано:**
+- Переключатель валют рядом с переключателем языка в шапке десктоп-приложения.
+- В Earnings tile под каждой PLS-цифрой отображается `≈ X RUB` (или выбранная валюта): сегодня / live-сессия / lifetime / frozen.
+- Live-сессия пересчитывает фиат каждую секунду по той же формуле что и PLS.
+- Цена тянется через Tauri-команду `fetch_price` (Rust → reqwest), чтобы обойти WebView CORS, кеш на стороне сервера (60с) + клиентский poll каждые 5 минут.
+
+**Файлы:**
+- `pulsar-node/desktop/src-tauri/src/lib.rs` — команда `fetch_price`
+- `pulsar-node/desktop/ui/index.html` — `ccy-toggle` button, `fetchPrice()`, `setFiatLabel()`
+
+**Что было сложным:**
+- Multi-decimal Decimal-тип в Prisma vs `Number()` — `totalPriceUsd: trade.amount * pricePerPlsUsd` через `Prisma.Decimal.mul()` чтобы не потерять точность.
+- Hooks-order в React (`MerchantSection`): добавил `useState` после early-return, словил React error #310. Хуки должны вызываться в одинаковом порядке — переместил выше.
+- WebView CORS: первая попытка десктопа фетчить цену напрямую `fetch('/api/v1/price')` молча падала, fiat не отрисовывался. Перенёс в Rust через reqwest по образцу `fetch_stats` / `lookup_token`.
+- Prisma OOM (exit 137): большая миграция (~6 новых таблиц + enum'ов) убилась дефолтным heap'ом. Поднял `NODE_OPTIONS=--max-old-space-size=4096` в deploy workflow.
+
+---
+
+## ✅ 18. Файловые загрузки: streaming через Fastify + Range support
+
+**Реализовано:** новый endpoint `GET /api/v1/files/dl?k=<s3key>&n=<filename>&t=<jwt>` стримит файл из MinIO/S3 через Fastify. До этого URL вёл напрямую в MinIO, и на медленных каналах загрузки падали на ~50% — Cloudflare/Nginx убивали соединение по таймауту.
+
+**Что внутри:**
+- HEAD на S3 для получения размера + content-type (быстрый 404, корректные заголовки)
+- `Accept-Ranges: bytes` всегда + честная обработка `Range:` header → HTTP 206 с `Content-Range`. Браузеры/IDM умеют resume при обрыве.
+- `Content-Disposition` с RFC 5987-encoded именем файла → правильное имя при сохранении.
+- Auth: Bearer header нормально, но клик по `<a href>` его не шлёт — поэтому endpoint также принимает `?t=<jwt>` query-param. Клиент дописывает токен из localStorage только для URL'ов на `/api/v1/files/dl`.
+- Старые сообщения с прямыми MinIO-ссылками продолжают работать без миграции.
+
+**Файлы:**
+- `apps/server/src/modules/files/files.routes.ts` (новый)
+- `apps/server/src/modules/upload/upload.routes.ts` — новый формат URL в ответе
+- `apps/web/src/components/chat/MessageBubble.tsx` — append `&t=` для protected эндпоинта
+
+---
+
+## 🔲 19. IPFS/Arweave хранение (опционально)
 
 Зашифрованные сообщения хранятся на IPFS/Arweave для перманентного децентрализованного хранения. CID/tx ID сохраняется в metadata сообщения.
 
