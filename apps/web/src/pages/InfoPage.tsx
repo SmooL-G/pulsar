@@ -135,15 +135,22 @@ export function InfoPage() {
 
         {/* Hero */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-xs font-medium mb-4">
-            <Sparkles size={12} />
-            {t('info.badge')}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold mb-4">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+            </span>
+            {locale === 'ru' ? 'ОТКРЫТАЯ BETA' : 'OPEN BETA'}
           </div>
           <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3">
-            {t('info.title')}
+            {locale === 'ru'
+              ? 'Telegram + крипто-кошелёк + P2P-биржа'
+              : 'Telegram + crypto wallet + P2P exchange'}
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            {t('info.subtitle')}
+            {locale === 'ru'
+              ? 'В одном чате. Майнинг встроен в десктоп — реальный вывод через P2P-обмен на СБП/USDT.'
+              : 'In one chat. Mining built into the desktop app, real fiat withdrawal via P2P (SBP / USDT).'}
           </p>
         </div>
 

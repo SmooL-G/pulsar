@@ -102,7 +102,20 @@ export function LoginPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">{t('auth.title')}</h1>
           <p className="text-gray-400">{t('auth.subtitle')}</p>
+          {/* Positioning hook — single sentence visitors read in <2s */}
+          <p className="text-xs text-gray-500 mt-2 max-w-sm mx-auto leading-snug">
+            {locale === 'ru'
+              ? 'Telegram + крипто-кошелёк + P2P-биржа в одном чате.'
+              : 'Telegram + crypto wallet + P2P exchange in one chat.'}
+          </p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-[11px] font-bold text-amber-300">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+              </span>
+              {locale === 'ru' ? 'ОТКРЫТАЯ BETA' : 'OPEN BETA'}
+            </span>
             <PlsPriceBadge />
             <LiveActivityPulse compact />
           </div>
