@@ -5,6 +5,7 @@ import {
   PlsTransactionType,
   P2PTradeStatus,
 } from '@prisma/client';
+import { recordBurn } from '../economy/burn.service.js';
 
 /**
  * P2P Merchant tiers.
@@ -61,7 +62,11 @@ export class MerchantError extends Error {
   }
 }
 
-/** Charge a fixed PLS amount to a user; throws if balance insufficient. */
+/** Charge a fixed PLS amount to a user; throws if balance insufficient.
+ *  All merchant fees go straight to /dev/null (no recipient wallet),
+ *  so each call also records a BURN entry — that's how the public
+ *  economy stats endpoint shows "X PLS burned to date".
+ */
 async function debitPls(tx: any, userId: string, amount: bigint, description: string) {
   const wallet = await tx.plsWallet.findUnique({ where: { userId } });
   if (!wallet) throw new MerchantError('NO_WALLET', 'No PLS wallet');
@@ -81,6 +86,9 @@ async function debitPls(tx: any, userId: string, amount: bigint, description: st
       description,
     },
   });
+  // 100% of merchant fees are burned (no recipient credit anywhere) —
+  // make it explicit for the supply ledger.
+  await recordBurn(tx, userId, amount, `Burn: ${description}`);
 }
 
 /** User submits a merchant application. Charges the application fee. */

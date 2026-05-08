@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database.js';
 import { Prisma, P2POfferSide, P2POfferStatus, P2PTradeStatus, PlsTransactionType, MerchantTier } from '@prisma/client';
+import { recordBurn } from '../economy/burn.service.js';
 
 /**
  * Internal P2P PLS marketplace.
@@ -298,6 +299,12 @@ export async function releaseTrade(tradeId: string, sellerId: string) {
           description: `P2P purchase ${tradeId.slice(0, 8)}`,
         },
       });
+    }
+    // The fee is implicitly removed (seller debited full amount, buyer
+    // credited amount-fee). Record it explicitly so the public economy
+    // stats endpoint can show "X PLS burned to date".
+    if (fee > 0n) {
+      await recordBurn(tx, sellerId, fee, `P2P platform fee burn ${tradeId.slice(0, 8)}`);
     }
 
     const released = await tx.p2PTrade.update({

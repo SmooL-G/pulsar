@@ -9,6 +9,7 @@ import { SettingsPanel } from '../settings/SettingsPanel';
 import { WalletPanel } from '../wallet/WalletPanel';
 import { ShieldCheck, Award, Wallet, ArrowUpRight, ArrowDownLeft, Copy, Check } from 'lucide-react';
 import { PlsPriceCard } from '../price/PlsPriceCard';
+import { BurnedSupplyCard } from '../economy/BurnedSupplyCard';
 import toast from 'react-hot-toast';
 
 export function NewsFeed() {
@@ -145,6 +146,9 @@ export function NewsFeed() {
 
         {/* PLS price informer — current rate + balance worth in fiat */}
         <PlsPriceCard balancePls={plsBalance} />
+
+        {/* Burn ledger — total PLS permanently removed from supply */}
+        <BurnedSupplyCard />
 
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-3">

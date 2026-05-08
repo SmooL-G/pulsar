@@ -746,6 +746,7 @@ enum PlsTransactionType {
   PURCHASE
   REWARD
   TRANSFER
+  BURN       // permanent supply removal — P2P fees, merchant fees, etc.
 }
 
 enum PlsTransactionStatus {
