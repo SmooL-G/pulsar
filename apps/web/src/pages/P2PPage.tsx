@@ -80,7 +80,7 @@ export function P2PPage() {
   }, []);
 
   return (
-    <div className="bg-dark-900 text-white min-h-screen">
+    <div className="bg-dark-900 text-white" style={{ height: '100dvh', overflowY: 'auto' }}>
       <div className="border-b border-dark-600 bg-dark-800/50 backdrop-blur sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <Link to="/" className="p-1.5 rounded-lg hover:bg-dark-600 text-gray-400">
