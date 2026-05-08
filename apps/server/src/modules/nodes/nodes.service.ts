@@ -8,13 +8,65 @@ import { redis } from '../../config/redis.js';
 //                + peer_bonus * unique_peers
 // Halved from initial values (2026-05-01) to make the runway sustainable.
 // Caps prevent farming via fake stats.
-export const BASE_RATE_PER_HOUR = 50n;         // PLS / hour online
-export const BANDWIDTH_BONUS_PER_GB = 25n;     // PLS / GB relayed
-export const PEER_BONUS_PER_PEER = 5n;         // PLS / unique peer served
-export const MAX_DAILY_PAYOUT = 2500n;         // soft daily total (sum of hourly caps)
+export const BASE_RATE_PER_HOUR_BASE = 50n;       // PLS / hour online (era 0, before any halving)
+export const BANDWIDTH_BONUS_PER_GB_BASE = 25n;   // PLS / GB relayed
+export const PEER_BONUS_PER_PEER_BASE = 5n;       // PLS / unique peer served
+export const MAX_DAILY_PAYOUT_BASE = 2500n;       // soft daily total (sum of hourly caps)
+
+// ─── Halving schedule ──────────────────────────────────────────────
+// Mining rewards halve every HALVING_INTERVAL_DAYS to control inflation
+// as the network grows. Predictable schedule = trust signal for miners
+// who plan multi-year ROI. Anchor is 2026-05-01 (the previous manual
+// halving). At 730 days (2 years) interval:
+//
+//   era 0 — 2026-05-01 → 2028-04-30: 50 PLS/hour
+//   era 1 — 2028-05-01 → 2030-04-30: 25 PLS/hour
+//   era 2 — 2030-05-01 → 2032-04-30: 12 PLS/hour
+//   ... asymptotic
+//
+// Once the divisor exceeds 2^16 = 65536 we cap rewards at 0 — beyond
+// 32 years from anchor any meaningful payout would be sub-PLS anyway.
+export const HALVING_ANCHOR_MS = Date.UTC(2026, 4, 1, 0, 0, 0);  // 2026-05-01 UTC
+export const HALVING_INTERVAL_DAYS = 730;
+const MAX_HALVINGS = 16;
+
+/** Returns the current era number (0 = first era). */
+export function currentHalvingEra(now: Date = new Date()): number {
+  const elapsedDays = Math.max(0, (now.getTime() - HALVING_ANCHOR_MS) / (24 * 60 * 60 * 1000));
+  const era = Math.floor(elapsedDays / HALVING_INTERVAL_DAYS);
+  return Math.min(era, MAX_HALVINGS);
+}
+
+/** Halving divisor for era N is 2^N. */
+function halvingDivisor(era: number): bigint {
+  return 1n << BigInt(era);
+}
+
+function applyHalving(amount: bigint): bigint {
+  const era = currentHalvingEra();
+  const divisor = halvingDivisor(era);
+  return amount / divisor;
+}
+
+/** Live (post-halving) values. Functions, not constants — the rate changes
+ *  automatically when a halving date passes, even if the server isn't
+ *  restarted. Each call recomputes against `Date.now()`. */
+export function getBaseRatePerHour(): bigint { return applyHalving(BASE_RATE_PER_HOUR_BASE); }
+export function getBandwidthBonusPerGB(): bigint { return applyHalving(BANDWIDTH_BONUS_PER_GB_BASE); }
+export function getPeerBonusPerPeer(): bigint { return applyHalving(PEER_BONUS_PER_PEER_BASE); }
+export function getMaxDailyPayout(): bigint { return applyHalving(MAX_DAILY_PAYOUT_BASE); }
+export function getMaxHourlyPayout(): bigint { return getMaxDailyPayout() / 24n; }
+
+/** Back-compat exports. Read at import time — refer to era 0. Don't use
+ *  these in new code; call the get* functions above. */
+export const BASE_RATE_PER_HOUR = BASE_RATE_PER_HOUR_BASE;
+export const BANDWIDTH_BONUS_PER_GB = BANDWIDTH_BONUS_PER_GB_BASE;
+export const PEER_BONUS_PER_PEER = PEER_BONUS_PER_PEER_BASE;
+export const MAX_DAILY_PAYOUT = MAX_DAILY_PAYOUT_BASE;
 // Hourly cap = daily / 24, rounded down. Each `payoutNodes()` run
 // earns at most this much per node, so a single big bandwidth burst
 // can't exceed the daily total even with hourly accrual.
+// (Era-0 value — payoutNodes() reads live via getMaxHourlyPayout.)
 export const MAX_HOURLY_PAYOUT = MAX_DAILY_PAYOUT / 24n;
 // Hourly accrual (was 24h continuous required). Verification Level 3
 // burn (25k PLS) remains the real sybil gate; the 1h floor just gives
@@ -284,12 +336,18 @@ export async function payoutNodes() {
     const totalGB = totalBytes / 1_000_000_000n;
     const peers = proofs.reduce((s, p) => s + p.uniquePeers, 0);
 
-    let payout =
-      (BASE_RATE_PER_HOUR * BigInt(uptimeMin)) / 60n
-      + BANDWIDTH_BONUS_PER_GB * totalGB
-      + PEER_BONUS_PER_PEER * BigInt(peers);
+    // Read live so payouts auto-halve when an era boundary passes.
+    const baseRate = getBaseRatePerHour();
+    const bwBonus = getBandwidthBonusPerGB();
+    const peerBonus = getPeerBonusPerPeer();
+    const hourlyCap = getMaxHourlyPayout();
 
-    if (payout > MAX_HOURLY_PAYOUT) payout = MAX_HOURLY_PAYOUT;
+    let payout =
+      (baseRate * BigInt(uptimeMin)) / 60n
+      + bwBonus * totalGB
+      + peerBonus * BigInt(peers);
+
+    if (payout > hourlyCap) payout = hourlyCap;
     if (payout <= 0n) continue;
 
     const availableAt = new Date(Date.now() + FREEZE_HOURS * 3600 * 1000);

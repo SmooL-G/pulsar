@@ -2,6 +2,15 @@ import type { FastifyInstance } from 'fastify';
 import { redis } from '../../config/redis.js';
 import { totalBurned, circulatingSupply } from './burn.service.js';
 import { TOTAL_SUPPLY } from '../staking/staking.service.js';
+import {
+  currentHalvingEra,
+  getBaseRatePerHour,
+  getMaxDailyPayout,
+  getBandwidthBonusPerGB,
+  getPeerBonusPerPeer,
+  HALVING_ANCHOR_MS,
+  HALVING_INTERVAL_DAYS,
+} from '../nodes/nodes.service.js';
 
 /**
  * Public read-only economy stats. Powers the "X PLS burned" widget on
@@ -16,6 +25,25 @@ const CACHE_KEY = 'economy:stats';
 const CACHE_TTL_SEC = 60;
 
 export async function economyRoutes(app: FastifyInstance) {
+  // GET /economy/halving — current era + next halving date + live rates.
+  // Used by the desktop miner / dashboard to show "next halving in X days".
+  app.get('/halving', async () => {
+    const era = currentHalvingEra();
+    const nextEraStartMs = HALVING_ANCHOR_MS + (era + 1) * HALVING_INTERVAL_DAYS * 24 * 60 * 60 * 1000;
+    return {
+      era,
+      anchorAt: new Date(HALVING_ANCHOR_MS).toISOString(),
+      intervalDays: HALVING_INTERVAL_DAYS,
+      nextHalvingAt: new Date(nextEraStartMs).toISOString(),
+      currentRates: {
+        baseRatePerHourPls: getBaseRatePerHour().toString(),
+        bandwidthBonusPerGbPls: getBandwidthBonusPerGB().toString(),
+        peerBonusPerPeerPls: getPeerBonusPerPeer().toString(),
+        maxDailyPayoutPls: getMaxDailyPayout().toString(),
+      },
+    };
+  });
+
   app.get('/stats', async () => {
     const cached = await redis.get(CACHE_KEY);
     if (cached) {
