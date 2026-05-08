@@ -144,8 +144,8 @@ export function InfoPage() {
           </div>
           <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3">
             {locale === 'ru'
-              ? 'Telegram + крипто-кошелёк + P2P-биржа'
-              : 'Telegram + crypto wallet + P2P exchange'}
+              ? 'Мессенджер + крипто-кошелёк + P2P-биржа'
+              : 'Messenger + crypto wallet + P2P exchange'}
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
             {locale === 'ru'

@@ -105,8 +105,8 @@ export function LoginPage() {
           {/* Positioning hook — single sentence visitors read in <2s */}
           <p className="text-xs text-gray-500 mt-2 max-w-sm mx-auto leading-snug">
             {locale === 'ru'
-              ? 'Telegram + крипто-кошелёк + P2P-биржа в одном чате.'
-              : 'Telegram + crypto wallet + P2P exchange in one chat.'}
+              ? 'Мессенджер + крипто-кошелёк + P2P-биржа в одном приложении.'
+              : 'Messenger + crypto wallet + P2P exchange in one app.'}
           </p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-[11px] font-bold text-amber-300">
