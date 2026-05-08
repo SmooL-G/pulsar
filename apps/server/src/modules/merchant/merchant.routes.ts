@@ -133,23 +133,23 @@ export async function merchantRoutes(app: FastifyInstance) {
       };
     });
 
-    admin.post<{ Params: { id: string }; Body: { notes?: string } }>('/admin/applications/:id/approve', async (request, reply) =>
+    admin.post<{ Params: { id: string }; Body: { notes?: string } | undefined }>('/admin/applications/:id/approve', async (request, reply) =>
       handle(reply, async () => {
         await approveApplication({
           applicationId: request.params.id,
           reviewerId: request.user!.userId,
-          notes: request.body.notes,
+          notes: request.body?.notes,
         });
         return { success: true };
       }),
     );
 
-    admin.post<{ Params: { id: string }; Body: { notes: string } }>('/admin/applications/:id/reject', async (request, reply) =>
+    admin.post<{ Params: { id: string }; Body: { notes?: string } | undefined }>('/admin/applications/:id/reject', async (request, reply) =>
       handle(reply, async () => {
         await rejectApplication({
           applicationId: request.params.id,
           reviewerId: request.user!.userId,
-          notes: request.body.notes ?? 'No reason given',
+          notes: request.body?.notes ?? 'No reason given',
         });
         return { success: true };
       }),
