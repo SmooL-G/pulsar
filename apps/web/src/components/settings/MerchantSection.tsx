@@ -29,6 +29,9 @@ export function MerchantSection() {
   const tx = (r: string, e: string) => (ru ? r : e);
   const [info, setInfo] = useState<MerchantInfo | null>(null);
   const [showApply, setShowApply] = useState(false);
+  // MUST be above the early-return below — hooks must run in the same
+  // order on every render. Was the cause of React error #310 in v62.
+  const [renewOpen, setRenewOpen] = useState(false);
 
   const load = () => {
     api.get('/merchant/me').then(({ data }) => setInfo(data)).catch(() => setInfo(null));
@@ -37,7 +40,6 @@ export function MerchantSection() {
 
   if (!info) return null;
 
-  const [renewOpen, setRenewOpen] = useState(false);
   const renew = async (months: number, pricePls: string) => {
     if (!confirm(tx(
       `Продлить подписку на ${months} мес за ${BigInt(pricePls).toLocaleString()} PLS?`,
