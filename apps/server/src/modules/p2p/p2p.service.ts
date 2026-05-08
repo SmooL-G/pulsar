@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database.js';
-import { Prisma, P2POfferSide, P2POfferStatus, P2PTradeStatus, PlsTransactionType } from '@prisma/client';
+import { Prisma, P2POfferSide, P2POfferStatus, P2PTradeStatus, PlsTransactionType, MerchantTier } from '@prisma/client';
 
 /**
  * Internal P2P PLS marketplace.
@@ -17,7 +17,10 @@ import { Prisma, P2POfferSide, P2POfferStatus, P2PTradeStatus, PlsTransactionTyp
  */
 
 const TRADE_TTL_MIN = 30;
-const PLATFORM_FEE_BPS = 100n; // 1.00%
+// Default platform fee = 1%. OFFICIAL merchants pay 0.5% as a perk
+// of their paid subscription — see release path below.
+const PLATFORM_FEE_BPS = 100n;            // 1.00%
+const PLATFORM_FEE_BPS_OFFICIAL = 50n;    // 0.50%
 
 /**
  * Minimum verification level to use the P2P marketplace.
@@ -246,7 +249,15 @@ export async function releaseTrade(tradeId: string, sellerId: string) {
       throw new P2PError('BAD_STATE', 'Can only release after buyer marks paid');
     }
 
-    const fee = (trade.amount * PLATFORM_FEE_BPS) / 10_000n;
+    // OFFICIAL merchants get the discounted fee on PLS they sell.
+    const seller = await tx.user.findUnique({
+      where: { id: sellerId },
+      select: { merchantTier: true, merchantExpiresAt: true },
+    });
+    const isOfficial = seller?.merchantTier === MerchantTier.OFFICIAL
+      && (!seller.merchantExpiresAt || seller.merchantExpiresAt > new Date());
+    const feeBps = isOfficial ? PLATFORM_FEE_BPS_OFFICIAL : PLATFORM_FEE_BPS;
+    const fee = (trade.amount * feeBps) / 10_000n;
     const buyerReceives = trade.amount - fee;
 
     // Deduct from seller's balance + lock; credit buyer's balance.

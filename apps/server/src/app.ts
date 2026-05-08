@@ -36,6 +36,7 @@ import { nftRoutes } from './modules/nft/nft.routes.js';
 import { keysRoutes } from './modules/keys/keys.routes.js';
 import { priceRoutes } from './modules/price/price.routes.js';
 import { p2pRoutes } from './modules/p2p/p2p.routes.js';
+import { merchantRoutes } from './modules/merchant/merchant.routes.js';
 import { channelRoutes } from './modules/channel/channel.routes.js';
 import { moderationRoutes } from './modules/moderation/moderation.routes.js';
 import { moderatorRoutes } from './modules/moderation/moderator.routes.js';
@@ -126,6 +127,7 @@ export async function buildApp() {
   await app.register(keysRoutes, { prefix: '/api/v1/keys' });
   await app.register(priceRoutes, { prefix: '/api/v1/price' });
   await app.register(p2pRoutes, { prefix: '/api/v1/p2p' });
+  await app.register(merchantRoutes, { prefix: '/api/v1/merchant' });
   await app.register(channelRoutes, { prefix: '/api/v1/channels' });
   await app.register(moderationRoutes, { prefix: '/api/v1/moderation' });
   await app.register(moderatorRoutes, { prefix: '/api/v1/moderator' });

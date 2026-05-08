@@ -16,6 +16,7 @@ import { startStorageChallengeWorker } from './modules/messages/storage-challeng
 import { backfillDevicesFromBundles } from './modules/keys/devices-backfill.js';
 import { startP2PWorker } from './modules/p2p/p2p.worker.js';
 import { startPriceSnapshotWorker } from './modules/price/price.worker.js';
+import { startMerchantWorker } from './modules/merchant/merchant.worker.js';
 
 async function main() {
   const app = await buildApp();
@@ -78,6 +79,9 @@ async function main() {
 
   // Hourly snapshot of effective PLS price for the chart sparkline.
   startPriceSnapshotWorker();
+
+  // P2P merchant: hourly TRUSTED-tier sweep + daily expiry sweep.
+  startMerchantWorker();
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

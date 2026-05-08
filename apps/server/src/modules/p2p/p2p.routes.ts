@@ -28,6 +28,8 @@ const userPickFields = {
   displayName: true,
   avatarUrl: true,
   verificationLevel: true,
+  merchantTier: true,
+  merchantSince: true,
   isOnline: true,
 } as const;
 
@@ -52,13 +54,21 @@ export async function p2pRoutes(app: FastifyInstance) {
 
   // ─── OFFERS ───────────────────────────────────────────
 
-  // GET /p2p/offers — list active offers (marketplace browse)
+  // GET /p2p/offers — list active offers (marketplace browse).
+  // Sort: OFFICIAL first, then TRUSTED, then NONE, each by createdAt desc.
   app.get('/offers', async (request) => {
     const offers = await prisma.p2POffer.findMany({
       where: { status: P2POfferStatus.ACTIVE, remainingAmount: { gt: 0n } },
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: 200,
       include: { seller: { select: userPickFields } },
+    });
+    const tierRank: Record<string, number> = { OFFICIAL: 0, TRUSTED: 1, NONE: 2 };
+    offers.sort((a, b) => {
+      const ra = tierRank[a.seller.merchantTier ?? 'NONE'] ?? 2;
+      const rb = tierRank[b.seller.merchantTier ?? 'NONE'] ?? 2;
+      if (ra !== rb) return ra - rb;
+      return b.createdAt.getTime() - a.createdAt.getTime();
     });
     return {
       offers: offers.map((o) => ({

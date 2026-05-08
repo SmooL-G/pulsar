@@ -35,6 +35,13 @@ model User {
   bubbleColor         String?    @map("bubble_color") @db.VarChar(7)
   profileBg           String?    @map("profile_bg") @db.VarChar(16)
   verificationLevel   Int        @default(0) @map("verification_level") @db.SmallInt
+  // P2P merchant tier — see MerchantTier enum + merchant.service.ts
+  merchantTier        MerchantTier @default(NONE) @map("merchant_tier")
+  // OFFICIAL subscription expires here; null for NONE/TRUSTED. Worker
+  // downgrades expired OFFICIAL → NONE at 09:00 UTC daily.
+  merchantExpiresAt   DateTime?    @map("merchant_expires_at")
+  // First time the user reached OFFICIAL — preserved across renewals.
+  merchantSince       DateTime?    @map("merchant_since")
   role                UserRole   @default(USER)
   status              UserStatus @default(ACTIVE)
   lastSeenAt          DateTime?  @map("last_seen_at")
@@ -82,6 +89,8 @@ model User {
   p2pBuyerTrades    P2PTrade[]         @relation("p2pBuyerTrades")
   p2pSellerTrades   P2PTrade[]         @relation("p2pSellerTrades")
   plsPriceUpdates   PlsPriceReference[]
+  merchantApplications MerchantApplication[] @relation("merchantApplicant")
+  merchantReviews   MerchantApplication[] @relation("merchantReviewer")
   botProfile        Bot?               @relation("botUser")
   ownedBots         Bot[]              @relation("botOwner")
   reports           Report[]
@@ -753,6 +762,43 @@ enum PlsTransactionStatus {
 enum P2POfferSide {
   SELL  // creator sells PLS for fiat (escrow on offer creation)
   BUY   // creator buys PLS with fiat (escrow on trade open by responder)
+}
+
+enum MerchantTier {
+  NONE      // regular user
+  TRUSTED   // auto-promoted: 10+ successful trades, 0 disputes/30d, account ≥60d
+  OFFICIAL  // paid annual subscription, manually approved by admin
+}
+
+enum MerchantApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model MerchantApplication {
+  id                String                    @id @default(uuid()) @db.Uuid
+  userId            String                    @map("user_id") @db.Uuid
+  status            MerchantApplicationStatus @default(PENDING)
+  // PLS paid as application fee — non-refundable, kept by treasury
+  // even if rejected (filters serial spam applications).
+  applicationFeePls BigInt                    @default(0) @map("application_fee_pls")
+  // Free-form: business description, expected volume, payment methods,
+  // public name to appear next to the badge, links to socials/proof.
+  description       String                    @db.VarChar(2000)
+  contactInfo       String?                   @map("contact_info") @db.VarChar(500)
+  // Set when admin approves/rejects.
+  reviewedBy        String?                   @map("reviewed_by") @db.Uuid
+  reviewedAt        DateTime?                 @map("reviewed_at")
+  reviewNotes       String?                   @map("review_notes") @db.VarChar(500)
+  createdAt         DateTime                  @default(now()) @map("created_at")
+
+  user     User  @relation("merchantApplicant", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("merchantReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@map("merchant_applications")
 }
 
 enum P2POfferStatus {
