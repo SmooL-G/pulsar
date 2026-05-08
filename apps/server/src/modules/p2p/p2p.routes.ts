@@ -9,6 +9,8 @@ import {
   openDispute,
   openTrade,
   releaseTrade,
+  sendTradeMessage,
+  listTradeMessages,
   P2PError,
   P2P_MIN_VERIFICATION_LEVEL,
 } from './p2p.service.js';
@@ -280,6 +282,41 @@ export async function p2pRoutes(app: FastifyInstance) {
       const userId = request.user!.userId;
       await openDispute(request.params.id, userId, request.body.reason ?? '');
       return { success: true };
+    }),
+  );
+
+  // ─── Trade chat (in-modal mini-chat between buyer and seller) ─────
+
+  app.get<{ Params: { id: string } }>('/trades/:id/messages', async (request, reply) =>
+    handle(reply, async () => {
+      const userId = request.user!.userId;
+      const isAdmin = request.user?.role === 'SUPER_ADMIN';
+      const messages = await listTradeMessages(request.params.id, userId, isAdmin);
+      return {
+        messages: messages.map((m) => ({
+          id: m.id,
+          senderId: m.senderId,
+          content: m.content,
+          createdAt: m.createdAt.toISOString(),
+          sender: m.sender,
+        })),
+      };
+    }),
+  );
+
+  app.post<{ Params: { id: string }; Body: { content: string } }>('/trades/:id/messages', async (request, reply) =>
+    handle(reply, async () => {
+      const userId = request.user!.userId;
+      const message = await sendTradeMessage(request.params.id, userId, request.body.content);
+      return reply.status(201).send({
+        message: {
+          id: message.id,
+          senderId: message.senderId,
+          content: message.content,
+          createdAt: message.createdAt.toISOString(),
+          sender: message.sender,
+        },
+      });
     }),
   );
 }

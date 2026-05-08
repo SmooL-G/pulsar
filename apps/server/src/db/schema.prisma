@@ -88,6 +88,7 @@ model User {
   p2pOffers         P2POffer[]
   p2pBuyerTrades    P2PTrade[]         @relation("p2pBuyerTrades")
   p2pSellerTrades   P2PTrade[]         @relation("p2pSellerTrades")
+  p2pTradeMessages  P2PTradeMessage[]  @relation("p2pTradeMessages")
   plsPriceUpdates   PlsPriceReference[]
   merchantApplications MerchantApplication[] @relation("merchantApplicant")
   merchantReviews   MerchantApplication[] @relation("merchantReviewer")
@@ -870,14 +871,32 @@ model P2PTrade {
   expiresAt     DateTime       @map("expires_at")
   createdAt     DateTime       @default(now()) @map("created_at")
 
-  offer  P2POffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  buyer  User     @relation("p2pBuyerTrades", fields: [buyerId], references: [id], onDelete: Cascade)
-  seller User     @relation("p2pSellerTrades", fields: [sellerId], references: [id], onDelete: Cascade)
+  offer    P2POffer           @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  buyer    User               @relation("p2pBuyerTrades", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller   User               @relation("p2pSellerTrades", fields: [sellerId], references: [id], onDelete: Cascade)
+  messages P2PTradeMessage[]
 
   @@index([buyerId, createdAt(sort: Desc)])
   @@index([sellerId, createdAt(sort: Desc)])
   @@index([status, expiresAt])
   @@map("p2p_trades")
+}
+
+// In-trade chat between buyer and seller. Plaintext (not E2E) so admins
+// can read conversation when arbitrating a dispute. Visible only to the
+// two trade participants and SUPER_ADMIN.
+model P2PTradeMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  tradeId   String   @map("trade_id") @db.Uuid
+  senderId  String   @map("sender_id") @db.Uuid
+  content   String   @db.VarChar(2000)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  trade  P2PTrade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  sender User     @relation("p2pTradeMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([tradeId, createdAt])
+  @@map("p2p_trade_messages")
 }
 
 // ─── PLS PRICE TIMESERIES ───────────────────────────────

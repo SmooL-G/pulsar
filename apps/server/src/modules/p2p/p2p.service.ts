@@ -371,6 +371,49 @@ export async function cancelTrade(tradeId: string, userId: string, reason?: stri
   });
 }
 
+/** Send a chat message inside an active trade. Buyer or seller only. */
+export async function sendTradeMessage(tradeId: string, senderId: string, content: string) {
+  const text = content.trim();
+  if (text.length === 0) throw new P2PError('EMPTY', 'Message is empty');
+  if (text.length > 2000) throw new P2PError('TOO_LONG', 'Message exceeds 2000 chars');
+  const trade = await prisma.p2PTrade.findUnique({
+    where: { id: tradeId },
+    select: { buyerId: true, sellerId: true, status: true },
+  });
+  if (!trade) throw new P2PError('NOT_FOUND', 'Trade not found');
+  if (trade.buyerId !== senderId && trade.sellerId !== senderId) {
+    throw new P2PError('FORBIDDEN', 'Not your trade');
+  }
+  // Allow chat even on RELEASED / CANCELLED so disputes can still
+  // gather context after the fact.
+  return prisma.p2PTradeMessage.create({
+    data: { tradeId, senderId, content: text.slice(0, 2000) },
+    include: {
+      sender: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+    },
+  });
+}
+
+/** List trade messages for a participant or admin. Newest last. */
+export async function listTradeMessages(tradeId: string, viewerId: string, isAdmin: boolean) {
+  const trade = await prisma.p2PTrade.findUnique({
+    where: { id: tradeId },
+    select: { buyerId: true, sellerId: true },
+  });
+  if (!trade) throw new P2PError('NOT_FOUND', 'Trade not found');
+  if (!isAdmin && trade.buyerId !== viewerId && trade.sellerId !== viewerId) {
+    throw new P2PError('FORBIDDEN', 'Not your trade');
+  }
+  return prisma.p2PTradeMessage.findMany({
+    where: { tradeId },
+    orderBy: { createdAt: 'asc' },
+    take: 200,
+    include: {
+      sender: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+    },
+  });
+}
+
 /** Open a dispute on a PAID trade. Admin will resolve. */
 export async function openDispute(tradeId: string, userId: string, reason: string) {
   const trade = await prisma.p2PTrade.findUnique({ where: { id: tradeId } });

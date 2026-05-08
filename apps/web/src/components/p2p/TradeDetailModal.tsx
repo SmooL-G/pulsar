@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { X, Loader2, Clock, AlertTriangle, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { X, Loader2, Clock, AlertTriangle, CheckCircle2, XCircle, Sparkles, Send, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../services/api';
 import { useI18n } from '../../i18n';
@@ -225,8 +225,129 @@ export function TradeDetailModal({ tradeId, onClose }: { tradeId: string; onClos
             {tx('Идёт разбирательство — админ свяжется с обеими сторонами.', 'Dispute in progress — admin will contact both parties.')}
           </div>
         )}
+
+        {/* In-trade chat — buyer/seller can coordinate (СБП-номера, скрин чека, etc) */}
+        <TradeChat tradeId={trade.id} myUserId={trade.myRole === 'buyer' ? trade.buyer.id : trade.seller.id} ru={ru} />
       </div>
     </Wrap>
+  );
+}
+
+interface TradeMessage {
+  id: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  sender: { id: string; username: string; displayName: string | null; avatarUrl: string | null };
+}
+
+function TradeChat({ tradeId, myUserId, ru }: { tradeId: string; myUserId: string; ru: boolean }) {
+  const tx = (r: string, e: string) => (ru ? r : e);
+  const [messages, setMessages] = useState<TradeMessage[] | null>(null);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const load = async () => {
+    try {
+      const { data } = await api.get(`/p2p/trades/${tradeId}/messages`);
+      setMessages(data.messages ?? []);
+    } catch {
+      setMessages([]);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // Poll every 3s while modal is open. Tradeoff vs sockets: simpler,
+    // and the modal is short-lived (typically < 30 min for an active trade).
+    const id = setInterval(load, 3000);
+    return () => clearInterval(id);
+  }, [tradeId]);
+
+  // Auto-scroll to newest message when count grows.
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [messages?.length]);
+
+  const send = async () => {
+    const content = input.trim();
+    if (!content || sending) return;
+    setSending(true);
+    try {
+      const { data } = await api.post(`/p2p/trades/${tradeId}/messages`, { content });
+      setMessages((prev) => [...(prev ?? []), data.message]);
+      setInput('');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? tx('Не отправилось', 'Send failed'));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-dark-500 bg-dark-800/40 overflow-hidden">
+      <div className="px-3 py-2 flex items-center gap-1.5 text-[11px] text-gray-400 border-b border-dark-500/50">
+        <MessageSquare size={11} />
+        {tx('Чат сделки', 'Trade chat')}
+        {messages && messages.length > 0 && (
+          <span className="text-gray-500 ml-auto tabular-nums">{messages.length}</span>
+        )}
+      </div>
+
+      <div ref={listRef} className="max-h-48 overflow-y-auto px-3 py-2 space-y-1.5">
+        {messages === null && (
+          <div className="flex justify-center py-2">
+            <Loader2 size={14} className="animate-spin text-gray-500" />
+          </div>
+        )}
+        {messages && messages.length === 0 && (
+          <p className="text-[11px] text-gray-500 italic text-center py-2">
+            {tx('Напиши первым — обсуди детали платежа', 'Say hi — coordinate the payment')}
+          </p>
+        )}
+        {messages?.map((m) => {
+          const isMine = m.senderId === myUserId;
+          return (
+            <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-[80%] rounded-lg px-2.5 py-1.5 text-xs whitespace-pre-wrap break-words ${
+                  isMine
+                    ? 'bg-primary-500/30 text-primary-50'
+                    : 'bg-dark-600 text-gray-100'
+                }`}
+                title={new Date(m.createdAt).toLocaleString()}
+              >
+                {!isMine && (
+                  <div className="text-[9px] text-gray-400 mb-0.5">@{m.sender.username}</div>
+                )}
+                {m.content}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-1.5 p-2 border-t border-dark-500/50 bg-dark-800/60">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+          maxLength={2000}
+          placeholder={tx('Сообщение…', 'Message…')}
+          className="flex-1 bg-dark-700 border border-dark-500 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-gray-500 focus:border-primary-500 focus:outline-none"
+        />
+        <button
+          onClick={send}
+          disabled={!input.trim() || sending}
+          className="p-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg disabled:opacity-40"
+          title={tx('Отправить', 'Send')}
+        >
+          {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+        </button>
+      </div>
+    </div>
   );
 }
 
