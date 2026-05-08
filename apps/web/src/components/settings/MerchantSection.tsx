@@ -212,7 +212,7 @@ function ApplyModal({ onClose, pricing, ru }: { onClose: () => void; pricing: Me
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={5}
-            className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none resize-none"
+            className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-primary-500 focus:outline-none resize-none"
             placeholder={tx(
               'Кто ты, какой объём планируешь, какие платёжные методы поддерживаешь, ссылки на профиль/каналы для проверки.',
               'Who you are, expected volume, payment methods supported, links to profile/channels for verification.',
@@ -227,7 +227,7 @@ function ApplyModal({ onClose, pricing, ru }: { onClose: () => void; pricing: Me
             type="text"
             value={contactInfo}
             onChange={(e) => setContactInfo(e.target.value)}
-            className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+            className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-primary-500 focus:outline-none"
             placeholder={tx('Telegram @username, email — на случай если админу нужны уточнения', 'Telegram @username, email — for admin clarifications')}
           />
         </label>

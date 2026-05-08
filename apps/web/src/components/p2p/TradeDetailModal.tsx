@@ -118,13 +118,13 @@ export function TradeDetailModal({ tradeId, onClose }: { tradeId: string; onClos
 
         <div className="rounded-xl border border-dark-500 p-3">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{tx('Условия и реквизиты', 'Terms & details')}</p>
-          <p className="text-sm whitespace-pre-wrap">{trade.offerTerms}</p>
+          <p className="text-sm text-gray-100 whitespace-pre-wrap">{trade.offerTerms}</p>
         </div>
 
         {trade.paymentNote && (
           <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3">
             <p className="text-[10px] text-cyan-400 uppercase tracking-wider mb-1">{tx('Заметка', 'Note from buyer')}</p>
-            <p className="text-sm whitespace-pre-wrap">{trade.paymentNote}</p>
+            <p className="text-sm text-gray-100 whitespace-pre-wrap">{trade.paymentNote}</p>
           </div>
         )}
 
@@ -135,7 +135,7 @@ export function TradeDetailModal({ tradeId, onClose }: { tradeId: string; onClos
               value={paymentNote}
               onChange={(e) => setPaymentNote(e.target.value)}
               rows={2}
-              className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none resize-none"
+              className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-primary-500 focus:outline-none resize-none"
               placeholder={tx('Опционально: ID транзакции, заметка для продавца', 'Optional: transaction ID, note to seller')}
             />
             <div className="flex gap-2">

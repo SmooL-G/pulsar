@@ -91,7 +91,7 @@ export function MerchantAdminSection() {
             <span className="text-[10px] text-gray-500">L{a.user.verificationLevel}</span>
             <span className="ml-auto text-[10px] text-gray-500 tabular-nums">{new Date(a.createdAt).toLocaleString()}</span>
           </div>
-          <div className="rounded-lg bg-dark-800 p-2 text-xs whitespace-pre-wrap">{a.description}</div>
+          <div className="rounded-lg bg-dark-800 p-2 text-xs text-gray-100 whitespace-pre-wrap">{a.description}</div>
           {a.contactInfo && (
             <p className="text-[11px] text-gray-400">
               <span className="text-gray-500">{tx('Контакт', 'Contact')}: </span>{a.contactInfo}

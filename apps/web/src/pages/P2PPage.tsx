@@ -443,19 +443,19 @@ function CreateOfferModal({ side, onClose, ru }: { side: OfferSide; onClose: () 
         </p>
 
         <Field label={isSell ? tx('Сколько PLS продаёшь', 'PLS amount to sell') : tx('Сколько PLS хочешь купить', 'PLS amount to buy')}>
-          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" placeholder="100000" />
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-primary-500 focus:outline-none" placeholder="100000" />
         </Field>
 
         <Field label={`${tx('Цена за 1 PLS', 'Price per 1 PLS')} (${currency})`}>
-          <input type="number" step="0.000001" value={pricePerPls} onChange={(e) => setPricePerPls(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" placeholder="0.001" />
+          <input type="number" step="0.000001" value={pricePerPls} onChange={(e) => setPricePerPls(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-primary-500 focus:outline-none" placeholder="0.001" />
         </Field>
 
         <div className="grid grid-cols-2 gap-2">
           <Field label={tx('Мин. сделка', 'Min trade')}>
-            <input type="number" value={minTrade} onChange={(e) => setMinTrade(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" placeholder="0" />
+            <input type="number" value={minTrade} onChange={(e) => setMinTrade(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-primary-500 focus:outline-none" placeholder="0" />
           </Field>
           <Field label={tx('Макс. сделка', 'Max trade')}>
-            <input type="number" value={maxTrade} onChange={(e) => setMaxTrade(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" placeholder="∞" />
+            <input type="number" value={maxTrade} onChange={(e) => setMaxTrade(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-primary-500 focus:outline-none" placeholder="∞" />
           </Field>
         </div>
 
@@ -464,7 +464,7 @@ function CreateOfferModal({ side, onClose, ru }: { side: OfferSide; onClose: () 
             value={terms}
             onChange={(e) => setTerms(e.target.value)}
             rows={4}
-            className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none resize-none"
+            className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-primary-500 focus:outline-none resize-none"
             placeholder={isSell
               ? tx('СБП Сбербанк +7 900 123 45 67, оплата в течение 30 минут', 'SBP / USDT TRC-20: TXyz... — pay within 30 min')
               : tx('Готов платить через СБП / USDT-TRC20. Куда отправлять — обсудим в чате после открытия сделки.', 'I pay via SBP / USDT-TRC20. Confirm payment route in chat after trade opens.')}
@@ -554,10 +554,10 @@ function OpenTradeModal({ offer, onClose, onOpened, ru }: { offer: Offer; onClos
             : tx('Твои PLS залочатся в эскроу. Покупатель отправит тебе фиат, потом подтвердишь — и PLS уйдут к нему.', 'Your PLS will be escrowed. Buyer sends fiat, you confirm — PLS goes to them.')}
         </p>
 
-        <div className="rounded-xl bg-dark-800 p-3 mb-3 text-sm whitespace-pre-wrap">{offer.terms}</div>
+        <div className="rounded-xl bg-dark-800 p-3 mb-3 text-sm text-gray-100 whitespace-pre-wrap">{offer.terms}</div>
 
         <Field label={isSellOffer ? tx('Сколько PLS купить', 'PLS to buy') : tx('Сколько PLS продать', 'PLS to sell')}>
-          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" placeholder="" />
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full bg-dark-800 border border-dark-500 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-primary-500 focus:outline-none" placeholder="" />
         </Field>
 
         {amount && (
