@@ -96,6 +96,8 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 78 | Гибкие сроки merchant-подписки (1/3/6/12 мес со скидкой до 20%), админ видит запрошенный срок | ✅ Готово | 2026-05-08 |
 | 79 | Streaming-download файлов через Fastify (Range support, фикс залипания на 50% из-за Cloudflare timeout) | ✅ Готово | 2026-05-08 |
 | 80 | Десктоп v0.1.35 — переключатель валют (6 фиатов) + фиат-сумма рядом с PLS в Earnings tile | ✅ Готово | 2026-05-08 |
+| 81 | Burn ledger — явная запись всех неявных burn'ов (P2P fee, merchant fee/sub) + публичный счётчик `/api/v1/economy/stats` + виджет на дашборде | ✅ Готово | 2026-05-08 |
+| 82 | Halving schedule в коде — каждые 2 года автоматически (anchor 2026-05-01), endpoint `/api/v1/economy/halving` для UI-обратного отсчёта | ✅ Готово | 2026-05-08 |
 
 ---
 
@@ -402,6 +404,51 @@ encryptionType   String? @map("encryption_type") @db.VarChar(32)
 - Hooks-order в React (`MerchantSection`): добавил `useState` после early-return, словил React error #310. Хуки должны вызываться в одинаковом порядке — переместил выше.
 - WebView CORS: первая попытка десктопа фетчить цену напрямую `fetch('/api/v1/price')` молча падала, fiat не отрисовывался. Перенёс в Rust через reqwest по образцу `fetch_stats` / `lookup_token`.
 - Prisma OOM (exit 137): большая миграция (~6 новых таблиц + enum'ов) убилась дефолтным heap'ом. Поднял `NODE_OPTIONS=--max-old-space-size=4096` в deploy workflow.
+
+---
+
+## ✅ 17a. Защита курса PLS: burn ledger + halving (#81-#82)
+
+Закрывает две главные «дыры» в защите токена от обесценивания:
+
+### 17a.1. Прозрачный burn
+
+До этого PLS-fees уходили в /dev/null имплицитно (контракт списывал с продавца, кредитил покупателя минус комиссия — разница просто исчезала). Никаких следов в БД, нечем хвастаться.
+
+**Сейчас:**
+- Новый `PlsTransactionType.BURN` в ledger'е
+- `recordBurn()` хелпер пишет negative-amount транзакцию каждый раз когда supply реально уменьшается
+- P2P releaseTrade → burn 1% (или 0.5% для OFFICIAL мерчантов)
+- Merchant `debitPls` → burn 100% (application fee + subscription + renewal)
+- `GET /api/v1/economy/stats` — public, кешируется 60с: `{ totalSupply, circulating, burned, burnedPctOfSupply }`
+- Виджет «Сожжено навсегда» на дашборде с розово-оранжевым градиентом и счётчиком процента от total supply
+
+**Маркетинговый эффект:** каждая P2P-сделка и merchant-подписка теперь визуально уменьшают supply. «При покупке PLS на бирже горят токены» — прямой defi-narrative.
+
+### 17a.2. Halving schedule
+
+**Защита от инфляции при росте miner-сети.** Зашит в код, никаких governance-голосований.
+
+```
+era 0  | 2026-05-01 → 2028-04-30 | 50 PLS/час  · 25/GB · 5/peer · cap 2500/день
+era 1  | 2028-05-01 → 2030-04-30 | 25 PLS/час  · 12/GB · 2/peer · cap 1250/день
+era 2  | 2030-05-01 → 2032-04-30 | 12 PLS/час  · 6/GB  · 1/peer · cap 625/день
+...
+```
+
+**Реализация:**
+- `BASE_RATE_PER_HOUR_BASE` и т.д. — immutable era-0 константы
+- Геттеры (`getBaseRatePerHour()` etc.) делят на `2^era` живьём при каждом вызове — рестарт сервера на дату halving не нужен
+- `payoutNodes()` использует геттеры
+- Endpoint `GET /api/v1/economy/halving` отдаёт era + nextHalvingAt + currentRates → готово для UI-countdown «До следующего halving N дней»
+
+**Files:**
+- `apps/server/src/modules/economy/burn.service.ts` — recordBurn / totalBurned / circulatingSupply
+- `apps/server/src/modules/economy/economy.routes.ts` — /stats + /halving
+- `apps/server/src/modules/nodes/nodes.service.ts` — halving formula + getters
+- `apps/server/src/modules/p2p/p2p.service.ts` — burn после release
+- `apps/server/src/modules/merchant/merchant.service.ts` — burn в debitPls
+- `apps/web/src/components/economy/BurnedSupplyCard.tsx` — виджет
 
 ---
 
