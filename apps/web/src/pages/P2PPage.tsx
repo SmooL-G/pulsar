@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Coins, Plus, Loader2, Tag, Trash2, ChevronRight,
-  AlertTriangle, CheckCircle2, XCircle, Clock, Sparkles, Lock as LockIcon, ShieldCheck,
+  AlertTriangle, CheckCircle2, XCircle, Clock, Sparkles, Lock as LockIcon, ShieldCheck, Crown,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../services/api';
@@ -23,7 +23,14 @@ type OfferSide = 'SELL' | 'BUY';
 
 interface Offer {
   id: string;
-  creator: { id: string; username: string; displayName: string | null; avatarUrl: string | null; verificationLevel: number };
+  creator: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+    verificationLevel: number;
+    merchantTier?: 'NONE' | 'TRUSTED' | 'OFFICIAL';
+  };
   side: OfferSide;
   pricePerPlsUsd: number;
   totalAmount: string;
@@ -315,11 +322,15 @@ function OfferCard({ offer, onAct, ru }: { offer: Offer; onAct: () => void; ru: 
 
   const priceInDisplayCcy = snap ? offer.pricePerPlsUsd * snap.fx[currency] : null;
   const isSell = offer.side === 'SELL';
+  const tier = offer.creator.merchantTier ?? 'NONE';
 
-  // Visual cue: amber border for sellers, emerald for buyers
-  const sideStyle = isSell
-    ? 'border-amber-500/30 hover:border-amber-400/60'
-    : 'border-emerald-500/30 hover:border-emerald-400/60';
+  // Visual cue: gold ring for OFFICIAL merchants regardless of side, then
+  // amber/emerald based on side for everyone else.
+  const sideStyle = tier === 'OFFICIAL'
+    ? 'border-amber-400/50 hover:border-amber-300 ring-1 ring-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]'
+    : isSell
+      ? 'border-amber-500/30 hover:border-amber-400/60'
+      : 'border-emerald-500/30 hover:border-emerald-400/60';
   const sideLabel = isSell
     ? { ru: 'Продаёт', en: 'Selling' }
     : { ru: 'Покупает', en: 'Buying' };
@@ -340,10 +351,11 @@ function OfferCard({ offer, onAct, ru }: { offer: Offer; onAct: () => void; ru: 
           {(offer.creator.displayName || offer.creator.username).slice(0, 1).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-baseline gap-2 flex-wrap">
             <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold ${sidePill}`}>
               {ru ? sideLabel.ru : sideLabel.en}
             </span>
+            <MerchantBadge tier={tier} />
             <span className="font-medium truncate">{offer.creator.displayName || offer.creator.username}</span>
             <span className="text-[11px] text-gray-500">@{offer.creator.username}</span>
           </div>
@@ -680,6 +692,26 @@ function MyTradesTab({ onOpen, ru }: { onOpen: (id: string) => void; ru: boolean
 }
 
 // ─── HELPERS ────────────────────────────────────────────
+
+function MerchantBadge({ tier }: { tier: 'NONE' | 'TRUSTED' | 'OFFICIAL' }) {
+  if (tier === 'OFFICIAL') {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-amber-500/15 text-amber-300 font-bold" title="Official Merchant — verified business">
+        <Crown size={9} />
+        Official
+      </span>
+    );
+  }
+  if (tier === 'TRUSTED') {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[9px] uppercase tracking-wider px-1 py-0.5 rounded bg-cyan-500/15 text-cyan-300 font-bold" title="Trusted Trader — earned through clean trade history">
+        <ShieldCheck size={9} />
+        Trusted
+      </span>
+    );
+  }
+  return null;
+}
 
 function StatusPill({ status, ru }: { status: MyOffer['status']; ru: boolean }) {
   const map: Record<MyOffer['status'], { label: { ru: string; en: string }; class: string }> = {

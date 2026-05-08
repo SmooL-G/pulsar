@@ -21,6 +21,8 @@ import { TransferModal } from '../wallet/TransferModal';
 import { exportKeys, importKeys, hasLocalKeys } from '../../crypto/keyManager';
 import { LinkedDevicesSection } from './LinkedDevicesSection';
 import { PlsPriceAdminSection } from './PlsPriceAdminSection';
+import { MerchantSection } from './MerchantSection';
+import { MerchantAdminSection } from './MerchantAdminSection';
 
 function SuperAdminOnly({ children }: { children: React.ReactNode }) {
   const role = useAuthStore((s) => (s.user as any)?.role);
@@ -370,7 +372,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 {/* Связанные устройства — multi-device E2E */}
                 <LinkedDevicesSection />
 
-                {/* Админ-курс PLS — только SUPER_ADMIN */}
+                {/* P2P merchant статус */}
+                <MerchantSection />
+
+                {/* Админ-секции — только SUPER_ADMIN */}
+                <SuperAdminOnly><MerchantAdminSection /></SuperAdminOnly>
                 <SuperAdminOnly><PlsPriceAdminSection /></SuperAdminOnly>
 
                 {/* E2E ключи — экспорт/импорт */}
