@@ -4,6 +4,8 @@ import { useI18n } from '../../i18n';
 interface Pulse {
   typingNow: number;
   onlineNow: number;
+  nodesOnline?: number;
+  nodesTotal?: number;
   updatedAt: string;
 }
 
@@ -57,6 +59,13 @@ export function LiveActivityPulse({ compact = false }: { compact?: boolean }) {
             <span className="text-gray-400">{tx('печатают', 'typing')}</span>
           </>
         )}
+        {typeof pulse.nodesOnline === 'number' && pulse.nodesOnline > 0 && (
+          <>
+            <span className="text-gray-500">·</span>
+            <span className="text-cyan-300 font-semibold tabular-nums">⛏ {pulse.nodesOnline}</span>
+            <span className="text-gray-400">{tx('нод', 'nodes')}</span>
+          </>
+        )}
       </div>
     );
   }
@@ -74,7 +83,7 @@ export function LiveActivityPulse({ compact = false }: { compact?: boolean }) {
         </span>
       </div>
 
-      <div className="flex items-baseline gap-4 tabular-nums">
+      <div className="flex items-baseline gap-4 tabular-nums flex-wrap">
         <div>
           <div className="text-2xl font-bold text-emerald-300">{pulse.onlineNow}</div>
           <div className="text-[10px] text-gray-500 uppercase tracking-wider">
@@ -87,12 +96,25 @@ export function LiveActivityPulse({ compact = false }: { compact?: boolean }) {
             {tx('печатают сейчас', 'typing now')}
           </div>
         </div>
+        {typeof pulse.nodesOnline === 'number' && (
+          <div className={`ml-auto text-right ${pulse.nodesOnline > 0 ? 'opacity-100' : 'opacity-60'}`}>
+            <div className="text-2xl font-bold text-amber-300 flex items-baseline gap-1 justify-end">
+              ⛏ <span>{pulse.nodesOnline}</span>
+              {typeof pulse.nodesTotal === 'number' && pulse.nodesTotal > pulse.nodesOnline && (
+                <span className="text-xs text-gray-500">/ {pulse.nodesTotal}</span>
+              )}
+            </div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider">
+              {tx('нод раздают', 'nodes relaying')}
+            </div>
+          </div>
+        )}
       </div>
 
       <p className="text-[10px] text-gray-500 mt-2 leading-snug">
         {tx(
-          'Каждое сообщение в чатах отражается здесь в реальном времени.',
-          'Every keystroke across the platform reflects here in real time.',
+          'Сообщения летят сквозь живую миннер-сеть в реальном времени.',
+          'Messages flow through a live miner network in real time.',
         )}
       </p>
     </div>

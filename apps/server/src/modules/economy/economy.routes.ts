@@ -28,20 +28,32 @@ const CACHE_TTL_SEC = 60;
 
 export async function economyRoutes(app: FastifyInstance) {
   // GET /economy/pulse — public proof-of-life snapshot. "X людей сейчас
-  // печатают, Y онлайн" — для виджета на login / dashboard. Кеш 5с,
-  // чтобы вирусный момент не положил Redis.
+  // печатают, Y онлайн, Z нод раздают трафик" — для виджета на
+  // login / dashboard. Кеш 5с, чтобы вирусный момент не положил Redis.
   app.get('/pulse', async () => {
     const cached = await redis.get('economy:pulse');
     if (cached) {
       try { return JSON.parse(cached); } catch { /* fallthrough */ }
     }
-    const [typingNow, onlineNow] = await Promise.all([
+    // Tunneled-nodes set holds node IDs currently keeping an outbound
+    // WebSocket tunnel to the relay container — that's the most honest
+    // "online right now" signal for miners (proofs lag 5min).
+    let nodesOnline = 0;
+    try {
+      const raw = await redis.get('relay:tunneled-nodes');
+      if (raw) nodesOnline = (JSON.parse(raw) as string[]).length;
+    } catch { /* fall back to 0 */ }
+
+    const [typingNow, onlineNow, nodesTotal] = await Promise.all([
       getTypingNow(),
       prisma.user.count({ where: { isOnline: true } }),
+      prisma.relayNode.count({ where: { status: 'ACTIVE' } }),
     ]);
     const snapshot = {
       typingNow,
       onlineNow,
+      nodesOnline,
+      nodesTotal,
       updatedAt: new Date().toISOString(),
     };
     await redis.set('economy:pulse', JSON.stringify(snapshot), 'EX', 5);
