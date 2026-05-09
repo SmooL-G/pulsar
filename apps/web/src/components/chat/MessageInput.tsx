@@ -469,7 +469,9 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   return (
     <div className="px-3 sm:px-4 py-3 pb-3-safe shrink-0">
      <BotChatBar chatId={chatId} onCommandSelect={handleBotCommand} />
-     <div className="bg-white dark:bg-dark-600 rounded-2xl shadow-xl shadow-black/15 dark:shadow-black/40 border border-gray-200/60 dark:border-dark-500/60 px-3 py-2">
+     {/* Frosted-glass input — readable on any wallpaper (light/dark/coloured)
+         via translucent base + backdrop-blur + subtle border highlight. */}
+     <div className="bg-white/85 dark:bg-dark-700/60 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/20 dark:shadow-black/50 border border-white/40 dark:border-white/10 ring-1 ring-black/5 dark:ring-white/5 px-3 py-2">
       {chatType === 'DIRECT' && !recipientIsBot && (
         <div className="flex items-center gap-3 mb-1 ml-1">
           {/* E2E indicator — DM messages always encrypt now (privacy-by-default).

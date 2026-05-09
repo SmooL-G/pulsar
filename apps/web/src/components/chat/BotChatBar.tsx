@@ -60,14 +60,15 @@ export function BotChatBar({ chatId, onCommandSelect }: BotChatBarProps) {
         </div>
       )}
 
-      {/* Bar */}
+      {/* Bar — glassmorphic pills with strong contrast so they read on
+          any chat wallpaper (light, dark, or coloured background). */}
       <div className="flex items-center gap-2 px-3 pb-2">
         <button
           onClick={() => setShowMenu(v => !v)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all backdrop-blur-md shadow-sm ${
             showMenu
-              ? 'bg-primary-500/20 border-primary-500/40 text-primary-400'
-              : 'bg-white/5 border-white/10 text-gray-400 hover:text-gray-200 hover:bg-white/10'
+              ? 'bg-primary-500/40 border-primary-300/70 text-white'
+              : 'bg-black/40 border-white/30 text-white hover:bg-black/55'
           }`}
         >
           <Bot size={13} />
@@ -75,7 +76,7 @@ export function BotChatBar({ chatId, onCommandSelect }: BotChatBarProps) {
         </button>
         <button
           onClick={() => setShowBotPanel(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-white/5 border border-white/10 text-gray-400 hover:text-gray-200 hover:bg-white/10 transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-black/40 border border-white/30 text-white hover:bg-black/55 transition-all backdrop-blur-md shadow-sm"
         >
           <AppWindow size={13} />
           Открыть приложение
