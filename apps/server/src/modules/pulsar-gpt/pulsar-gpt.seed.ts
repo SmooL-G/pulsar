@@ -3,7 +3,7 @@ import { prisma } from '../../config/database.js';
 export let PULSAR_GPT_BOT_USER_ID: string | null = null;
 
 const BOT_BIO = '🤖 Мульти-модельный AI-ассистент. Чат, изображения, оживление фото, видео из текста.';
-const BOT_START = '🤖 Привет! Я Pulsar GPT — твой AI-помощник.\n\nОткрой страницу /pulsar-gpt чтобы:\n💬 Поговорить с ИИ\n🎨 Создать изображение\n🎬 Оживить картинку\n🎥 Сгенерировать видео из текста';
+const BOT_START = '🤖 Привет!\n\nДобро пожаловать в Pulsar GPT — твой AI-помощник.\n\n✨ Что я умею:\n• 💬 Диалог с AI (DeepSeek · GPT-4o · Claude · Gemini)\n• 🎨 Генерация изображений (Flux · Imagen · GPT Image-2)\n• 🎬 Оживление фотографий (Grok · Bytedance Seedance)\n• 🎥 Видео из текста (Veo · Grok · Seedance)\n• 🎤 Озвучка текста (скоро)\n\nНапиши /menu чтобы открыть кнопки.';
 
 /**
  * One-shot seed for the system bot account that represents Pulsar GPT

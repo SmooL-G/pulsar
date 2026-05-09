@@ -81,25 +81,55 @@ async function sendBot(chatId: string, text: string, buttons?: InlineButton[][])
 }
 
 const MENU_BUTTONS: InlineButton[][] = [
+  [{ text: '💬 Диалог с AI', callbackData: 'gpt:chat' }],
+  [{ text: '🎨 Создать изображение', callbackData: 'gpt:image' }],
   [
-    { text: '💬 Чат с ИИ', callbackData: 'gpt:chat' },
-    { text: '🎨 Картинка', callbackData: 'gpt:image' },
+    { text: '🎬 Оживить фото', callbackData: 'gpt:animate' },
+    { text: '🎥 Видео из текста', callbackData: 'gpt:video' },
   ],
+  [{ text: '🎤 Озвучить текст', callbackData: 'gpt:voice' }],
   [
-    { text: '🎬 Оживить', callbackData: 'gpt:animate' },
-    { text: '🎥 Видео', callbackData: 'gpt:video' },
-  ],
-  [
-    { text: '⚙ Настройки (страница)', callbackData: 'gpt:settings' },
+    { text: '👤 Мой профиль', callbackData: 'gpt:profile' },
+    { text: '💎 Купить PLS', callbackData: 'gpt:topup' },
   ],
 ];
 
-async function showMenu(chatId: string) {
-  await sendBot(
-    chatId,
-    '🤖 Pulsar GPT — выбери что делать:',
-    MENU_BUTTONS,
-  );
+async function showMenu(userId: string, chatId: string) {
+  // Personalized greeting + capability list + live balance.
+  // Mirrors the convention popular Telegram AI bots use: friendly opener,
+  // bullet list of capabilities (with concrete model names so it feels
+  // real), wallet status, then big buttons.
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { displayName: true, username: true, role: true },
+  });
+  const wallet = await prisma.plsWallet.findUnique({
+    where: { userId },
+    select: { balance: true },
+  });
+  const name = user?.displayName || user?.username || 'друг';
+  const isAdmin = user?.role === 'SUPER_ADMIN';
+  const balance = wallet?.balance ?? 0n;
+
+  const balanceLine = isAdmin
+    ? '👑 Admin — все модели бесплатно'
+    : balance > 0n
+      ? `💰 Твой баланс: ${balance.toLocaleString()} PLS`
+      : '💰 Баланс пуст — пополни через P2P-биржу или подписку';
+
+  const text =
+    `🤖 Привет, ${name}!\n` +
+    `\nДобро пожаловать в Pulsar GPT — твой AI-помощник.\n` +
+    `\n✨ Что я умею:\n` +
+    `• 💬 Диалог с AI (DeepSeek · GPT-4o · Claude · Gemini)\n` +
+    `• 🎨 Генерация изображений (Flux · Imagen · GPT Image-2)\n` +
+    `• 🎬 Оживление фотографий (Grok · Bytedance Seedance)\n` +
+    `• 🎥 Создание видео из текста (Veo · Grok · Seedance)\n` +
+    `• 🎤 Озвучка текста (скоро)\n` +
+    `\n${balanceLine}\n` +
+    `\nВыбери действие 👇`;
+
+  await sendBot(chatId, text, MENU_BUTTONS);
 }
 
 /** Detect first message attachment that's an image. */
@@ -131,7 +161,7 @@ export async function handlePulsarGptMessage(
   // Universal: /menu / /start always returns to the main menu.
   if (lower === '/menu' || lower === '/start' || lower === 'меню' || lower === 'menu') {
     await clearSession(userId);
-    await showMenu(chatId);
+    await showMenu(userId, chatId);
     return;
   }
 
@@ -164,7 +194,7 @@ export async function handlePulsarGptMessage(
       return handleAnimatePrompt(userId, chatId, trimmed, session);
     case 'idle':
     default:
-      await showMenu(chatId);
+      await showMenu(userId, chatId);
       return;
   }
 }
@@ -191,6 +221,60 @@ async function handleCallback(userId: string, chatId: string, data: string) {
       await setSession(userId, { state: 'awaiting_animate_image' });
       await sendBot(chatId, '🎬 Прикрепи фото которое надо оживить.');
       return;
+    case 'voice':
+      await sendBot(
+        chatId,
+        '🎤 Озвучка текста — в разработке. Скоро добавим TTS-модели.\n\n/menu — вернуться',
+      );
+      return;
+    case 'profile': {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { displayName: true, username: true, role: true, verificationLevel: true, merchantTier: true },
+      });
+      const wallet = await prisma.plsWallet.findUnique({
+        where: { userId },
+        select: { balance: true, lockedAmount: true },
+      });
+      const stats = await prisma.pulsarGptRequest.groupBy({
+        by: ['type'],
+        where: { userId },
+        _count: { _all: true },
+      });
+      const isAdmin = user?.role === 'SUPER_ADMIN';
+      const spendable = (wallet?.balance ?? 0n) - (wallet?.lockedAmount ?? 0n);
+      const counts = stats.reduce<Record<string, number>>((acc, s) => {
+        acc[s.type] = s._count._all;
+        return acc;
+      }, {});
+      const text =
+        `👤 ${user?.displayName || user?.username || 'юзер'}\n` +
+        `\n📊 Уровень верификации: L${user?.verificationLevel ?? 0}\n` +
+        (user?.merchantTier && user.merchantTier !== 'NONE' ? `🏆 Merchant: ${user.merchantTier}\n` : '') +
+        `\n💰 Баланс: ${(wallet?.balance ?? 0n).toLocaleString()} PLS` +
+        (spendable !== (wallet?.balance ?? 0n) ? ` (доступно ${spendable.toLocaleString()})\n` : '\n') +
+        (isAdmin ? '👑 Admin — все модели бесплатно\n' : '') +
+        `\n📈 Использовано:\n` +
+        `• 💬 Диалогов: ${counts.CHAT ?? 0}\n` +
+        `• 🎨 Картинок: ${counts.IMAGE ?? 0}\n` +
+        `• 🎬 Анимаций: ${counts.ANIMATE ?? 0}\n` +
+        `• 🎥 Видео: ${counts.VIDEO ?? 0}\n` +
+        `\n⚙ Настройки моделей и история — на странице:\n👉 https://pulsar-chat.fun/pulsar-gpt`;
+      await sendBot(chatId, text);
+      return;
+    }
+    case 'topup':
+      await sendBot(
+        chatId,
+        '💎 Купить PLS\n\n' +
+        '1️⃣ P2P-биржа: купи у других пользователей за СБП / USDT\n' +
+        '👉 https://pulsar-chat.fun/p2p\n\n' +
+        '2️⃣ Кошелёк: пополнить с карты через YooKassa\n' +
+        '👉 https://pulsar-chat.fun (открой кошелёк → «Пополнить»)\n\n' +
+        '3️⃣ Майнинг: установи десктоп-приложение и зарабатывай PLS пока работает\n' +
+        '👉 https://pulsar-chat.fun/download',
+      );
+      return;
     case 'settings':
       await sendBot(
         chatId,
@@ -198,7 +282,7 @@ async function handleCallback(userId: string, chatId: string, data: string) {
       );
       return;
     default:
-      await showMenu(chatId);
+      await showMenu(userId, chatId);
   }
 }
 
