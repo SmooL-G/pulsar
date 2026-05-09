@@ -345,12 +345,12 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
               const { handlePulsarBotMessage } = await import('../../modules/bot/pulsarBot.handler.js');
               await handlePulsarBotMessage(userId, data.chatId, data.content);
             }
-            // Pulsar GPT replies with deep link to the dedicated /pulsar-gpt page.
+            // Pulsar GPT — full conversational bot with inline buttons.
             const { PULSAR_GPT_BOT_USER_ID } = await import('../../modules/pulsar-gpt/pulsar-gpt.seed.js');
             const hasPulsarGpt = botMembers.some((m) => m.userId === PULSAR_GPT_BOT_USER_ID);
             if (hasPulsarGpt && PULSAR_GPT_BOT_USER_ID) {
               const { handlePulsarGptMessage } = await import('../../modules/pulsar-gpt/pulsar-gpt.handler.js');
-              await handlePulsarGptMessage(userId, data.chatId, data.content);
+              await handlePulsarGptMessage(userId, data.chatId, data.content, data.attachments);
             }
             // Dispatch to user bots (webhooks + long-poll queue)
             const { dispatchBotUpdates } = await import('../../modules/bot/webhook.service.js');

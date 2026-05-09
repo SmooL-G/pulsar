@@ -111,6 +111,8 @@ export async function startTask(args: {
   prompt?: string;
   inputUrl?: string;
   extraInput?: Record<string, unknown>;
+  /** When set, worker posts the finished result as a bot message in this chat. */
+  postToChatId?: string;
 }) {
   const user = await prisma.user.findUnique({
     where: { id: args.userId },
@@ -159,6 +161,7 @@ export async function startTask(args: {
         model: args.model,
         prompt: args.prompt?.slice(0, 2000) ?? null,
         inputUrl: args.inputUrl ?? null,
+        postToChatId: args.postToChatId ?? null,
         kieTaskId: taskId,
         pricePls: isAdmin ? null : estimate.pricePls,
         paymentMode: isAdmin ? 'ADMIN' : 'PLS',

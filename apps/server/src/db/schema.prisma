@@ -960,6 +960,10 @@ model PulsarGptRequest {
   prompt       String?             @db.Text
   inputUrl     String?             @map("input_url")            // for animate flows
   outputUrl    String?             @map("output_url")            // S3 link
+  // When request was triggered from a chat with the bot (not the
+  // dedicated page), worker posts the result as a bot message into
+  // this chat. Null = page-driven request.
+  postToChatId String?             @map("post_to_chat_id") @db.Uuid
   // Async task id from KIE for non-chat requests; null for chat (sync).
   kieTaskId    String?             @map("kie_task_id") @db.VarChar(128)
   // Cost we paid KIE in their credits — captured from balance delta or
