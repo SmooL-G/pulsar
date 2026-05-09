@@ -132,6 +132,7 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 95a | 📺 Phase 2: routing через miner nodes — viewers коннектятся к ближайшей ноде, миннеры получают PLS за bandwidth | 🔲 В очереди | — |
 | 95b | 📺 Phase 3: featured-плитка стримов на landing — платные слоты (X PLS/час → burn) + free-tier по viewer count | 🔲 В очереди | — |
 | 95c | 📺 Phase 4: Live-tipping (zips PLS во время стрима, 5% burn) + sub-only chat + recording | 🔲 В очереди | — |
+| 96 | 🤖 **Pulsar GPT** — встроенный бот с мульти-модельным AI: chat + image gen + image animation + text→video, PLS или YooKassa | 🔲 **MVP** | — |
 
 ---
 
@@ -831,6 +832,135 @@ event: done         data: { tokensUsed, plsCharged }
 ### Брендовая интеграция
 
 Эту фичу можно подавать как «Pulsar TV» или «Pulsar Live» — отдельный sub-product с собственным narrative для стримеров: «**Стримь без YouTube. Зарабатывай PLS. Твоя аудитория поддерживает стрим своими нодами.**»
+
+---
+
+## 🔲 23. Pulsar GPT — встроенный AI-бот (#96)
+
+Системный bot-аккаунт (как PulsarBot) c доступом к нескольким AI-моделям через внешний API-сервис (endpoint предоставит владелец). Монетизация — PLS или YooKassa, SUPER_ADMIN видит всё бесплатно.
+
+### Возможности (главное меню)
+
+Bot отображается в чат-листе. При первом открытии — приветствие + inline-кнопки:
+
+| Кнопка | Действие |
+|---|---|
+| 💬 **Диалог с ИИ** | Открывает chat-thread, юзер пишет, бот отвечает. Модель выбирается в Profile → Settings (default: дешёвая) |
+| 🎨 **Создать изображение** | Юзер вводит prompt → бот возвращает картинку. После генерации — кнопка «🎬 Оживить?» (передаёт результат в image-to-video flow) |
+| 🎬 **Оживить фото** | Юзер аплоадит фото → бот возвращает анимированное видео. Модель в настройках |
+| 🎥 **Видео из текста** | Text-to-video (Runway/Sora-style). Модель в настройках |
+| 👤 **Профиль / настройки** | Picker-модели для каждой категории, баланс, история использования, кнопка «Пополнить» |
+| 💳 **Оплата** | Выбор: списать с PLS-баланса или оплатить картой через YooKassa (RUB → пакет генераций) |
+
+### Pricing-модель (черновая, тюнится по реальной cost)
+
+| Действие | PLS | RUB через YooKassa |
+|---|---|---|
+| 1 chat-message (Haiku-tier) | 1 PLS | — (free до N в день после подписки) |
+| 1 chat-message (Sonnet/Opus-tier) | 10 PLS | — |
+| Image (1024×1024 SDXL/Flux) | 50 PLS | ~5 ₽ |
+| Image animation (5 сек) | 200 PLS | ~20 ₽ |
+| Text→video (5 сек 720p) | 500 PLS | ~50 ₽ |
+| Text→video (15 сек 1080p HD-модель) | 2000 PLS | ~200 ₽ |
+
+**Burn:** 10% от каждой PLS-цены → burn ledger. Когда оплата YooKassa — PLS не сжигается, конвертируется в выручку платформы.
+
+**Подписки** (опциональные, для frequent users):
+- **«Заряд»** 500 ₽/мес → 1000 PLS на баланс + −20% от всех цен
+- **«Турбо»** 2000 ₽/мес → unlimited chat + 50 image/мес + 5 video/мес
+
+### Ролевая логика
+
+- **SUPER_ADMIN** (ты, брат) — все модели бесплатно, без лимитов. Технически: проверка `request.user.role === 'SUPER_ADMIN'` → пропускаем debit
+- **Trusted/Official Merchant** (тиры мерчантов) — −10% от всех цен (бенефит за подписку)
+- **Обычный юзер** — обычные цены
+
+### Архитектура
+
+```
+POST /api/v1/pulsar-gpt/chat       Body: { message, model? }
+POST /api/v1/pulsar-gpt/image      Body: { prompt, model?, size? }
+POST /api/v1/pulsar-gpt/animate    Body: { imageUrl или imageId, model? }
+POST /api/v1/pulsar-gpt/video      Body: { prompt, model?, duration?, hd? }
+GET  /api/v1/pulsar-gpt/models     → список доступных моделей (cached)
+GET  /api/v1/pulsar-gpt/usage      → история запросов + остаток
+POST /api/v1/pulsar-gpt/topup      Body: { method: 'YOOKASSA' | 'PLS', amount }
+```
+
+Каждый endpoint:
+1. Auth + rate-limit (10 req/min на юзера)
+2. Если SUPER_ADMIN → пропускаем debit, идём в API
+3. Иначе списываем PLS atomically → recordBurn(10%) → вызываем внешний API
+4. На failure — refund 100% PLS обратно
+5. Возвращаем результат + сохраняем в `PulsarGptRequest` для history
+
+### Schema (Prisma)
+
+```prisma
+model PulsarGptRequest {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  type        String   @db.VarChar(16)   // 'chat' | 'image' | 'animate' | 'video'
+  model       String   @db.VarChar(64)
+  prompt      String?  @db.Text
+  inputUrl    String?  // для animate
+  outputUrl   String?  // S3 link
+  pricePls    BigInt?
+  priceRub    Decimal? @db.Decimal(10, 2)
+  paymentMode String   @db.VarChar(8)    // 'PLS' | 'RUB' | 'ADMIN'
+  status      String   @db.VarChar(16)   // 'PENDING' | 'DONE' | 'FAILED'
+  errorMessage String? @db.VarChar(500)
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("pulsar_gpt_requests")
+}
+
+model PulsarGptUserSettings {
+  userId       String @id @db.Uuid
+  chatModel    String @default("haiku-4.5")
+  imageModel   String @default("flux-schnell")
+  animateModel String @default("svd-xt")
+  videoModel   String @default("sora-mini")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("pulsar_gpt_settings")
+}
+```
+
+### UI
+
+- **В чате** с ботом — стандартное окно сообщений, но caret отключён (вход через inline-кнопки)
+- **Главное меню** — `<InlineBotButtons>` (компонент уже есть!) с 4 действиями + Профиль
+- **Image gen** — после ввода prompt бот шлёт «Генерирую…» → через 5-15 сек присылает картинку как attachment + кнопка «🎬 Оживить» под ней
+- **Settings (профиль)** — отдельная модалка `<PulsarGptSettings>` с тремя model-picker'ами (chat/image/animate/video) + блок «Баланс: X PLS / Y кредитов» + кнопка «Пополнить»
+- **History** — лента последних 50 запросов с миниатюрами картинок/видео и кнопкой «Скачать»
+
+### Что из инфры уже готово ✅
+
+- Bot system (PulsarBot pattern)
+- Inline buttons (`InlineBotButtons` компонент)
+- Attachments через `/api/v1/files/dl` (streaming с Range support — идеально для видео)
+- PlsWallet + recordBurn для PLS-debit
+- YooKassa integration (`yookassa.webhook.js`)
+- File upload в MinIO/S3
+- Auth + rate-limit middleware
+
+### Что нужно от тебя 🟡
+
+1. **API endpoint AI-сервиса** — URL, формат запроса/ответа, аутентификация (Bearer/API-key), список моделей и их цен
+2. **Подтверждение pricing-модели** — цифры выше черновые, поправлю под реальные cost
+3. **Подписки или нет на старте** — могу сделать сразу или отложить на v2
+
+### MVP scope (3 дня после получения API)
+
+- Day 1: schema, bot account создание, endpoints (без UI), тестирование chat + image вручную
+- Day 2: UI — главное меню, chat-flow, image-gen-flow, image-animate-flow
+- Day 3: video, settings, history, payment-flow для YooKassa
+
+После запуска — анализ usage и тюнинг цен через первые 2 недели.
 
 ---
 
