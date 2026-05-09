@@ -17,6 +17,40 @@ export class PulsarGptError extends Error {
 }
 
 /**
+ * Per-model-family `input` defaults so KIE doesn't reject on missing
+ * required fields. Each family has its own quirks — flux2 wants
+ * aspect_ratio + resolution, imagen wants aspect_ratio, video models
+ * want duration, etc. Caller can still override via `extraInput`.
+ */
+function buildModelInput(model: string, opts: { prompt?: string; inputUrl?: string }): Record<string, unknown> {
+  const input: Record<string, unknown> = {};
+  if (opts.prompt) input.prompt = opts.prompt;
+
+  if (model.startsWith('flux-2/')) {
+    input.aspect_ratio = '1:1';
+    input.resolution = '1K';
+    input.nsfw_checker = false;
+    if (opts.inputUrl && model.includes('image-to-image')) input.image_url = opts.inputUrl;
+  } else if (model.startsWith('google/imagen4')) {
+    input.aspect_ratio = '1:1';
+  } else if (model.startsWith('bytedance/seedance')) {
+    input.duration = 5;        // seconds
+    input.resolution = '720p';
+    input.aspect_ratio = '16:9';
+    if (opts.inputUrl) input.image_url = opts.inputUrl;
+  } else if (model.startsWith('kling/')) {
+    input.duration = 5;
+    input.aspect_ratio = '16:9';
+    if (opts.inputUrl && model.includes('image-to-video')) input.image_url = opts.inputUrl;
+  } else if (opts.inputUrl) {
+    // Generic image-input fallback for any other family.
+    input.image_url = opts.inputUrl;
+  }
+
+  return input;
+}
+
+/**
  * Run a chat completion through KIE.AI, debit PLS atomically and log
  * the request. Pricing is metered against actual token usage returned
  * by the upstream — user pays exactly for what they consumed plus the
@@ -135,10 +169,14 @@ export async function startTask(args: {
     }
   }
 
-  // Build KIE input shape from our generic args.
-  const input: Record<string, unknown> = { ...(args.extraInput ?? {}) };
-  if (args.prompt) input.prompt = args.prompt;
-  if (args.inputUrl) input.image_url = args.inputUrl;
+  // Build KIE input shape — different model families want different
+  // shapes. Defaults to merging extraInput (caller-provided overrides)
+  // on top of safe per-model defaults.
+  const input: Record<string, unknown> = buildModelInput(args.model, {
+    prompt: args.prompt,
+    inputUrl: args.inputUrl,
+  });
+  Object.assign(input, args.extraInput ?? {});
 
   // Create the upstream task FIRST. If KIE rejects, no debit.
   const { taskId } = await createTask({ model: args.model, input });
