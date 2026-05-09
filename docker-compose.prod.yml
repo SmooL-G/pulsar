@@ -101,6 +101,12 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       WHISPER_RELAY_URL: ${WHISPER_RELAY_URL:-}
       WHISPER_RELAY_TOKEN: ${WHISPER_RELAY_TOKEN:-}
+      # KIE.AI — multi-model AI marketplace powering the Pulsar GPT bot
+      # (chat / image / video / audio). Two distinct base URLs: chat is
+      # OpenAI-compatible at kieai.erweima.ai, tasks at api.kie.ai.
+      KIE_API_KEY: ${KIE_API_KEY:-}
+      KIE_API_BASE_TASKS: ${KIE_API_BASE_TASKS:-https://api.kie.ai/api/v1}
+      KIE_API_BASE_CHAT: ${KIE_API_BASE_CHAT:-https://kieai.erweima.ai/api/v1}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
