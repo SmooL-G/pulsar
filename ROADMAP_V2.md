@@ -127,6 +127,7 @@ Pulsar — крипто-мессенджер на Solana. Платформа и�
 | 91 | 🥉 **Group Treasury** — каждая группа = mini-DAO с общим PLS-кошельком и голосованием | 🔲 В очереди | — |
 | 92 | **`/airdrop` команда** для админов каналов — auto-распределение PLS активным юзерам (5% → burn) | 🔲 В очереди | — |
 | 93 | **Onchain reactions = микро-донаты** — каждый лайк = 1 PLS автору, 0.1 PLS → burn | 🔲 В очереди | — |
+| 94 | 🔥 **AI-поиск на главной** (Perplexity-стиль) — поисковая строка по центру landing'а, Claude + web_search, free-tier → 5 PLS/запрос burn | 🔲 **MVP** | — |
 
 ---
 
@@ -649,6 +650,94 @@ era 2  | 2030-05-01 → 2032-04-30 | 12 PLS/час  · 6/GB  · 1/peer · cap 62
 **Schema:**
 - расширить `Reaction` полем `tipPls BigInt?`
 - атомарный transfer в `addReaction` через `PlsWallet`
+
+---
+
+## 🔲 21. AI-поиск на главной странице (#94)
+
+**Гипотеза acquisition-канала:** поиск — high-frequency action (10×/день), мессенджер — low (1-2×/день). Если поставить Perplexity-style search bar на login — визиторы заходят за поиском, остаются в чате. Конкуренты (Perplexity, SearchGPT) не имеют мессенджера, мы имеем оба → уникальная связка.
+
+### Концепция UX
+
+**Landing-страница до входа:**
+- Огромная поисковая строка по центру (Google-style)
+- Кнопка `Войти` справа сверху со свечением + анимацией (привлекает внимание после первого результата)
+- Под строкой 3 кнопки-примера: «Что такое Solana?», «Как майнить Pulsar?», «Курс PLS сегодня»
+- Beta-бейдж + tagline остаются
+
+**После запроса (`/search?q=...`):**
+- Streaming-ответ от Claude с typing-эффектом (ощущение «думающего ИИ»)
+- 5-10 source-карточек снизу (ссылка + favicon + сниппет)
+- Sticky-CTA сверху: «Понравилось? Войди в Pulsar — твой приватный угол интернета: поиск + общение в одном месте»
+- Возможность задать follow-up вопрос (мини-чат с Claude в контексте предыдущего ответа)
+
+### Монетизация и анти-абьюз
+
+| Tier | Лимит | Цена |
+|---|---|---|
+| Анонимный (по IP) | **3 запроса/день** | бесплатно |
+| Зарегистрированный | **10 запросов/день** | бесплатно |
+| Дальше | без лимита | **5 PLS / запрос → burn** |
+
+**Анти-абьюз:**
+- Cloudflare Turnstile (или внутренний captcha) после 5 анонимных запросов
+- Rate-limit per-IP через Redis: max 1 запрос/3 секунды
+- Кеш в Redis на 24h по нормализованному запросу — повторные «что такое биткоин» не платят дважды (для нас → меньше расходов)
+
+### Технический стек
+
+- **LLM:** Claude API с **built-in `web_search` tool** (доступен с 2025) — не нужно интегрировать Brave/Tavily отдельно
+- **Default model:** Haiku 4.5 для скорости + дешевизны (~$0.001-0.005/search). Sonnet 4.6 опционально для «Deep Research» режима за +20 PLS
+- **Streaming:** Server-Sent Events (SSE) от Fastify → стримим ответ + источники в UI
+- **Source rendering:** парсим `tool_use` results из Claude, формируем красивые карточки с favicon (через Google's `s2/favicons` proxy)
+- **SEO:** генерируем static `<meta>` теги для каждого `/search?q=...` URL → Google индексирует → виральный traffic
+
+### Brand-позиционирование
+
+Риск размывания «мы мессенджер ИЛИ search?» решается лёгким переименованием landing-сабпродукта:
+
+> **Pulsar AI** — твой приватный угол интернета.
+> Поиск без рекламы и трекинга + общение в зашифрованных чатах.
+
+Это снимает дисонанс: одно зонтичное приложение с двумя главными use case'ами, как у Telegram (chat + channels) или Discord (chat + voice).
+
+### Backend skeleton
+
+```
+POST /api/v1/search
+Body: { q: string, mode?: 'fast' | 'deep' }
+Headers: X-Forwarded-For (для rate-limit)
+
+Response: SSE-стрим
+event: token        data: { delta: "..." }
+event: source       data: { url, title, snippet, favicon }
+event: done         data: { tokensUsed, plsCharged }
+```
+
+- Auth optional. Если есть Bearer → проверяем баланс PLS до запроса
+- Если анонимный → проверяем дневной IP-лимит
+- Если paid → атомарно списываем 5 PLS + recordBurn() в transaction
+
+### MVP scope (3-4 дня)
+
+1. **Backend:** `POST /api/v1/search` + Redis-кеш + IP/user rate-limit + PLS-debit
+2. **Frontend:** новый `<SearchHero />` компонент на LoginPage — большая строка, 3 кнопки-примера, streaming-результат под ней
+3. **Result page:** `/search?q=...` — sticky CTA + answer + sources + follow-up input
+4. **Анти-абьюз:** простой rate-limit на старте, Turnstile добавляем когда придёт первый бот-флуд
+
+### Что НЕ берём в MVP
+
+- **Personalisation** (история запросов привязанная к юзеру) — accumulate потом
+- **Image search / video understanding** — Sonnet с vision, дорого, добавим позже
+- **Voice search** — отдельный effort, ждёт adoption
+- **Browser extension** — заманчиво, но сложно поддерживать; ждёт первой 1k MAU
+
+### Метрики успеха (что меряем после запуска)
+
+- **CTR от поиска к регистрации** — целевое >5% (1 из 20 ищущих заводит аккаунт)
+- **PLS-burn от платных запросов** — добавляется к дашборду «Сожжено навсегда»
+- **Search latency p95** — целевое <3 секунды до первого токена
+- **Cost-per-acquisition** — ежедневный USD-расход на LLM ÷ новые регистрации. Целевое <$0.50
 
 ---
 
