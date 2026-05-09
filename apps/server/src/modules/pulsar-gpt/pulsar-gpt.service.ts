@@ -6,8 +6,8 @@ import {
   MerchantTier,
 } from '@prisma/client';
 import { recordBurn } from '../economy/burn.service.js';
-import { chatComplete, type ChatMessage } from './kie.client.js';
-import { priceChatTokens, BURN_PCT_OF_CHARGE } from './pricing.js';
+import { chatComplete, createTask, getTaskInfo, type ChatMessage } from './kie.client.js';
+import { priceChatTokens, priceTaskCredits, estimateTaskPls, BURN_PCT_OF_CHARGE } from './pricing.js';
 
 export class PulsarGptError extends Error {
   constructor(public code: string, message: string) {
@@ -94,6 +94,104 @@ export async function runChat(args: {
     pricePls: isAdmin ? '0' : price.pricePls.toString(),
     burnPls: isAdmin ? '0' : price.burnPls.toString(),
     isAdminBypass: isAdmin,
+  };
+}
+
+/**
+ * Kick off an async generation task (image / animate / video). Charges
+ * the user upfront with the static credit-based estimate; if the actual
+ * cost ends up lower, we keep the difference as platform margin (we
+ * already added 25% on top, so this is rare). On task failure the
+ * worker refunds the full charge — see runPollWorker().
+ */
+export async function startTask(args: {
+  userId: string;
+  type: 'IMAGE' | 'ANIMATE' | 'VIDEO';
+  model: string;
+  prompt?: string;
+  inputUrl?: string;
+  extraInput?: Record<string, unknown>;
+}) {
+  const user = await prisma.user.findUnique({
+    where: { id: args.userId },
+    select: { role: true, merchantTier: true },
+  });
+  if (!user) throw new PulsarGptError('NOT_FOUND', 'User not found');
+  const isAdmin = user.role === 'SUPER_ADMIN';
+
+  // Estimate price + check balance BEFORE we spend any KIE credits.
+  const estimate = priceTaskCredits({ model: args.model, tier: user.merchantTier });
+  if (!isAdmin) {
+    const wallet = await prisma.plsWallet.findUnique({ where: { userId: args.userId } });
+    if (!wallet) throw new PulsarGptError('NO_WALLET', 'No PLS wallet');
+    const spendable = wallet.balance - wallet.lockedAmount;
+    if (spendable < estimate.pricePls) {
+      throw new PulsarGptError(
+        'INSUFFICIENT_BALANCE',
+        `Need ${estimate.pricePls} PLS, have ${spendable} spendable`,
+      );
+    }
+  }
+
+  // Build KIE input shape from our generic args.
+  const input: Record<string, unknown> = { ...(args.extraInput ?? {}) };
+  if (args.prompt) input.prompt = args.prompt;
+  if (args.inputUrl) input.image_url = args.inputUrl;
+
+  // Create the upstream task FIRST. If KIE rejects, no debit.
+  const { taskId } = await createTask({ model: args.model, input });
+
+  // Debit + create local request row in one transaction.
+  const requestId = await prisma.$transaction(async (tx) => {
+    if (!isAdmin) {
+      await tx.plsWallet.update({
+        where: { userId: args.userId },
+        data: { balance: { decrement: estimate.pricePls } },
+      });
+      if (estimate.burnPls > 0n) {
+        await recordBurn(tx, args.userId, estimate.burnPls, `Pulsar GPT ${args.type.toLowerCase()} (${args.model})`);
+      }
+    }
+    const row = await tx.pulsarGptRequest.create({
+      data: {
+        userId: args.userId,
+        type: args.type as any,
+        model: args.model,
+        prompt: args.prompt?.slice(0, 2000) ?? null,
+        inputUrl: args.inputUrl ?? null,
+        kieTaskId: taskId,
+        pricePls: isAdmin ? null : estimate.pricePls,
+        paymentMode: isAdmin ? 'ADMIN' : 'PLS',
+        status: 'PENDING',
+      },
+    });
+    return row.id;
+  });
+
+  return {
+    requestId,
+    taskId,
+    estimatedPls: isAdmin ? '0' : estimate.pricePls.toString(),
+    status: 'PENDING' as const,
+  };
+}
+
+/** Get a request by id (only owner can read). */
+export async function getRequest(requestId: string, userId: string) {
+  const row = await prisma.pulsarGptRequest.findUnique({ where: { id: requestId } });
+  if (!row || row.userId !== userId) return null;
+  return {
+    id: row.id,
+    type: row.type,
+    model: row.model,
+    prompt: row.prompt,
+    inputUrl: row.inputUrl,
+    outputUrl: row.outputUrl,
+    pricePls: row.pricePls?.toString() ?? null,
+    status: row.status,
+    errorMessage: row.errorMessage,
+    createdAt: row.createdAt.toISOString(),
+    completedAt: row.completedAt?.toISOString() ?? null,
   };
 }
 

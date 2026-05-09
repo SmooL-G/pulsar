@@ -17,6 +17,7 @@ import { backfillDevicesFromBundles } from './modules/keys/devices-backfill.js';
 import { startP2PWorker } from './modules/p2p/p2p.worker.js';
 import { startPriceSnapshotWorker } from './modules/price/price.worker.js';
 import { startMerchantWorker } from './modules/merchant/merchant.worker.js';
+import { startPulsarGptWorker } from './modules/pulsar-gpt/pulsar-gpt.worker.js';
 
 async function main() {
   const app = await buildApp();
@@ -82,6 +83,9 @@ async function main() {
 
   // P2P merchant: hourly TRUSTED-tier sweep + daily expiry sweep.
   startMerchantWorker();
+
+  // Poll KIE.AI for pending image/video tasks every 5s, refund on failure.
+  startPulsarGptWorker();
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

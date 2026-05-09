@@ -3,6 +3,8 @@ import { authMiddleware } from '../../middleware/auth.js';
 import { getCreditBalance } from './kie.client.js';
 import {
   runChat,
+  startTask,
+  getRequest,
   getUserSettings,
   updateUserSettings,
   listHistory,
@@ -86,6 +88,80 @@ export async function pulsarGptRoutes(app: FastifyInstance) {
         maxTokens: request.body.maxTokens,
       });
       return result;
+    }),
+  );
+
+  // POST /pulsar-gpt/image — generate image (async). Returns requestId
+  // immediately; client polls GET /requests/:id to know when it's done.
+  app.post<{ Body: { prompt: string; model?: string; size?: string } }>(
+    '/image',
+    async (request, reply) => handle(reply, async () => {
+      const userId = request.user!.userId;
+      const settings = await getUserSettings(userId);
+      const model = request.body.model || settings.imageModel;
+      if (!request.body.prompt || request.body.prompt.trim().length < 2) {
+        throw new PulsarGptError('NO_PROMPT', 'prompt required');
+      }
+      return startTask({
+        userId,
+        type: 'IMAGE',
+        model,
+        prompt: request.body.prompt,
+        extraInput: request.body.size ? { size: request.body.size } : undefined,
+      });
+    }),
+  );
+
+  // POST /pulsar-gpt/animate — image-to-video. Caller uploads the
+  // image first (POST /upload/file) and passes its public URL here.
+  app.post<{ Body: { imageUrl: string; prompt?: string; model?: string } }>(
+    '/animate',
+    async (request, reply) => handle(reply, async () => {
+      const userId = request.user!.userId;
+      const settings = await getUserSettings(userId);
+      const model = request.body.model || settings.animateModel;
+      if (!request.body.imageUrl) {
+        throw new PulsarGptError('NO_IMAGE', 'imageUrl required');
+      }
+      return startTask({
+        userId,
+        type: 'ANIMATE',
+        model,
+        prompt: request.body.prompt,
+        inputUrl: request.body.imageUrl,
+      });
+    }),
+  );
+
+  // POST /pulsar-gpt/video — text-to-video
+  app.post<{ Body: { prompt: string; model?: string; duration?: number; hd?: boolean } }>(
+    '/video',
+    async (request, reply) => handle(reply, async () => {
+      const userId = request.user!.userId;
+      const settings = await getUserSettings(userId);
+      const model = request.body.model || settings.videoModel;
+      if (!request.body.prompt || request.body.prompt.trim().length < 2) {
+        throw new PulsarGptError('NO_PROMPT', 'prompt required');
+      }
+      const extra: Record<string, unknown> = {};
+      if (request.body.duration) extra.duration = request.body.duration;
+      if (request.body.hd) extra.hd = true;
+      return startTask({
+        userId,
+        type: 'VIDEO',
+        model,
+        prompt: request.body.prompt,
+        extraInput: Object.keys(extra).length ? extra : undefined,
+      });
+    }),
+  );
+
+  // GET /pulsar-gpt/requests/:id — poll status of an async task
+  app.get<{ Params: { id: string } }>('/requests/:id', async (request, reply) =>
+    handle(reply, async () => {
+      const row = await getRequest(request.params.id, request.user!.userId);
+      if (!row) return reply.status(404).send({ error: 'NOT_FOUND' });
+      return { request: row };
     }),
   );
 
