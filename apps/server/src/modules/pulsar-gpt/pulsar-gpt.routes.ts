@@ -35,13 +35,13 @@ export async function pulsarGptRoutes(app: FastifyInstance) {
         usdPer1MOut: CHAT_PRICE_USD_PER_1M[m].output,
       })),
       image: Object.entries(TASK_CREDITS_OVERRIDE)
-        .filter(([m]) => m.includes('image') || m.includes('flux') || m.includes('imagen'))
+        .filter(([m]) => m.includes('text-to-image') || m.includes('image-to-image'))
         .map(([id, credits]) => ({ id, credits, plsEstimate: estimateTaskPls(id).toString() })),
       animate: Object.entries(TASK_CREDITS_OVERRIDE)
-        .filter(([m]) => m.includes('image-to-video') || m === 'grok-imagine/image-to-video')
+        .filter(([m]) => m.includes('image-to-video') || m.includes('seedance'))
         .map(([id, credits]) => ({ id, credits, plsEstimate: estimateTaskPls(id).toString() })),
       video: Object.entries(TASK_CREDITS_OVERRIDE)
-        .filter(([m]) => m.includes('text-to-video') || m === 'veo3' || m === 'veo3_fast' || m.includes('seedance'))
+        .filter(([m]) => m.includes('text-to-video'))
         .map(([id, credits]) => ({ id, credits, plsEstimate: estimateTaskPls(id).toString() })),
     };
   });

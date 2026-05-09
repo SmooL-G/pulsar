@@ -44,22 +44,25 @@ export const CHAT_PRICE_USD_PER_1M: Record<string, { input: number; output: numb
 };
 
 // Static credit cost overrides for tasks where we know the price upfront.
-// Otherwise we fall back to balance-delta measurement.
+// Otherwise we fall back to balance-delta measurement. Model IDs use the
+// namespaced format that KIE's /api/v1/jobs/createTask expects.
 export const TASK_CREDITS_OVERRIDE: Record<string, number> = {
-  // Image
-  'flux-2-text-to-image':              15,
-  'flux-2-image-to-image':             20,
-  'gpt/gpt-image-2-text-to-image':     30,
-  'gpt/gpt-image-2-image-to-image':    35,
-  'google/imagen4-ultra':              40,
+  // Image — text-to-image
+  'flux-2/pro-text-to-image':              15,
+  'flux-2/flex-text-to-image':             10,
+  'google/imagen4-fast':                   12,
+  'google/imagen4':                        25,
+  'google/imagen4-ultra':                  40,
+  // Image — image-to-image (edit)
+  'flux-2/pro-image-to-image':             20,
+  'flux-2/flex-image-to-image':            15,
   // Image-to-video / animate
-  'grok-imagine/image-to-video':       180,
-  'bytedance/v1-pro-fast-image-to-video': 200,
+  'bytedance/seedance-1-5-pro':            300,
+  'bytedance/seedance-2':                  350,
+  'bytedance/seedance-2-fast':             200,
+  'kling/image-to-video':                  250,
   // Text-to-video
-  'grok-imagine/text-to-video':        220,
-  'bytedance/seedance-1-5-pro':        300,
-  'veo3':                              400,
-  'veo3_fast':                         200,
+  'kling/text-to-video':                   280,
 };
 
 /** Tier discount on top of base price. OFFICIAL gets 10%, TRUSTED gets 5%. */
