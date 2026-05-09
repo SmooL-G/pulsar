@@ -53,15 +53,19 @@ export function startPulsarGptWorker() {
                 completedAt: new Date(),
               },
             });
+            console.log(`[pulsar-gpt-worker] req ${req.id} marked DONE — postToChatId=${req.postToChatId} botUser=${PULSAR_GPT_BOT_USER_ID}`);
             // If this request was triggered from a bot DM, post the
             // result back into that chat as a bot message with the
             // url + a follow-up "Ещё?" button.
             if (req.postToChatId && PULSAR_GPT_BOT_USER_ID) {
               try {
-                await postBotResult(req.postToChatId, req.type, info.resultUrls[0], req.prompt);
-              } catch (e) {
-                console.warn('[pulsar-gpt-worker] post to chat failed', e);
+                const msgId = await postBotResult(req.postToChatId, req.type, info.resultUrls[0], req.prompt);
+                console.log(`[pulsar-gpt-worker] posted result msg ${msgId} to chat ${req.postToChatId}`);
+              } catch (e: any) {
+                console.error('[pulsar-gpt-worker] post to chat FAILED:', e?.message, e?.stack);
               }
+            } else {
+              console.warn(`[pulsar-gpt-worker] skipped chat post — postToChatId=${req.postToChatId} botUser=${PULSAR_GPT_BOT_USER_ID}`);
             }
           } else if (info.state === 'failed') {
             await refundAndFail(req.id, req.userId, req.pricePls, info.errorMessage || 'KIE task failed');
@@ -110,6 +114,13 @@ async function postBotResult(chatId: string, type: string, resultUrl: string, pr
       },
     },
   });
+  // Bump chat's updatedAt so the chat list re-sorts to the top with
+  // the new message — otherwise users with the chat collapsed won't
+  // see any indicator that a result arrived.
+  await prisma.chat.update({
+    where: { id: chatId },
+    data: { updatedAt: new Date() },
+  }).catch(() => {});
   const io = getIO();
   if (io) {
     io.to(`chat:${chatId}`).emit('message:new', {
@@ -119,7 +130,10 @@ async function postBotResult(chatId: string, type: string, resultUrl: string, pr
       createdAt: msg.createdAt.toISOString(), updatedAt: msg.updatedAt.toISOString(),
       sender: msg.sender, status: 'sent', attachments: [],
     } as any);
+  } else {
+    console.warn('[pulsar-gpt-worker] no IO instance — message saved but not pushed live');
   }
+  return msg.id;
 }
 
 /** Refund a charged PLS amount and mark request as FAILED. */
