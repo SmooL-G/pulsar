@@ -18,6 +18,7 @@ import { MiningPage } from './pages/MiningPage';
 import { DownloadPage } from './pages/DownloadPage';
 import { P2PPage } from './pages/P2PPage';
 import { P2PTermsPage } from './pages/P2PTermsPage';
+import { PulsarGptPage } from './pages/PulsarGptPage';
 import { DevelopersPage } from './pages/DevelopersPage';
 import { InfoPage } from './pages/InfoPage';
 import { DonatePage } from './pages/DonatePage';
@@ -88,6 +89,7 @@ export function App() {
               <Route path="/download" element={<DownloadPage />} />
               <Route path="/p2p" element={<ProtectedRoute><P2PPage /></ProtectedRoute>} />
               <Route path="/p2p/terms" element={<P2PTermsPage />} />
+              <Route path="/pulsar-gpt" element={<ProtectedRoute><PulsarGptPage /></ProtectedRoute>} />
               {/* Universal share-link landing for any user/bot username.
                   Reserved system paths above match first; anything else falls
                   through here and gets resolved by GET /api/v1/u/:username. */}
