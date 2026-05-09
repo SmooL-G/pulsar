@@ -92,6 +92,8 @@ model User {
   plsPriceUpdates   PlsPriceReference[]
   merchantApplications MerchantApplication[] @relation("merchantApplicant")
   merchantReviews   MerchantApplication[] @relation("merchantReviewer")
+  pulsarGptRequests PulsarGptRequest[]    @relation("pulsarGptRequests")
+  pulsarGptSettings PulsarGptUserSettings? @relation("pulsarGptSettings")
   botProfile        Bot?               @relation("botUser")
   ownedBots         Bot[]              @relation("botOwner")
   reports           Report[]
@@ -927,6 +929,70 @@ model PlsPriceReference {
 
   @@index([setAt(sort: Desc)])
   @@map("pls_price_references")
+}
+
+// ─── PULSAR GPT (KIE.AI bot) ────────────────────────────
+enum PulsarGptType {
+  CHAT
+  IMAGE
+  ANIMATE
+  VIDEO
+}
+
+enum PulsarGptStatus {
+  PENDING
+  DONE
+  FAILED
+}
+
+enum PulsarGptPaymentMode {
+  PLS         // debited from PlsWallet, 10% burn
+  RUB         // paid via YooKassa, accounted in revenue
+  ADMIN       // SUPER_ADMIN — free, just logged
+  SUBSCRIPTION // bundled into active "Заряд"/"Турбо" tier
+}
+
+model PulsarGptRequest {
+  id           String              @id @default(uuid()) @db.Uuid
+  userId       String              @map("user_id") @db.Uuid
+  type         PulsarGptType
+  model        String              @db.VarChar(64)
+  prompt       String?             @db.Text
+  inputUrl     String?             @map("input_url")            // for animate flows
+  outputUrl    String?             @map("output_url")            // S3 link
+  // Async task id from KIE for non-chat requests; null for chat (sync).
+  kieTaskId    String?             @map("kie_task_id") @db.VarChar(128)
+  // Cost we paid KIE in their credits — captured from balance delta or
+  // model-static lookup; used to retro-validate margin.
+  creditsCost  Float?              @map("credits_cost")
+  // What we charged the user.
+  pricePls     BigInt?             @map("price_pls")
+  priceRub     Decimal?            @map("price_rub") @db.Decimal(10, 2)
+  paymentMode  PulsarGptPaymentMode @map("payment_mode")
+  status       PulsarGptStatus     @default(PENDING)
+  errorMessage String?             @map("error_message") @db.VarChar(500)
+  createdAt    DateTime            @default(now()) @map("created_at")
+  completedAt  DateTime?           @map("completed_at")
+
+  user User @relation("pulsarGptRequests", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([kieTaskId])
+  @@index([status, createdAt])
+  @@map("pulsar_gpt_requests")
+}
+
+model PulsarGptUserSettings {
+  userId       String @id @map("user_id") @db.Uuid
+  chatModel    String @default("deepseek-chat") @map("chat_model") @db.VarChar(64)
+  imageModel   String @default("flux-2-text-to-image") @map("image_model") @db.VarChar(64)
+  animateModel String @default("grok-imagine/image-to-video") @map("animate_model") @db.VarChar(64)
+  videoModel   String @default("grok-imagine/text-to-video") @map("video_model") @db.VarChar(64)
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation("pulsarGptSettings", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pulsar_gpt_settings")
 }
 
 // ─── E2E KEY BUNDLES ────────────────────────────────────

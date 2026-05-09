@@ -39,6 +39,7 @@ import { p2pRoutes } from './modules/p2p/p2p.routes.js';
 import { merchantRoutes } from './modules/merchant/merchant.routes.js';
 import { filesRoutes } from './modules/files/files.routes.js';
 import { economyRoutes } from './modules/economy/economy.routes.js';
+import { pulsarGptRoutes } from './modules/pulsar-gpt/pulsar-gpt.routes.js';
 import { channelRoutes } from './modules/channel/channel.routes.js';
 import { moderationRoutes } from './modules/moderation/moderation.routes.js';
 import { moderatorRoutes } from './modules/moderation/moderator.routes.js';
@@ -132,6 +133,7 @@ export async function buildApp() {
   await app.register(merchantRoutes, { prefix: '/api/v1/merchant' });
   await app.register(filesRoutes, { prefix: '/api/v1/files' });
   await app.register(economyRoutes, { prefix: '/api/v1/economy' });
+  await app.register(pulsarGptRoutes, { prefix: '/api/v1/pulsar-gpt' });
   await app.register(channelRoutes, { prefix: '/api/v1/channels' });
   await app.register(moderationRoutes, { prefix: '/api/v1/moderation' });
   await app.register(moderatorRoutes, { prefix: '/api/v1/moderator' });

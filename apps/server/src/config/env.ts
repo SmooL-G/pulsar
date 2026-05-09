@@ -54,4 +54,11 @@ export const env = cleanEnv(process.env, {
   OPENAI_API_KEY: str({ default: '' }),
   WHISPER_RELAY_URL: str({ default: '' }),
   WHISPER_RELAY_TOKEN: str({ default: '' }),
+
+  // KIE.AI — multi-model AI marketplace powering Pulsar GPT bot.
+  // Two distinct base URLs: one OpenAI-compatible chat endpoint,
+  // one async-task endpoint for image/video/audio generation.
+  KIE_API_KEY: str({ default: '' }),
+  KIE_API_BASE_TASKS: str({ default: 'https://api.kie.ai/api/v1' }),
+  KIE_API_BASE_CHAT: str({ default: 'https://kieai.erweima.ai/api/v1' }),
 });
