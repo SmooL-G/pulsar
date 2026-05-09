@@ -60,7 +60,9 @@ async function sendBot(chatId: string, text: string, buttons?: InlineButton[][])
       senderId: PULSAR_GPT_BOT_USER_ID,
       content: text,
       type: 'TEXT',
-      ...(buttons && { metadata: { buttons } }),
+      // Cast through `any` because Prisma's NullableJsonNullValueInput
+      // is too strict to accept our typed inline button shape directly.
+      ...(buttons && { metadata: { buttons } as any }),
     },
     include: {
       sender: { select: { id: true, username: true, displayName: true, avatarUrl: true, isBot: true } },
