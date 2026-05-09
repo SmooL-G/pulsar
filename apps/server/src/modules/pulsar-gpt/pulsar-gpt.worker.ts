@@ -21,6 +21,7 @@ const TICK_MS = 5_000;
 const MAX_AGE_MIN = 15;       // older than this → auto-fail + refund
 
 export function startPulsarGptWorker() {
+  console.log('[pulsar-gpt-worker] started');
   const tick = async () => {
     try {
       const cutoff = new Date(Date.now() - MAX_AGE_MIN * 60 * 1000);
@@ -30,6 +31,10 @@ export function startPulsarGptWorker() {
         take: 50,
       });
 
+      if (pending.length > 0) {
+        console.log(`[pulsar-gpt-worker] tick: ${pending.length} pending`);
+      }
+
       for (const req of pending) {
         // Auto-timeout requests stuck > MAX_AGE_MIN. Refund + mark FAILED.
         if (req.createdAt < cutoff) {
@@ -38,6 +43,7 @@ export function startPulsarGptWorker() {
         }
         try {
           const info = await getTaskInfo(req.kieTaskId!);
+          console.log(`[pulsar-gpt-worker] task ${req.kieTaskId} state=${info.state} urls=${info.resultUrls.length}`);
           if (info.state === 'success' && info.resultUrls.length > 0) {
             await prisma.pulsarGptRequest.update({
               where: { id: req.id },
