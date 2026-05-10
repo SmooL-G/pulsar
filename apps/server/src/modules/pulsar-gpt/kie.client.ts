@@ -154,12 +154,27 @@ export async function getTaskInfo(taskId: string): Promise<TaskInfo> {
   else if (['fail', 'failed', 'error'].includes(rawState)) state = 'failed';
   else if (['running', 'in_progress', 'processing'].includes(rawState)) state = 'running';
 
-  // Result URLs likewise vary: resultUrls / resultUrl / response.url / etc.
+  // Result URLs likewise vary across model families:
+  //   - direct array      : d.resultUrls
+  //   - direct single     : d.resultUrl
+  //   - nested in response: d.response.urls / d.response.url / d.response.resultUrls
+  //   - JSON-encoded      : d.resultJson (string) → parse → resultUrls
+  //                         ↑ Kling uses this; learned from working ref impl
   let resultUrls: string[] = [];
   if (Array.isArray(d.resultUrls)) resultUrls = d.resultUrls;
   else if (typeof d.resultUrl === 'string') resultUrls = [d.resultUrl];
   else if (Array.isArray(d?.response?.urls)) resultUrls = d.response.urls;
   else if (typeof d?.response?.url === 'string') resultUrls = [d.response.url];
+  else if (Array.isArray(d?.response?.resultUrls)) resultUrls = d.response.resultUrls;
+  else if (typeof d?.response?.resultUrls === 'string') {
+    try { resultUrls = JSON.parse(d.response.resultUrls); } catch { /* ignore */ }
+  } else if (typeof d.resultJson === 'string' && d.resultJson) {
+    try {
+      const parsed = JSON.parse(d.resultJson);
+      if (Array.isArray(parsed?.resultUrls)) resultUrls = parsed.resultUrls;
+      else if (typeof parsed?.resultUrl === 'string') resultUrls = [parsed.resultUrl];
+    } catch { /* ignore — log via outer error path */ }
+  }
 
   // KIE uses several error field names across models — try them all
   // before falling back to the raw payload so the user sees something
@@ -179,6 +194,80 @@ export async function getTaskInfo(taskId: string): Promise<TaskInfo> {
     state,
     resultUrls,
     errorMessage,
+    raw: d,
+  };
+}
+
+// ─── Veo (Google Veo3) — separate endpoint family ───────
+//
+// Veo lives at /api/v1/veo/* with a flat payload (NOT wrapped in
+// `input`) and a different polling response shape (`successFlag`
+// instead of `state`, `response.resultUrls` instead of `resultJson`).
+// Model IDs are bare: "veo3" (1080p) or "veo3_fast" (720p).
+
+export interface CreateVeoArgs {
+  prompt: string;
+  model: 'veo3' | 'veo3_fast';
+  aspectRatio?: '16:9' | '9:16' | '1:1';
+  /** image-to-video Veo flow — pass [imageUrl]; omit for text-to-video. */
+  imageUrls?: string[];
+}
+
+export async function createVeoTask(args: CreateVeoArgs): Promise<CreateTaskResult> {
+  const url = `${env.KIE_API_BASE_TASKS}/veo/generate`;
+  const isImageDriven = (args.imageUrls?.length ?? 0) > 0;
+  const body = await request(url, {
+    method: 'POST',
+    headers: authHeader(),
+    body: JSON.stringify({
+      prompt: args.prompt,
+      model: args.model,
+      aspectRatio: args.aspectRatio ?? '16:9',
+      enableTranslation: true,
+      enableFallback: true,
+      generationType: isImageDriven ? 'FIRST_AND_LAST_FRAMES_2_VIDEO' : 'TEXT_2_VIDEO',
+      ...(isImageDriven && { imageUrls: args.imageUrls }),
+    }),
+  });
+  if (body?.code !== 200 || !body?.data?.taskId) {
+    throw new KieError(
+      `VEO_CREATE_${body?.code ?? 'UNKNOWN'}`,
+      body?.msg || 'Failed to create Veo task',
+    );
+  }
+  return { taskId: String(body.data.taskId) };
+}
+
+/** Poll a Veo task. Veo uses a different status field (`successFlag`)
+ *  and a different result location (`response.resultUrls`) than the
+ *  generic /jobs endpoints. We translate to the same `TaskInfo` shape
+ *  so callers don't need to branch. */
+export async function getVeoTaskInfo(taskId: string): Promise<TaskInfo> {
+  const url = `${env.KIE_API_BASE_TASKS}/veo/record-info?taskId=${encodeURIComponent(taskId)}`;
+  const body = await request(url, { headers: authHeader() });
+  if (body?.code !== 200) {
+    throw new KieError(`VEO_INFO_${body?.code ?? 'UNKNOWN'}`, body?.msg || 'Failed to fetch Veo task info');
+  }
+  const d = body.data ?? {};
+  const flag = d.successFlag;
+
+  let state: TaskState = 'pending';
+  if (flag === 1) state = 'success';
+  else if (flag === 2 || flag === 3) state = 'failed';
+  else state = 'running';
+
+  let resultUrls: string[] = [];
+  const respUrls = d?.response?.resultUrls;
+  if (Array.isArray(respUrls)) resultUrls = respUrls;
+  else if (typeof respUrls === 'string') {
+    try { resultUrls = JSON.parse(respUrls); } catch { /* ignore */ }
+  }
+
+  return {
+    taskId,
+    state,
+    resultUrls,
+    errorMessage: d.errorMessage || d.error || undefined,
     raw: d,
   };
 }

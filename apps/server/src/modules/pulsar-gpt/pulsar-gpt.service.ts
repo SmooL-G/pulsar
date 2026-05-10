@@ -6,7 +6,7 @@ import {
   MerchantTier,
 } from '@prisma/client';
 import { recordBurn } from '../economy/burn.service.js';
-import { chatComplete, createTask, getTaskInfo, type ChatMessage } from './kie.client.js';
+import { chatComplete, createTask, getTaskInfo, createVeoTask, type ChatMessage } from './kie.client.js';
 import { priceChatTokens, priceTaskCredits, estimateTaskPls, BURN_PCT_OF_CHARGE } from './pricing.js';
 
 export class PulsarGptError extends Error {
@@ -44,8 +44,13 @@ function buildModelInput(model: string, opts: { prompt?: string; inputUrl?: stri
     input.aspect_ratio = '16:9';
     if (opts.inputUrl) input.image_url = opts.inputUrl;
   } else if (model.startsWith('kling/')) {
-    input.duration = 5;
-    input.aspect_ratio = '16:9';
+    // Kling on KIE expects duration as a STRING ("5"/"10"), not int.
+    // Per ref impl, also requires negative_prompt and cfg_scale.
+    // Both v2.5-turbo image-to-video and earlier text-to-video use
+    // the same input wrapper.
+    input.duration = '5';
+    input.cfg_scale = 0.5;
+    input.negative_prompt = '';
     if (opts.inputUrl && model.includes('image-to-video')) input.image_url = opts.inputUrl;
   } else if (opts.inputUrl) {
     // Generic image-input fallback for any other family.
@@ -184,12 +189,25 @@ export async function startTask(args: {
   Object.assign(input, args.extraInput ?? {});
 
   // Create the upstream task FIRST. If KIE rejects, no debit.
-  // Log the exact payload we send so we can diagnose 4xx rejections.
+  // Veo models live on a different endpoint with a different payload
+  // shape — route them via createVeoTask. Everything else goes through
+  // the generic /jobs/createTask flow.
   console.log(`[pulsar-gpt] createTask model=${args.model} input=${JSON.stringify(input).slice(0, 400)}`);
   let taskId: string;
   try {
-    ({ taskId } = await createTask({ model: args.model, input }));
+    if (args.model === 'veo3' || args.model === 'veo3_fast') {
+      if (!args.prompt) throw new PulsarGptError('NO_PROMPT', 'Veo требует текстовое описание');
+      ({ taskId } = await createVeoTask({
+        prompt: args.prompt,
+        model: args.model,
+        aspectRatio: '16:9',
+        ...(args.inputUrl ? { imageUrls: [args.inputUrl] } : {}),
+      }));
+    } else {
+      ({ taskId } = await createTask({ model: args.model, input }));
+    }
   } catch (e: any) {
+    if (e instanceof PulsarGptError) throw e;
     console.error(`[pulsar-gpt] createTask FAILED model=${args.model} code=${e?.code} msg=${e?.message}`);
     throw new PulsarGptError(
       e?.code || 'KIE_ERROR',

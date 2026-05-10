@@ -57,12 +57,16 @@ export const TASK_CREDITS_OVERRIDE: Record<string, number> = {
   'flux-2/pro-image-to-image':             20,
   'flux-2/flex-image-to-image':            15,
   // Image-to-video / animate
-  'bytedance/seedance-1-5-pro':            300,
-  'bytedance/seedance-2':                  350,
-  'bytedance/seedance-2-fast':             200,
-  'kling/image-to-video':                  250,
-  // Text-to-video
-  'kling/text-to-video':                   280,
+  'bytedance/seedance-1-5-pro':                300,
+  'bytedance/seedance-2':                      350,
+  'bytedance/seedance-2-fast':                 200,
+  // Kling 2.5 Turbo — proven working ID per ИИдинорожек ref impl.
+  'kling/v2-5-turbo-image-to-video-pro':       250,
+  // Veo (Google) — separate /api/v1/veo/generate endpoint, NOT
+  // /jobs/createTask. Model IDs are bare ("veo3", "veo3_fast"),
+  // not namespaced. Cost is per generation, not per credit.
+  'veo3':                                      400,
+  'veo3_fast':                                 200,
 };
 
 /** Tier discount on top of base price. OFFICIAL gets 10%, TRUSTED gets 5%. */

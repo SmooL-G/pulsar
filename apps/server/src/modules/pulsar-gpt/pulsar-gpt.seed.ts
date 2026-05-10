@@ -79,11 +79,28 @@ export async function seedPulsarGptBot(): Promise<string> {
  * value, so user-overridden choices aren't trampled.
  */
 export async function migratePulsarGptDefaults() {
-  const result = await prisma.pulsarGptUserSettings.updateMany({
+  // Image: flux-2 was returning input_urls errors for many users — moved
+  // to imagen4-fast; if still on the old default, migrate.
+  const r1 = await prisma.pulsarGptUserSettings.updateMany({
     where: { imageModel: 'flux-2/flex-text-to-image' },
     data: { imageModel: 'google/imagen4-fast' },
   });
-  if (result.count > 0) {
-    console.log(`[PulsarGPT] Migrated ${result.count} user(s) from flux-2 → imagen4-fast`);
-  }
+  if (r1.count > 0) console.log(`[PulsarGPT] Migrated ${r1.count} user(s) imageModel → imagen4-fast`);
+
+  // Animate: ported to working Kling 2.5 Turbo model ID per ИИдинорожек
+  // ref impl. Old IDs ("kling/image-to-video", "bytedance/seedance-2-fast")
+  // either don't exist or use different APIs.
+  const r2 = await prisma.pulsarGptUserSettings.updateMany({
+    where: { animateModel: { in: ['bytedance/seedance-2-fast', 'kling/image-to-video'] } },
+    data: { animateModel: 'kling/v2-5-turbo-image-to-video-pro' },
+  });
+  if (r2.count > 0) console.log(`[PulsarGPT] Migrated ${r2.count} user(s) animateModel → kling/v2-5-turbo`);
+
+  // Video: Veo 3 Fast lives on a separate /api/v1/veo/generate endpoint
+  // and is the proven text-to-video winner in the ref impl.
+  const r3 = await prisma.pulsarGptUserSettings.updateMany({
+    where: { videoModel: { in: ['kling/text-to-video', 'bytedance/seedance-2-fast'] } },
+    data: { videoModel: 'veo3_fast' },
+  });
+  if (r3.count > 0) console.log(`[PulsarGPT] Migrated ${r3.count} user(s) videoModel → veo3_fast`);
 }

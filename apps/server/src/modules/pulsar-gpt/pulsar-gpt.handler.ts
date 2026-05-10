@@ -115,15 +115,14 @@ const MODEL_CATALOG: Record<'image' | 'animate' | 'video' | 'chat', ModelOption[
     { id: 'flux-2/pro-text-to-image',      name: 'Flux 2 Pro',     cost: '15 кр',  desc: 'Точнее следует промпту' },
   ],
   animate: [
-    { id: 'bytedance/seedance-2-fast',     name: 'Seedance 2 Fast', cost: '200 кр', desc: 'Быстро, базовое качество', recommended: true },
-    { id: 'bytedance/seedance-2',          name: 'Seedance 2',      cost: '350 кр', desc: 'Лучшее качество анимации' },
-    { id: 'bytedance/seedance-1-5-pro',    name: 'Seedance 1.5',    cost: '300 кр', desc: 'Стабильная старая версия' },
-    { id: 'kling/image-to-video',          name: 'Kling I2V',       cost: '250 кр', desc: 'Другой стиль движения' },
+    { id: 'kling/v2-5-turbo-image-to-video-pro', name: 'Kling 2.5 Turbo', cost: '250 кр', desc: 'Лучшее качество, проверено в проде', recommended: true },
+    { id: 'bytedance/seedance-2-fast',           name: 'Seedance 2 Fast', cost: '200 кр', desc: 'Быстро, базовое качество' },
+    { id: 'bytedance/seedance-2',                name: 'Seedance 2',      cost: '350 кр', desc: 'Альтернатива' },
   ],
   video: [
-    { id: 'kling/text-to-video',           name: 'Kling T2V',       cost: '280 кр', desc: 'Хорошо для динамики', recommended: true },
-    { id: 'bytedance/seedance-2-fast',     name: 'Seedance 2 Fast', cost: '200 кр', desc: 'Быстро' },
-    { id: 'bytedance/seedance-2',          name: 'Seedance 2',      cost: '350 кр', desc: 'Топ-качество' },
+    { id: 'veo3_fast',           name: 'Veo 3 Fast',     cost: '200 кр', desc: 'Google Veo, 720p, быстро', recommended: true },
+    { id: 'veo3',                name: 'Veo 3',          cost: '400 кр', desc: 'Google Veo, 1080p, премиум-качество' },
+    { id: 'bytedance/seedance-2-fast', name: 'Seedance 2 Fast', cost: '200 кр', desc: 'Альтернатива от Bytedance' },
   ],
   chat: [
     { id: 'deepseek-chat',                 name: 'DeepSeek',         cost: '~бесплатно', desc: 'Отличное качество, очень дёшево', recommended: true },

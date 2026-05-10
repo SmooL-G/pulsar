@@ -1,6 +1,6 @@
 import { prisma } from '../../config/database.js';
 import { PulsarGptStatus } from '@prisma/client';
-import { getTaskInfo } from './kie.client.js';
+import { getTaskInfo, getVeoTaskInfo } from './kie.client.js';
 import { getIO } from '../../socket/index.js';
 import { PULSAR_GPT_BOT_USER_ID } from './pulsar-gpt.seed.js';
 
@@ -42,7 +42,12 @@ export function startPulsarGptWorker() {
           continue;
         }
         try {
-          const info = await getTaskInfo(req.kieTaskId!);
+          // Veo lives on /api/v1/veo/* with a different polling response
+          // shape — branch on model name.
+          const isVeo = req.model === 'veo3' || req.model === 'veo3_fast';
+          const info = isVeo
+            ? await getVeoTaskInfo(req.kieTaskId!)
+            : await getTaskInfo(req.kieTaskId!);
           console.log(`[pulsar-gpt-worker] task ${req.kieTaskId} state=${info.state} urls=${info.resultUrls.length}`);
           if (info.state === 'success' && info.resultUrls.length > 0) {
             await prisma.pulsarGptRequest.update({
