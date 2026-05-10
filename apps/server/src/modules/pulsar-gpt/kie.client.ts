@@ -23,13 +23,21 @@ export class KieError extends Error {
 }
 
 function authHeader(): Record<string, string> {
-  if (!env.KIE_API_KEY) {
+  // When the relay is in use, the relay rewrites Authorization with its
+  // own KIE key — but we still need to satisfy our local validation that
+  // a key is configured. The relay is the source of truth for the actual
+  // key sent upstream. We always also include X-Relay-Token when set so
+  // the relay accepts the request.
+  const usingRelay = !!env.AI_RELAY_TOKEN;
+  if (!usingRelay && !env.KIE_API_KEY) {
     throw new KieError('KIE_API_KEY_MISSING', 'KIE_API_KEY env var not configured');
   }
-  return {
-    Authorization: `Bearer ${env.KIE_API_KEY}`,
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${env.KIE_API_KEY || 'relay'}`,
     'Content-Type': 'application/json',
   };
+  if (env.AI_RELAY_TOKEN) headers['X-Relay-Token'] = env.AI_RELAY_TOKEN;
+  return headers;
 }
 
 async function request(url: string, init?: RequestInit): Promise<any> {

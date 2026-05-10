@@ -58,7 +58,19 @@ export const env = cleanEnv(process.env, {
   // KIE.AI — multi-model AI marketplace powering Pulsar GPT bot.
   // Two distinct base URLs: one OpenAI-compatible chat endpoint,
   // one async-task endpoint for image/video/audio generation.
+  // When AI_RELAY_URL is set, KIE_API_BASE_TASKS should point at the
+  // relay instead of api.kie.ai directly — the relay forwards from a
+  // non-RU IP so we avoid geo-flakiness from jino.
   KIE_API_KEY: str({ default: '' }),
   KIE_API_BASE_TASKS: str({ default: 'https://api.kie.ai/api/v1' }),
   KIE_API_BASE_CHAT: str({ default: 'https://kieai.erweima.ai/api/v1' }),
+
+  // Pulsar AI relay — proxies OpenAI (DALL-E) + KIE through a non-RU
+  // VPS. AI_RELAY_URL is the base URL (e.g. http://92.51.37.201:8080),
+  // AI_RELAY_TOKEN is the shared secret matching the relay's
+  // PULSAR_RELAY_TOKEN env. When AI_RELAY_TOKEN is set, the kie client
+  // adds an X-Relay-Token header to every request so the relay accepts
+  // it; when empty the requests go raw (useful for direct-mode testing).
+  AI_RELAY_URL: str({ default: '' }),
+  AI_RELAY_TOKEN: str({ default: '' }),
 });

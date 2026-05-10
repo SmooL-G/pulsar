@@ -107,6 +107,12 @@ services:
       KIE_API_KEY: ${KIE_API_KEY:-}
       KIE_API_BASE_TASKS: ${KIE_API_BASE_TASKS:-https://api.kie.ai/api/v1}
       KIE_API_BASE_CHAT: ${KIE_API_BASE_CHAT:-https://kieai.erweima.ai/api/v1}
+      # Pulsar AI relay — proxies OpenAI (DALL-E) + KIE through the DE
+      # VPS (92.51.37.201), since jino is geo-blocked from OpenAI and
+      # gets flaky service from some KIE model providers. When set,
+      # KIE_API_BASE_TASKS should point at the relay's /kie path.
+      AI_RELAY_URL: ${AI_RELAY_URL:-}
+      AI_RELAY_TOKEN: ${AI_RELAY_TOKEN:-}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}

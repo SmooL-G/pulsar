@@ -108,7 +108,8 @@ interface ModelOption {
  *  and moderation strictness for each task. */
 const MODEL_CATALOG: Record<'image' | 'animate' | 'video' | 'chat', ModelOption[]> = {
   image: [
-    { id: 'google/imagen4-fast',           name: 'Imagen 4 Fast',  cost: '12 кр',  desc: 'Быстро, мягкая модерация, фотореализм', recommended: true },
+    { id: 'dall-e-3',                      name: 'DALL-E 3',       cost: '$0.04',  desc: 'OpenAI, синхронно (~5 сек), проверено в проде', recommended: true },
+    { id: 'google/imagen4-fast',           name: 'Imagen 4 Fast',  cost: '12 кр',  desc: 'Быстро, мягкая модерация, фотореализм' },
     { id: 'google/imagen4',                name: 'Imagen 4',       cost: '25 кр',  desc: 'Высокое качество от Google' },
     { id: 'google/imagen4-ultra',          name: 'Imagen 4 Ultra', cost: '40 кр',  desc: 'Максимум деталей, медленно' },
     { id: 'flux-2/flex-text-to-image',     name: 'Flux 2 Flex',    cost: '10 кр',  desc: 'Дёшево, художественный стиль' },
@@ -514,10 +515,22 @@ async function runAsyncTask(
     const priceLine = result.estimatedPls === '0'
       ? '🎁 Бесплатно (admin)'
       : `💰 ${result.estimatedPls} PLS списано (вернётся если упадёт)`;
-    await sendBot(
-      chatId,
-      `✨ Генерирую ${labels[type]}…\n\nМодель: ${model}\n${priceLine}\n\nОбычно занимает 30-90 секунд. Я пришлю результат сюда же.`,
-    );
+
+    // DALL-E and any other sync path: result is already DONE with a URL,
+    // so post the image immediately instead of the "I'll send later" stub.
+    if ((result as any).status === 'DONE' && (result as any).outputUrl) {
+      const url = (result as any).outputUrl;
+      const promptHint = prompt ? `«${prompt.slice(0, 80)}${prompt.length > 80 ? '…' : ''}»\n\n` : '';
+      await sendBot(
+        chatId,
+        `🎨 Готово\n${promptHint}${url}\n\nМодель: ${model}\n${priceLine}\n\n/menu — вернуться в меню`,
+      );
+    } else {
+      await sendBot(
+        chatId,
+        `✨ Генерирую ${labels[type]}…\n\nМодель: ${model}\n${priceLine}\n\nОбычно занимает 30-90 секунд. Я пришлю результат сюда же.`,
+      );
+    }
     // Reset to idle after launch — user can /menu or send another action.
     await clearSession(userId);
   } catch (e: any) {

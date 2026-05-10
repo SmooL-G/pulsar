@@ -47,7 +47,9 @@ export const CHAT_PRICE_USD_PER_1M: Record<string, { input: number; output: numb
 // Otherwise we fall back to balance-delta measurement. Model IDs use the
 // namespaced format that KIE's /api/v1/jobs/createTask expects.
 export const TASK_CREDITS_OVERRIDE: Record<string, number> = {
-  // Image — text-to-image
+  // Image — DALL-E (OpenAI, sync via relay; ~$0.04/1024² standard)
+  'dall-e-3':                              40,
+  // Image — text-to-image (KIE-side)
   'flux-2/pro-text-to-image':              15,
   'flux-2/flex-text-to-image':             10,
   'google/imagen4-fast':                   12,

@@ -79,13 +79,15 @@ export async function seedPulsarGptBot(): Promise<string> {
  * value, so user-overridden choices aren't trampled.
  */
 export async function migratePulsarGptDefaults() {
-  // Image: flux-2 was returning input_urls errors for many users — moved
-  // to imagen4-fast; if still on the old default, migrate.
+  // Image: flux-2 had input_urls quirks, then imagen-ultra returned
+  // 500s — both KIE-side. DALL-E 3 via relay is sync, fast and proven
+  // in the ИИдинорожек ref impl. Migrate any user still on the older
+  // KIE-image defaults onto DALL-E.
   const r1 = await prisma.pulsarGptUserSettings.updateMany({
-    where: { imageModel: 'flux-2/flex-text-to-image' },
-    data: { imageModel: 'google/imagen4-fast' },
+    where: { imageModel: { in: ['flux-2/flex-text-to-image', 'google/imagen4-fast'] } },
+    data: { imageModel: 'dall-e-3' },
   });
-  if (r1.count > 0) console.log(`[PulsarGPT] Migrated ${r1.count} user(s) imageModel → imagen4-fast`);
+  if (r1.count > 0) console.log(`[PulsarGPT] Migrated ${r1.count} user(s) imageModel → dall-e-3`);
 
   // Animate: ported to working Kling 2.5 Turbo model ID per ИИдинорожек
   // ref impl. Old IDs ("kling/image-to-video", "bytedance/seedance-2-fast")

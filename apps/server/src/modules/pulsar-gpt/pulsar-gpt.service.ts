@@ -7,6 +7,7 @@ import {
 } from '@prisma/client';
 import { recordBurn } from '../economy/burn.service.js';
 import { chatComplete, createTask, getTaskInfo, createVeoTask, type ChatMessage } from './kie.client.js';
+import { generateImageDalle3, DalleError } from './dalle.client.js';
 import { priceChatTokens, priceTaskCredits, estimateTaskPls, BURN_PCT_OF_CHARGE } from './pricing.js';
 
 export class PulsarGptError extends Error {
@@ -187,6 +188,57 @@ export async function startTask(args: {
     inputUrl: args.inputUrl,
   });
   Object.assign(input, args.extraInput ?? {});
+
+  // DALL-E 3 short-circuit: synchronous via relay. Returns a final URL
+  // immediately, so we mark the request DONE in one transaction and
+  // skip the worker poll loop entirely.
+  if (args.model === 'dall-e-3') {
+    if (!args.prompt) throw new PulsarGptError('NO_PROMPT', 'DALL-E требует текстовое описание');
+    let dalle;
+    try {
+      dalle = await generateImageDalle3({ prompt: args.prompt });
+    } catch (e: any) {
+      console.error(`[pulsar-gpt] dalle3 failed: ${e?.message}`);
+      throw new PulsarGptError(
+        e?.code || 'DALLE_ERROR',
+        `DALL-E отказал: ${e?.message || 'unknown error'}`,
+      );
+    }
+    const requestId = await prisma.$transaction(async (tx) => {
+      if (!isAdmin) {
+        await tx.plsWallet.update({
+          where: { userId: args.userId },
+          data: { balance: { decrement: estimate.pricePls } },
+        });
+        if (estimate.burnPls > 0n) {
+          await recordBurn(tx, args.userId, estimate.burnPls, `Pulsar GPT image (dall-e-3)`);
+        }
+      }
+      const row = await tx.pulsarGptRequest.create({
+        data: {
+          userId: args.userId,
+          type: PulsarGptType.IMAGE,
+          model: dalle.model,
+          prompt: args.prompt!.slice(0, 2000),
+          inputUrl: null,
+          postToChatId: args.postToChatId ?? null,
+          outputUrl: dalle.url,
+          pricePls: isAdmin ? null : estimate.pricePls,
+          paymentMode: isAdmin ? PulsarGptPaymentMode.ADMIN : PulsarGptPaymentMode.PLS,
+          status: PulsarGptStatus.DONE,
+          completedAt: new Date(),
+        },
+      });
+      return row.id;
+    });
+    return {
+      requestId,
+      taskId: requestId,         // no upstream task id, reuse local id
+      estimatedPls: isAdmin ? '0' : estimate.pricePls.toString(),
+      status: 'DONE' as const,
+      outputUrl: dalle.url,
+    };
+  }
 
   // Create the upstream task FIRST. If KIE rejects, no debit.
   // Veo models live on a different endpoint with a different payload
