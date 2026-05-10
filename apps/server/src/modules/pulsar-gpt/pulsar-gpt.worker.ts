@@ -68,11 +68,14 @@ export function startPulsarGptWorker() {
               console.warn(`[pulsar-gpt-worker] skipped chat post — postToChatId=${req.postToChatId} botUser=${PULSAR_GPT_BOT_USER_ID}`);
             }
           } else if (info.state === 'failed') {
-            await refundAndFail(req.id, req.userId, req.pricePls, info.errorMessage || 'KIE task failed');
+            const errMsg = info.errorMessage || 'KIE task failed';
+            await refundAndFail(req.id, req.userId, req.pricePls, errMsg);
             if (req.postToChatId && PULSAR_GPT_BOT_USER_ID) {
               try {
-                await postBotResult(req.postToChatId, 'FAILED', '', `❌ Не получилось — деньги вернулись.\n${info.errorMessage || ''}`);
-              } catch { /* ignore */ }
+                await postBotFailure(req.postToChatId, errMsg);
+              } catch (e: any) {
+                console.error('[pulsar-gpt-worker] post failure msg failed:', e?.message);
+              }
             }
           }
           // else still pending/running — leave for next tick
@@ -134,6 +137,39 @@ async function postBotResult(chatId: string, type: string, resultUrl: string, pr
     console.warn('[pulsar-gpt-worker] no IO instance — message saved but not pushed live');
   }
   return msg.id;
+}
+
+/** Post a failure notification with the full upstream error message. */
+async function postBotFailure(chatId: string, errorMessage: string) {
+  // Translate common KIE moderation phrases to plain Russian so the
+  // user understands what happened and what to do next.
+  const lower = errorMessage.toLowerCase();
+  let hint = '';
+  if (lower.includes('sensitive') || lower.includes('nsfw') || lower.includes('flagged')) {
+    hint = '\n\nℹ Промпт или результат отклонены модерацией KIE. Попробуй переформулировать без чувствительных слов (насилие, эротика, известные люди, бренды).';
+  } else if (lower.includes('timeout') || lower.includes('timed out')) {
+    hint = '\n\nℹ Модель не ответила вовремя. Попробуй ещё раз или выбери другую модель.';
+  } else if (lower.includes('rate') || lower.includes('quota')) {
+    hint = '\n\nℹ Превышен лимит запросов. Подожди минуту.';
+  }
+  const text = `❌ Не получилось — деньги вернулись.\n\n${errorMessage}${hint}\n\n/menu — вернуться в меню`;
+  const msg = await prisma.message.create({
+    data: { chatId, senderId: PULSAR_GPT_BOT_USER_ID!, content: text, type: 'TEXT' },
+    include: {
+      sender: { select: { id: true, username: true, displayName: true, avatarUrl: true, isBot: true } },
+    },
+  });
+  await prisma.chat.update({ where: { id: chatId }, data: { updatedAt: new Date() } }).catch(() => {});
+  const io = getIO();
+  if (io) {
+    io.to(`chat:${chatId}`).emit('message:new', {
+      id: msg.id, chatId: msg.chatId, senderId: msg.senderId, content: msg.content, type: msg.type,
+      replyToId: null, isEdited: false, isDeleted: false, metadata: null,
+      signature: null, signerWallet: null, encryptedContent: null, encryptionType: null,
+      createdAt: msg.createdAt.toISOString(), updatedAt: msg.updatedAt.toISOString(),
+      sender: msg.sender, status: 'sent', attachments: [],
+    } as any);
+  }
 }
 
 /** Refund a charged PLS amount and mark request as FAILED. */

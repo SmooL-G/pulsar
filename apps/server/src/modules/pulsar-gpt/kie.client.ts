@@ -161,11 +161,24 @@ export async function getTaskInfo(taskId: string): Promise<TaskInfo> {
   else if (Array.isArray(d?.response?.urls)) resultUrls = d.response.urls;
   else if (typeof d?.response?.url === 'string') resultUrls = [d.response.url];
 
+  // KIE uses several error field names across models — try them all
+  // before falling back to the raw payload so the user sees something
+  // actionable.
+  const errorMessage =
+    d.errorMessage ||
+    d.failMsg ||
+    d.failureReason ||
+    d.error ||
+    d.msg ||
+    d?.response?.errorMessage ||
+    d?.response?.error ||
+    (state === 'failed' ? `Upstream rejected: ${JSON.stringify(d).slice(0, 300)}` : undefined);
+
   return {
     taskId,
     state,
     resultUrls,
-    errorMessage: d.errorMessage || d.error || undefined,
+    errorMessage,
     raw: d,
   };
 }
