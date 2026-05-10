@@ -179,7 +179,18 @@ export async function startTask(args: {
   Object.assign(input, args.extraInput ?? {});
 
   // Create the upstream task FIRST. If KIE rejects, no debit.
-  const { taskId } = await createTask({ model: args.model, input });
+  // Log the exact payload we send so we can diagnose 4xx rejections.
+  console.log(`[pulsar-gpt] createTask model=${args.model} input=${JSON.stringify(input).slice(0, 400)}`);
+  let taskId: string;
+  try {
+    ({ taskId } = await createTask({ model: args.model, input }));
+  } catch (e: any) {
+    console.error(`[pulsar-gpt] createTask FAILED model=${args.model} code=${e?.code} msg=${e?.message}`);
+    throw new PulsarGptError(
+      e?.code || 'KIE_ERROR',
+      `KIE отказал: ${e?.message || 'unknown error'}`,
+    );
+  }
 
   // Debit + create local request row in one transaction.
   const requestId = await prisma.$transaction(async (tx) => {
