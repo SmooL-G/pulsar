@@ -194,9 +194,9 @@ export function NewsFeed() {
           <ArrowUpRight size={16} className="text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
         </a>
 
-        {/* Pulsar GPT — multi-model AI bot */}
+        {/* Pulsar GPT — multi-model AI bot, lives as @pulsargpt_pls DM */}
         <a
-          href="/pulsar-gpt"
+          href="/pulsargpt_pls"
           className="group bg-gradient-to-br from-primary-500/10 to-cyan-500/10 dark:from-primary-500/15 dark:to-cyan-500/15 rounded-2xl p-5 border border-primary-500/30 hover:border-primary-400 hover:shadow-md transition-all flex items-center gap-4"
         >
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-cyan-500 flex items-center justify-center shrink-0">

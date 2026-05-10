@@ -17,8 +17,10 @@ import { backfillDevicesFromBundles } from './modules/keys/devices-backfill.js';
 import { startP2PWorker } from './modules/p2p/p2p.worker.js';
 import { startPriceSnapshotWorker } from './modules/price/price.worker.js';
 import { startMerchantWorker } from './modules/merchant/merchant.worker.js';
-import { startPulsarGptWorker } from './modules/pulsar-gpt/pulsar-gpt.worker.js';
-import { seedPulsarGptBot, migratePulsarGptDefaults } from './modules/pulsar-gpt/pulsar-gpt.seed.js';
+// Pulsar GPT in-server bot is retired — replaced by the standalone
+// pulsar-gpt-bot service running on the DE VPS using the public bot
+// SDK. Old imports removed; the AI / KIE / DALL-E logic lives in that
+// service now.
 
 async function main() {
   const app = await buildApp();
@@ -42,23 +44,7 @@ async function main() {
   } catch (e) {
     console.error('PulsarBot seed failed:', e);
   }
-  // Seed Pulsar GPT system account (multi-model AI bot)
-  try {
-    await seedPulsarGptBot();
-    await migratePulsarGptDefaults();
-    console.log('Pulsar GPT bot seeded');
-  } catch (e2) {
-    console.error('Pulsar GPT bot seed failed:', e2);
-  }
-  // Probe KIE account balance so we can see at-a-glance in logs whether
-  // the account is funded — common cause of 500/4xx mid-task.
-  try {
-    const { getCreditBalance } = await import('./modules/pulsar-gpt/kie.client.js');
-    const credits = await getCreditBalance();
-    console.log(`[KIE] account credit balance: ${credits}`);
-  } catch (e: any) {
-    console.warn(`[KIE] credit probe failed: ${e?.message || e}`);
-  }
+  // (Pulsar GPT bot now runs out-of-process; no seed/probe here.)
 
   // Start webhook worker (bot webhooks delivery)
   startWebhookWorker().catch((err) => console.error('Webhook worker error:', err));
@@ -101,9 +87,6 @@ async function main() {
 
   // P2P merchant: hourly TRUSTED-tier sweep + daily expiry sweep.
   startMerchantWorker();
-
-  // Poll KIE.AI for pending image/video tasks every 5s, refund on failure.
-  startPulsarGptWorker();
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {

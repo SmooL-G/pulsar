@@ -61,6 +61,63 @@ export async function adminRoutes(app: FastifyInstance) {
     },
   );
 
+  // DELETE /system-bots/:username — purge a system bot completely.
+  // Removes the Bot row (kills its API token), wipes pulsar_gpt_*
+  // tables for that bot user, and soft-deletes the user (renames
+  // to free the username, sets status=DELETED). Messages remain
+  // for chat history integrity.
+  app.delete<{ Params: { username: string } }>(
+    '/system-bots/:username',
+    async (request, reply) => {
+      if (!hasRole(request.user!.role, 'SUPER_ADMIN')) {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'SUPER_ADMIN required' });
+      }
+      const { username } = request.params;
+      const user = await prisma.user.findUnique({
+        where: { username },
+        select: { id: true, isBot: true, role: true },
+      });
+      if (!user) return reply.status(404).send({ error: 'NOT_FOUND' });
+      if (!user.isBot) return reply.status(400).send({ error: 'NOT_A_BOT' });
+      if (user.role === 'SUPER_ADMIN') {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'Cannot delete admin-bot' });
+      }
+
+      const bots = await prisma.bot.findMany({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      const botIds = bots.map((b) => b.id);
+
+      // Optional: pulsar_gpt tables (may not exist on all installs)
+      const pulsarGptCleanup = Promise.allSettled([
+        prisma.pulsarGptRequest.deleteMany({ where: { userId: user.id } }),
+        prisma.pulsarGptUserSettings.deleteMany({ where: { userId: user.id } }),
+      ]);
+
+      await prisma.bot.deleteMany({ where: { userId: user.id } });
+      await pulsarGptCleanup;
+
+      // Soft-delete user: free the username so it can be reused;
+      // mark status DELETED. Don't hard-delete because messages
+      // reference user as sender and we don't want orphans in chats.
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          status: 'DELETED',
+          username: `deleted_${user.id.slice(0, 8)}`,
+          isOnline: false,
+        },
+      });
+
+      // Bust per-bot auth caches
+      for (const id of botIds) await redis.del(`bot:auth:${id}`);
+      await redis.del('admin:dashboard');
+
+      return { ok: true, deletedUserId: user.id, deletedBotIds: botIds };
+    },
+  );
+
   // ─── DASHBOARD ──────────────────────────────────────────
   app.get('/dashboard', async (request) => {
     const cached = await redis.get('admin:dashboard');

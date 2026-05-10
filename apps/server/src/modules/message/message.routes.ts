@@ -294,12 +294,8 @@ export async function messageRoutes(app: FastifyInstance) {
         await handlePulsarBotMessage(userId, message.chatId, callbackData);
         return { ok: true };
       }
-      // Pulsar GPT bot — same pattern, route into our state machine
-      if (senderUsername === 'pulsargpt') {
-        const { handlePulsarGptMessage } = await import('../pulsar-gpt/pulsar-gpt.handler.js');
-        await handlePulsarGptMessage(userId, message.chatId, callbackData);
-        return { ok: true };
-      }
+      // (Pulsar GPT bot moved out-of-process; callback dispatch goes
+      //  via the standard bot SDK long-poll path below.)
 
       // For user bots — dispatch to webhook
       const { dispatchBotCallback } = await import('../bot/webhook.service.js');
