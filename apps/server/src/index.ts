@@ -50,6 +50,15 @@ async function main() {
   } catch (e2) {
     console.error('Pulsar GPT bot seed failed:', e2);
   }
+  // Probe KIE account balance so we can see at-a-glance in logs whether
+  // the account is funded — common cause of 500/4xx mid-task.
+  try {
+    const { getCreditBalance } = await import('./modules/pulsar-gpt/kie.client.js');
+    const credits = await getCreditBalance();
+    console.log(`[KIE] account credit balance: ${credits}`);
+  } catch (e: any) {
+    console.warn(`[KIE] credit probe failed: ${e?.message || e}`);
+  }
 
   // Start webhook worker (bot webhooks delivery)
   startWebhookWorker().catch((err) => console.error('Webhook worker error:', err));
