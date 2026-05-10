@@ -1,4 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { prisma } from '../../config/database.js';
 import { redis } from '../../config/redis.js';
 import { authMiddleware, adminMiddleware } from '../../middleware/auth.js';
@@ -23,6 +25,41 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'FORBIDDEN', message: 'Admin access required' });
     }
   });
+
+  // ─── SYSTEM BOTS (SUPER_ADMIN) ─────────────────────────
+  // Mint or rotate the API token for a system bot (e.g. @pulsargpt).
+  // The standard /api/v1/bots/:id/token/regenerate endpoint excludes
+  // system bots, so this is the only path to obtain a callable token
+  // for the bots seeded by the platform itself.
+  app.post<{ Body: { username: string } }>(
+    '/system-bots/regenerate-token',
+    async (request, reply) => {
+      if (!hasRole(request.user!.role, 'SUPER_ADMIN')) {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'SUPER_ADMIN required' });
+      }
+      const username = (request.body?.username || '').trim();
+      if (!username) return reply.status(400).send({ error: 'username required' });
+      const user = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+      if (!user) return reply.status(404).send({ error: 'BOT_USER_NOT_FOUND' });
+      const bot = await prisma.bot.findFirst({
+        where: { userId: user.id, isSystemBot: true },
+        select: { id: true },
+      });
+      if (!bot) return reply.status(404).send({ error: 'SYSTEM_BOT_NOT_FOUND' });
+
+      const prefix = bot.id.replace(/-/g, '').slice(0, 8);
+      const secret = randomBytes(24).toString('base64url');
+      const tokenRaw = `${prefix}:${secret}`;
+      const tokenHash = await bcrypt.hash(tokenRaw, 10);
+
+      await prisma.bot.update({
+        where: { id: bot.id },
+        data: { tokenHash, tokenPlain: tokenRaw },
+      });
+      await redis.del(`bot:auth:${bot.id}`);
+      return { token: tokenRaw, botId: bot.id, username };
+    },
+  );
 
   // ─── DASHBOARD ──────────────────────────────────────────
   app.get('/dashboard', async (request) => {
