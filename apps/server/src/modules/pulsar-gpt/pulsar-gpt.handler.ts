@@ -2,7 +2,7 @@ import { prisma } from '../../config/database.js';
 import { redis } from '../../config/redis.js';
 import { getIO } from '../../socket/index.js';
 import { PULSAR_GPT_BOT_USER_ID } from './pulsar-gpt.seed.js';
-import { runChat, startTask, getUserSettings, PulsarGptError } from './pulsar-gpt.service.js';
+import { runChat, startTask, getUserSettings, updateUserSettings, PulsarGptError } from './pulsar-gpt.service.js';
 
 /**
  * In-chat Pulsar GPT bot — full conversational UX in DM. Inline buttons
@@ -92,7 +92,53 @@ const MENU_BUTTONS: InlineButton[][] = [
     { text: '👤 Мой профиль', callbackData: 'gpt:profile' },
     { text: '💎 Купить PLS', callbackData: 'gpt:topup' },
   ],
+  [{ text: '⚙ Сменить модель', callbackData: 'gpt:settings' }],
 ];
+
+interface ModelOption {
+  id: string;
+  name: string;
+  cost: string;
+  desc: string;
+  recommended?: boolean;
+}
+
+/** Catalog of user-pickable models, grouped by category. ⭐ marks the
+ *  recommended default that gives the best balance of quality, cost
+ *  and moderation strictness for each task. */
+const MODEL_CATALOG: Record<'image' | 'animate' | 'video' | 'chat', ModelOption[]> = {
+  image: [
+    { id: 'google/imagen4-fast',           name: 'Imagen 4 Fast',  cost: '12 кр',  desc: 'Быстро, мягкая модерация, фотореализм', recommended: true },
+    { id: 'google/imagen4',                name: 'Imagen 4',       cost: '25 кр',  desc: 'Высокое качество от Google' },
+    { id: 'google/imagen4-ultra',          name: 'Imagen 4 Ultra', cost: '40 кр',  desc: 'Максимум деталей, медленно' },
+    { id: 'flux-2/flex-text-to-image',     name: 'Flux 2 Flex',    cost: '10 кр',  desc: 'Дёшево, художественный стиль' },
+    { id: 'flux-2/pro-text-to-image',      name: 'Flux 2 Pro',     cost: '15 кр',  desc: 'Точнее следует промпту' },
+  ],
+  animate: [
+    { id: 'bytedance/seedance-2-fast',     name: 'Seedance 2 Fast', cost: '200 кр', desc: 'Быстро, базовое качество', recommended: true },
+    { id: 'bytedance/seedance-2',          name: 'Seedance 2',      cost: '350 кр', desc: 'Лучшее качество анимации' },
+    { id: 'bytedance/seedance-1-5-pro',    name: 'Seedance 1.5',    cost: '300 кр', desc: 'Стабильная старая версия' },
+    { id: 'kling/image-to-video',          name: 'Kling I2V',       cost: '250 кр', desc: 'Другой стиль движения' },
+  ],
+  video: [
+    { id: 'kling/text-to-video',           name: 'Kling T2V',       cost: '280 кр', desc: 'Хорошо для динамики', recommended: true },
+    { id: 'bytedance/seedance-2-fast',     name: 'Seedance 2 Fast', cost: '200 кр', desc: 'Быстро' },
+    { id: 'bytedance/seedance-2',          name: 'Seedance 2',      cost: '350 кр', desc: 'Топ-качество' },
+  ],
+  chat: [
+    { id: 'deepseek-chat',                 name: 'DeepSeek',         cost: '~бесплатно', desc: 'Отличное качество, очень дёшево', recommended: true },
+    { id: 'gpt-4o',                        name: 'GPT-4o',           cost: '$$',         desc: 'Флагман OpenAI' },
+    { id: 'claude-sonnet-4-5',             name: 'Claude Sonnet 4.5', cost: '$$',        desc: 'Флагман Anthropic' },
+    { id: 'gemini-2.0-flash',              name: 'Gemini 2.0 Flash', cost: '~дёшево',    desc: 'Флагман Google' },
+  ],
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  image: 'картинок',
+  animate: 'анимации',
+  video: 'видео',
+  chat: 'чата',
+};
 
 async function showMenu(userId: string, chatId: string) {
   // Personalized greeting + capability list + live balance.
@@ -199,9 +245,107 @@ export async function handlePulsarGptMessage(
   }
 }
 
+/** Top-level settings panel showing current picks and category buttons. */
+async function showSettings(userId: string, chatId: string) {
+  const s = await getUserSettings(userId);
+  const text =
+    `⚙ Настройки моделей\n\n` +
+    `Текущие выборы:\n` +
+    `• 🎨 Картинки: ${s.imageModel}\n` +
+    `• 🎬 Анимация: ${s.animateModel}\n` +
+    `• 🎥 Видео: ${s.videoModel}\n` +
+    `• 💬 Чат: ${s.chatModel}\n\n` +
+    `Что хочешь сменить?`;
+  await sendBot(chatId, text, [
+    [{ text: '🎨 Картинки', callbackData: 'gpt:set:image' }],
+    [
+      { text: '🎬 Анимация', callbackData: 'gpt:set:animate' },
+      { text: '🎥 Видео', callbackData: 'gpt:set:video' },
+    ],
+    [{ text: '💬 Чат', callbackData: 'gpt:set:chat' }],
+    [{ text: '« Назад в меню', callbackData: 'gpt:menu' }],
+  ]);
+}
+
+/** Shows the model list for a category — current pick marked ✅,
+ *  recommended marked ⭐. Buttons let the user one-click switch. */
+async function showModelPicker(
+  userId: string,
+  chatId: string,
+  category: 'image' | 'animate' | 'video' | 'chat',
+) {
+  const settings = await getUserSettings(userId);
+  const currentMap: Record<typeof category, string> = {
+    image: settings.imageModel,
+    animate: settings.animateModel,
+    video: settings.videoModel,
+    chat: settings.chatModel,
+  };
+  const current = currentMap[category];
+  const options = MODEL_CATALOG[category];
+
+  const lines = [`Выбери модель для ${CATEGORY_LABELS[category]}:`, ''];
+  const buttons: InlineButton[][] = [];
+  for (const m of options) {
+    const mark = m.id === current ? '✅ ' : '';
+    const rec = m.recommended ? ' ⭐' : '';
+    lines.push(`${mark}${m.name}${rec} — ${m.cost}`);
+    lines.push(`   ${m.desc}`);
+    lines.push('');
+    buttons.push([{
+      text: `${mark}${m.name} (${m.cost})`,
+      callbackData: `gpt:pick:${category}:${m.id}`,
+    }]);
+  }
+  buttons.push([{ text: '« К настройкам', callbackData: 'gpt:settings' }]);
+  await sendBot(chatId, lines.join('\n'), buttons);
+}
+
+/** Persist a model pick and re-render the picker so the user sees the
+ *  ✅ move to their new choice. */
+async function pickModel(
+  userId: string,
+  chatId: string,
+  category: string,
+  modelId: string,
+) {
+  const patch: Parameters<typeof updateUserSettings>[1] = {};
+  if (category === 'image') patch.imageModel = modelId;
+  else if (category === 'animate') patch.animateModel = modelId;
+  else if (category === 'video') patch.videoModel = modelId;
+  else if (category === 'chat') patch.chatModel = modelId;
+  else { await sendBot(chatId, '⚠ Неизвестная категория'); return; }
+  await updateUserSettings(userId, patch);
+  await sendBot(chatId, `✅ Сохранено: ${modelId}\n\nИспользуется со следующего запроса.`);
+  await showModelPicker(userId, chatId, category as any);
+}
+
 async function handleCallback(userId: string, chatId: string, data: string) {
   const action = data.slice(4); // strip "gpt:"
+
+  // gpt:set:<category> → open picker for that category
+  if (action.startsWith('set:')) {
+    const cat = action.slice(4);
+    if (cat === 'image' || cat === 'animate' || cat === 'video' || cat === 'chat') {
+      return showModelPicker(userId, chatId, cat);
+    }
+    return showSettings(userId, chatId);
+  }
+
+  // gpt:pick:<category>:<modelId> — modelId may contain '/' so we
+  // split only on the first colon after the category.
+  if (action.startsWith('pick:')) {
+    const rest = action.slice(5);
+    const colonIdx = rest.indexOf(':');
+    if (colonIdx < 0) return showSettings(userId, chatId);
+    const cat = rest.slice(0, colonIdx);
+    const modelId = rest.slice(colonIdx + 1);
+    return pickModel(userId, chatId, cat, modelId);
+  }
+
   switch (action) {
+    case 'menu':
+      return showMenu(userId, chatId);
     case 'chat':
       await setSession(userId, { state: 'chat', history: [] });
       await sendBot(
@@ -276,11 +420,7 @@ async function handleCallback(userId: string, chatId: string, data: string) {
       );
       return;
     case 'settings':
-      await sendBot(
-        chatId,
-        '⚙ Настройки моделей и баланса — на странице:\n👉 https://pulsar-chat.fun/pulsar-gpt',
-      );
-      return;
+      return showSettings(userId, chatId);
     default:
       await showMenu(userId, chatId);
   }
