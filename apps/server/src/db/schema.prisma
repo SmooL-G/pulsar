@@ -989,7 +989,7 @@ model PulsarGptRequest {
 model PulsarGptUserSettings {
   userId       String @id @map("user_id") @db.Uuid
   chatModel    String @default("deepseek-chat") @map("chat_model") @db.VarChar(64)
-  imageModel   String @default("flux-2/flex-text-to-image") @map("image_model") @db.VarChar(64)
+  imageModel   String @default("google/imagen4-fast") @map("image_model") @db.VarChar(64)
   animateModel String @default("bytedance/seedance-2-fast") @map("animate_model") @db.VarChar(64)
   videoModel   String @default("kling/text-to-video") @map("video_model") @db.VarChar(64)
   updatedAt    DateTime @updatedAt @map("updated_at")

@@ -71,3 +71,19 @@ export async function seedPulsarGptBot(): Promise<string> {
   console.log(`[PulsarGPT] Seeded system bot: @pulsargpt (${botUser.id})`);
   return botUser.id;
 }
+
+/**
+ * Idempotent one-shot: migrate existing user-settings rows whose model
+ * picks point at known-broken defaults to the current safe defaults.
+ * Safe to re-run on every boot — only touches rows still on the broken
+ * value, so user-overridden choices aren't trampled.
+ */
+export async function migratePulsarGptDefaults() {
+  const result = await prisma.pulsarGptUserSettings.updateMany({
+    where: { imageModel: 'flux-2/flex-text-to-image' },
+    data: { imageModel: 'google/imagen4-fast' },
+  });
+  if (result.count > 0) {
+    console.log(`[PulsarGPT] Migrated ${result.count} user(s) from flux-2 → imagen4-fast`);
+  }
+}

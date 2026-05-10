@@ -30,7 +30,12 @@ function buildModelInput(model: string, opts: { prompt?: string; inputUrl?: stri
     input.aspect_ratio = '1:1';
     input.resolution = '1K';
     input.nsfw_checker = false;
-    if (opts.inputUrl && model.includes('image-to-image')) input.image_url = opts.inputUrl;
+    // Flux 2 on KIE *requires* input_urls even for text-to-image —
+    // pass an empty array when there's no source image; populate it
+    // for image-to-image variants.
+    input.input_urls = opts.inputUrl && model.includes('image-to-image')
+      ? [opts.inputUrl]
+      : [];
   } else if (model.startsWith('google/imagen4')) {
     input.aspect_ratio = '1:1';
   } else if (model.startsWith('bytedance/seedance')) {

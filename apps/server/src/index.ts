@@ -18,7 +18,7 @@ import { startP2PWorker } from './modules/p2p/p2p.worker.js';
 import { startPriceSnapshotWorker } from './modules/price/price.worker.js';
 import { startMerchantWorker } from './modules/merchant/merchant.worker.js';
 import { startPulsarGptWorker } from './modules/pulsar-gpt/pulsar-gpt.worker.js';
-import { seedPulsarGptBot } from './modules/pulsar-gpt/pulsar-gpt.seed.js';
+import { seedPulsarGptBot, migratePulsarGptDefaults } from './modules/pulsar-gpt/pulsar-gpt.seed.js';
 
 async function main() {
   const app = await buildApp();
@@ -45,6 +45,7 @@ async function main() {
   // Seed Pulsar GPT system account (multi-model AI bot)
   try {
     await seedPulsarGptBot();
+    await migratePulsarGptDefaults();
     console.log('Pulsar GPT bot seeded');
   } catch (e2) {
     console.error('Pulsar GPT bot seed failed:', e2);
