@@ -148,9 +148,15 @@ async function postBotFailure(chatId: string, errorMessage: string) {
   if (lower.includes('sensitive') || lower.includes('nsfw') || lower.includes('flagged')) {
     hint = '\n\nℹ Промпт или результат отклонены модерацией KIE. Попробуй переформулировать без чувствительных слов (насилие, эротика, известные люди, бренды).';
   } else if (lower.includes('timeout') || lower.includes('timed out')) {
-    hint = '\n\nℹ Модель не ответила вовремя. Попробуй ещё раз или выбери другую модель.';
+    hint = '\n\nℹ Модель не ответила вовремя. Попробуй ещё раз или выбери другую модель: /menu → ⚙ Сменить модель.';
   } else if (lower.includes('rate') || lower.includes('quota')) {
     hint = '\n\nℹ Превышен лимит запросов. Подожди минуту.';
+  } else if (lower.includes('internal error') || lower.includes('try again later') || lower.includes('500')) {
+    hint = '\n\nℹ Эта модель временно недоступна на стороне KIE. Переключись на другую: /menu → ⚙ Сменить модель → 🎨 Картинки → Imagen 4 Fast ⭐ (самая стабильная).';
+  } else if (lower.includes('credit') || lower.includes('insufficient')) {
+    hint = '\n\nℹ На нашем KIE-аккаунте закончились кредиты. Сообщи админу.';
+  } else if (lower.includes('not enabled') || lower.includes('not found') || lower.includes('not supported')) {
+    hint = '\n\nℹ Эта модель недоступна в нашем плане KIE. Выбери другую: /menu → ⚙ Сменить модель.';
   }
   const text = `❌ Не получилось — деньги вернулись.\n\n${errorMessage}${hint}\n\n/menu — вернуться в меню`;
   const msg = await prisma.message.create({
