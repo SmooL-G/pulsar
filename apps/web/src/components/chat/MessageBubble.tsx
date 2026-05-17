@@ -19,6 +19,7 @@ import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
 import { decryptMessage } from '../../crypto/e2eEncrypt';
+import { RichText } from './RichText';
 import toast from 'react-hot-toast';
 
 interface MessageBubbleProps {
@@ -349,7 +350,7 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
             {displayContent && (
               isEmojiOnly
                 ? <span className={`${emojiSize} leading-tight`}>{displayContent}</span>
-                : <MessageContent content={displayContent} isOwn={isOwn} metadata={message.metadata} />
+                : <MessageContent content={displayContent} isOwn={isOwn} metadata={message.metadata} chatId={message.chatId} />
             )}
             {isEncrypted && !displayContent && (
               <p className="text-xs italic text-gray-400 flex items-center gap-1">
@@ -803,10 +804,8 @@ function MessageStatusIcon({ status }: { status?: string }) {
 }
 
 const INVITE_REGEX = /((https?:\/\/[^\s]+)?\/invite\/([a-zA-Z0-9_-]+))/;
-const URL_REGEX = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
-const MENTION_REGEX = /@([a-zA-Z0-9_]{2,32})/g;
 
-function MessageContent({ content, isOwn, metadata }: { content: string; isOwn: boolean; metadata?: any }) {
+function MessageContent({ content, isOwn, metadata, chatId }: { content: string; isOwn: boolean; metadata?: any; chatId: string }) {
   const { t } = useI18n();
   const linkPreview = metadata?.linkPreview as { title?: string; description?: string; image?: string; siteName?: string; url?: string } | undefined;
 
@@ -821,7 +820,7 @@ function MessageContent({ content, isOwn, metadata }: { content: string; isOwn: 
 
     return (
       <div className="space-y-2">
-        {textBefore && <p className="whitespace-pre-wrap break-words">{renderTextWithLinks(textBefore, isOwn)}</p>}
+        {textBefore && <p className="whitespace-pre-wrap break-words"><RichText content={textBefore} isOwn={isOwn} chatId={chatId} /></p>}
         <a
           href={fullUrl}
           className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-colors no-underline ${
@@ -847,79 +846,22 @@ function MessageContent({ content, isOwn, metadata }: { content: string; isOwn: 
             {t('invite.join')}
           </div>
         </a>
-        {textAfter && <p className="whitespace-pre-wrap break-words">{renderTextWithLinks(textAfter, isOwn)}</p>}
+        {textAfter && <p className="whitespace-pre-wrap break-words"><RichText content={textAfter} isOwn={isOwn} chatId={chatId} /></p>}
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <p className="whitespace-pre-wrap break-words">{renderTextWithLinks(content, isOwn)}</p>
+      <p className="whitespace-pre-wrap break-words"><RichText content={content} isOwn={isOwn} chatId={chatId} /></p>
       {linkPreview && <LinkPreviewCard preview={linkPreview} isOwn={isOwn} />}
     </div>
   );
 }
 
-// Render text with clickable links AND @mentions. Mentions of the current
-// user are styled distinctively so they catch the eye.
-function renderTextWithLinks(text: string, isOwn: boolean): React.ReactNode {
-  const myUsername = useAuthStore.getState().user?.username?.toLowerCase();
+// (renderTextWithLinks removed — replaced by <RichText> which also
+//  handles /commands and avatar-pill mentions.)
 
-  // Collect all matches first (URLs + mentions), sort by position, render in order.
-  const tokens: { start: number; end: number; type: 'url' | 'mention'; value: string }[] = [];
-
-  for (const m of text.matchAll(new RegExp(URL_REGEX.source, 'g'))) {
-    if (m.index === undefined) continue;
-    tokens.push({ start: m.index, end: m.index + m[0].length, type: 'url', value: m[1] });
-  }
-  for (const m of text.matchAll(new RegExp(MENTION_REGEX.source, 'g'))) {
-    if (m.index === undefined) continue;
-    // Skip mentions that overlap a URL (e.g., the @ inside an email-like URL).
-    if (tokens.some((t) => t.type === 'url' && m.index! >= t.start && m.index! < t.end)) continue;
-    tokens.push({ start: m.index, end: m.index + m[0].length, type: 'mention', value: m[1] });
-  }
-  tokens.sort((a, b) => a.start - b.start);
-
-  if (tokens.length === 0) return text;
-
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  for (const tok of tokens) {
-    if (tok.start > lastIndex) {
-      parts.push(text.slice(lastIndex, tok.start));
-    }
-    if (tok.type === 'url') {
-      parts.push(
-        <a
-          key={`u${tok.start}`}
-          href={tok.value}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`underline break-all ${isOwn ? 'text-blue-200 hover:text-white' : 'text-primary-500 hover:text-primary-400'}`}
-        >
-          {tok.value}
-        </a>
-      );
-    } else {
-      const isMe = myUsername && tok.value.toLowerCase() === myUsername;
-      parts.push(
-        <span
-          key={`m${tok.start}`}
-          className={`font-semibold ${
-            isMe
-              ? isOwn ? 'text-amber-200' : 'text-amber-500 bg-amber-500/15 px-1 rounded'
-              : isOwn ? 'text-blue-100' : 'text-primary-500'
-          }`}
-        >
-          @{tok.value}
-        </span>
-      );
-    }
-    lastIndex = tok.end;
-  }
-  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
-  return parts;
-}
 
 // Link preview card
 function LinkPreviewCard({ preview, isOwn }: { preview: { title?: string; description?: string; image?: string; siteName?: string; url?: string }; isOwn: boolean }) {
