@@ -22,7 +22,11 @@ import { useUserLookup, type ResolvedUser } from '../../hooks/useUserLookup';
  */
 
 const URL_REGEX     = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
-const MENTION_REGEX = /@([a-zA-Z0-9_]{2,32})/g;
+// Pulsar usernames allow letters, digits, underscore, hyphen, dot.
+// VarChar(32) hard cap, 2 chars min. Start + end on alnum/underscore
+// so trailing punctuation like "@user." or "@user-" stops cleanly
+// (regex backtracks the trailing hyphen/dot via the final char-class).
+const MENTION_REGEX = /@([a-zA-Z0-9_][a-zA-Z0-9_.-]{0,30}[a-zA-Z0-9_])/g;
 // Commands: a slash + letter + 0-31 more word chars, preceded by start-
 // of-string or whitespace, followed by a word boundary. The lookbehind
 // keeps URLs (which contain slashes) from matching.
