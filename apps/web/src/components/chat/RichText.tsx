@@ -89,9 +89,12 @@ interface RichTextProps {
   isOwn: boolean;
   /** chatId is needed for /command click → socket emit. */
   chatId: string;
+  /** URLs in this set are skipped in the text (because they're being
+   *  rendered as inline media blocks below the message). */
+  hideUrls?: Set<string>;
 }
 
-export function RichText({ content, isOwn, chatId }: RichTextProps) {
+export function RichText({ content, isOwn, chatId, hideUrls }: RichTextProps) {
   const tokens = tokenize(content);
   if (tokens.length === 0) return <>{content}</>;
   const myUsername = useAuthStore.getState().user?.username?.toLowerCase();
@@ -101,6 +104,7 @@ export function RichText({ content, isOwn, chatId }: RichTextProps) {
       {tokens.map((tok, i) => {
         if (tok.kind === 'text') return <span key={i}>{tok.raw}</span>;
         if (tok.kind === 'url') {
+          if (hideUrls?.has(tok.raw)) return null;
           return (
             <a
               key={i}
@@ -284,6 +288,99 @@ export function extractMentions(text: string): string[] {
     }
   }
   return out;
+}
+
+// ─── Inline media auto-embed (image / video / audio by URL) ─────────
+
+const IMG_EXT_REGEX   = /\.(jpe?g|png|gif|webp|avif|svg|bmp)$/i;
+const VIDEO_EXT_REGEX = /\.(mp4|webm|mov|m4v)$/i;
+const AUDIO_EXT_REGEX = /\.(mp3|wav|ogg|m4a|opus)$/i;
+
+export type MediaKind = 'image' | 'video' | 'audio';
+
+export function detectMediaKind(url: string): MediaKind | null {
+  try {
+    const u = new URL(url);
+    const p = u.pathname;
+    if (IMG_EXT_REGEX.test(p))   return 'image';
+    if (VIDEO_EXT_REGEX.test(p)) return 'video';
+    if (AUDIO_EXT_REGEX.test(p)) return 'audio';
+  } catch { /* not a URL */ }
+  return null;
+}
+
+/** Extract all URLs in text together with their detected media kind.
+ *  Only entries with a non-null kind are returned, preserving order
+ *  of first occurrence and de-duplicating. */
+export function extractMediaUrls(text: string): { url: string; kind: MediaKind }[] {
+  const seen = new Set<string>();
+  const out: { url: string; kind: MediaKind }[] = [];
+  for (const m of text.matchAll(URL_REGEX)) {
+    const url = m[1];
+    if (seen.has(url)) continue;
+    const kind = detectMediaKind(url);
+    if (!kind) continue;
+    seen.add(url);
+    out.push({ url, kind });
+  }
+  return out;
+}
+
+/** Block-level inline media renderer. Falls back to a plain text link
+ *  if the media itself fails to load (e.g. signed URL expired). */
+export function InlineMedia({ url, kind, isOwn }: { url: string; kind: MediaKind; isOwn: boolean }) {
+  const [errored, setErrored] = useState(false);
+
+  if (errored) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`block text-xs underline break-all opacity-70 ${isOwn ? 'text-blue-100' : 'text-primary-500'}`}
+      >
+        {url}
+      </a>
+    );
+  }
+
+  if (kind === 'image') {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+        <img
+          src={url}
+          alt=""
+          className="max-w-full max-h-96 rounded-xl object-contain bg-black/5 dark:bg-white/5"
+          loading="lazy"
+          onError={() => setErrored(true)}
+        />
+      </a>
+    );
+  }
+
+  if (kind === 'video') {
+    return (
+      <video
+        src={url}
+        controls
+        playsInline
+        preload="metadata"
+        className="max-w-full max-h-96 rounded-xl bg-black"
+        onError={() => setErrored(true)}
+      />
+    );
+  }
+
+  // audio
+  return (
+    <audio
+      src={url}
+      controls
+      preload="metadata"
+      className="w-full"
+      onError={() => setErrored(true)}
+    />
+  );
 }
 
 // ─── /command chip — click sends the command ────────────────────────

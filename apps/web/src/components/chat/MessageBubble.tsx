@@ -19,7 +19,7 @@ import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
 import { decryptMessage } from '../../crypto/e2eEncrypt';
-import { RichText, MentionContactCard, extractMentions } from './RichText';
+import { RichText, MentionContactCard, InlineMedia, extractMentions, extractMediaUrls } from './RichText';
 import toast from 'react-hot-toast';
 
 interface MessageBubbleProps {
@@ -852,16 +852,28 @@ function MessageContent({ content, isOwn, metadata, chatId }: { content: string;
   }
 
   const mentions = extractMentions(content);
-  // If the message is *only* @mentions (and whitespace), skip the text
-  // paragraph — the cards below already display the same handles, so
-  // showing pills + cards would just duplicate the information.
-  const textWithoutMentions = content.replace(/@([a-zA-Z0-9_][a-zA-Z0-9_.-]{0,30}[a-zA-Z0-9_])/g, '').trim();
-  const onlyMentions = mentions.length > 0 && textWithoutMentions === '';
+  const media    = extractMediaUrls(content);
+  const mediaUrlSet = new Set(media.map((m) => m.url));
+
+  // Check if the text would be empty after stripping the things we
+  // already render as standalone blocks (mentions + media URLs). If
+  // so, skip the text <p> — pill + card duplication / URL + image
+  // duplication is just noise.
+  let stripped = content.replace(/@([a-zA-Z0-9_][a-zA-Z0-9_.-]{0,30}[a-zA-Z0-9_])/g, '');
+  for (const m of media) stripped = stripped.split(m.url).join('');
+  stripped = stripped.trim();
+  const onlyExtras = stripped === '' && (mentions.length > 0 || media.length > 0);
+
   return (
-    <div className="space-y-1">
-      {!onlyMentions && (
-        <p className="whitespace-pre-wrap break-words"><RichText content={content} isOwn={isOwn} chatId={chatId} /></p>
+    <div className="space-y-2">
+      {!onlyExtras && (
+        <p className="whitespace-pre-wrap break-words">
+          <RichText content={content} isOwn={isOwn} chatId={chatId} hideUrls={mediaUrlSet} />
+        </p>
       )}
+      {media.map((m) => (
+        <InlineMedia key={m.url} url={m.url} kind={m.kind} isOwn={isOwn} />
+      ))}
       {mentions.map((u) => (
         <MentionContactCard key={u} username={u} isOwn={isOwn} />
       ))}
