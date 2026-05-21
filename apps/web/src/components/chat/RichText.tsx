@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { MessageCircle, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useChatStore } from '../../store/chatStore';
+import { api } from '../../services/api';
 import { getSocket } from '../../hooks/useSocket';
 import { useUserLookup, type ResolvedUser } from '../../hooks/useUserLookup';
 
@@ -132,23 +134,6 @@ export function RichText({ content, isOwn, chatId }: RichTextProps) {
 
 function MentionPill({ username, isOwn, isMe }: { username: string; isOwn: boolean; isMe: boolean }) {
   const { user } = useUserLookup(username);
-  const [hovering, setHovering] = useState(false);
-  const linkRef = useRef<HTMLAnchorElement | null>(null);
-  // Delay hiding so the cursor has time to travel from link → card.
-  const hideTimer = useRef<number | null>(null);
-  const showCard = () => {
-    if (hideTimer.current) { window.clearTimeout(hideTimer.current); hideTimer.current = null; }
-    setHovering(true);
-  };
-  const hideCard = () => {
-    if (hideTimer.current) window.clearTimeout(hideTimer.current);
-    hideTimer.current = window.setTimeout(() => setHovering(false), 150);
-  };
-  useEffect(() => () => { if (hideTimer.current) window.clearTimeout(hideTimer.current); }, []);
-
-  // Don't render hover-card on touch devices (no hover state) — tap
-  // navigates straight to the profile.
-  const supportsHover = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)').matches;
 
   // Color emphasis if it's a mention of *me*.
   const baseCls = isMe
@@ -162,100 +147,143 @@ function MentionPill({ username, isOwn, isMe }: { username: string; isOwn: boole
   const initial = (user?.displayName || username || '?')[0].toUpperCase();
 
   return (
-    <>
-      <Link
-        ref={linkRef}
-        to={`/${username}`}
-        onMouseEnter={supportsHover ? showCard : undefined}
-        onMouseLeave={supportsHover ? hideCard : undefined}
-        className={`inline-flex items-center gap-1 align-baseline px-1.5 py-0.5 rounded-md font-medium no-underline transition-colors ${baseCls}`}
-        onClick={(e) => { e.stopPropagation(); }}
-      >
-        {user?.avatarUrl ? (
-          <img
-            src={user.avatarUrl}
-            alt=""
-            className="w-4 h-4 rounded-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <span className="w-4 h-4 rounded-full bg-black/20 dark:bg-white/20 flex items-center justify-center text-[8px] font-bold leading-none">
-            {initial}
-          </span>
-        )}
-        <span>@{user?.username || username}</span>
-        {user?.isBot && <span className="text-[9px] opacity-70 font-bold">BOT</span>}
-      </Link>
-      {hovering && user && supportsHover && linkRef.current && (
-        <MentionPreviewCard
-          user={user}
-          anchor={linkRef.current}
-          onEnter={showCard}
-          onLeave={hideCard}
+    <Link
+      to={`/${username}`}
+      className={`inline-flex items-center gap-1 align-baseline px-1.5 py-0.5 rounded-md font-medium no-underline transition-colors ${baseCls}`}
+      onClick={(e) => { e.stopPropagation(); }}
+    >
+      {user?.avatarUrl ? (
+        <img
+          src={user.avatarUrl}
+          alt=""
+          className="w-4 h-4 rounded-full object-cover"
+          loading="lazy"
         />
+      ) : (
+        <span className="w-4 h-4 rounded-full bg-black/20 dark:bg-white/20 flex items-center justify-center text-[8px] font-bold leading-none">
+          {initial}
+        </span>
       )}
-    </>
+      <span>@{user?.username || username}</span>
+      {user?.isBot && <span className="text-[9px] opacity-70 font-bold">BOT</span>}
+    </Link>
   );
 }
 
-function MentionPreviewCard({
-  user, anchor, onEnter, onLeave,
-}: {
-  user: ResolvedUser;
-  anchor: HTMLElement;
-  onEnter: () => void;
-  onLeave: () => void;
-}) {
-  // Compute position from anchor's bounding rect — render via portal
-  // so we escape any clipping ancestor (overflow:hidden on chat panel,
-  // message bubble z-stacking, etc).
-  const rect = anchor.getBoundingClientRect();
-  const cardWidth = 256; // w-64
-  const cardHeight = 100; // approx
-  // Prefer above the pill; fall back to below if no room.
-  const placeAbove = rect.top > cardHeight + 16;
-  const top = placeAbove
-    ? rect.top - cardHeight - 8
-    : rect.bottom + 8;
-  // Clamp left so card doesn't go off-screen.
-  let left = rect.left;
-  if (left + cardWidth > window.innerWidth - 16) {
-    left = window.innerWidth - cardWidth - 16;
-  }
-  if (left < 16) left = 16;
+// ─── Inline contact card (one per unique @mention in a message) ─────
 
-  return createPortal(
+export function MentionContactCard({ username, isOwn }: { username: string; isOwn: boolean }) {
+  const { user } = useUserLookup(username);
+  const navigate = useNavigate();
+  const [opening, setOpening] = useState(false);
+  const currentUserId = useAuthStore((s) => s.user?.id);
+
+  // If lookup hasn't returned yet, show a slim loading skeleton so the
+  // card doesn't pop in suddenly.
+  if (user === undefined) {
+    return (
+      <div className={`mt-2 flex items-center gap-2 px-3 py-2 rounded-xl ${isOwn ? 'bg-white/10' : 'bg-black/5 dark:bg-white/5'}`}>
+        <Loader2 size={14} className="animate-spin opacity-50" />
+        <span className="text-xs opacity-60">@{username}</span>
+      </div>
+    );
+  }
+  // Cached-as-null = doesn't exist; hide the card entirely.
+  if (user === null) return null;
+
+  const isMe = currentUserId === user.id;
+  const initial = (user.displayName || user.username || '?')[0].toUpperCase();
+
+  const handleWrite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (opening || isMe) return;
+    setOpening(true);
+    try {
+      const res: any = await api.post('/chats/direct', { targetUserId: user.id });
+      const created = res?.data ?? res;
+      await useChatStore.getState().fetchChats();
+      const chat = useChatStore.getState().chats.find(
+        (c) => c.id === created.id || c.id === created.chatId,
+      );
+      if (chat) {
+        useChatStore.getState().setActiveChat(chat);
+        navigate('/', { replace: false });
+      }
+    } catch {
+      // soft-fail: still navigate to profile so user has a way forward
+      navigate(`/${user.username}`);
+    } finally {
+      setOpening(false);
+    }
+  };
+
+  return (
     <div
-      role="tooltip"
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
-      style={{ position: 'fixed', top, left, width: cardWidth, zIndex: 9999 }}
-      className="rounded-xl bg-white dark:bg-dark-700 shadow-xl ring-1 ring-black/10 dark:ring-white/10 p-3 text-left animate-fade-in"
+      className={`mt-2 flex items-center gap-2.5 px-2.5 py-2 rounded-xl ${
+        isOwn
+          ? 'bg-white/10 hover:bg-white/15'
+          : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10'
+      } transition-colors`}
     >
-      <div className="flex items-center gap-2">
+      <Link
+        to={`/${user.username}`}
+        className="flex items-center gap-2.5 flex-1 min-w-0 no-underline"
+        onClick={(e) => e.stopPropagation()}
+      >
         {user.avatarUrl ? (
-          <img src={user.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+          <img src={user.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-500 font-semibold shrink-0">
-            {(user.displayName || user.username || '?')[0].toUpperCase()}
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+            isOwn ? 'bg-white/20 text-white' : 'bg-primary-500/20 text-primary-600 dark:text-primary-300'
+          }`}>
+            {initial}
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
+          <div className={`text-sm font-semibold truncate ${isOwn ? 'text-white' : 'text-gray-800 dark:text-gray-100'}`}>
             {user.displayName || user.username}
-            {user.isBot && <span className="ml-1 text-[10px] font-bold text-amber-500">BOT</span>}
+            {user.isBot && (
+              <span className={`ml-1.5 text-[9px] font-bold px-1 py-0.5 rounded ${
+                isOwn ? 'bg-white/20 text-white' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+              }`}>BOT</span>
+            )}
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">@{user.username}</div>
+          <div className={`text-[11px] truncate ${isOwn ? 'text-blue-100/80' : 'text-gray-500 dark:text-gray-400'}`}>
+            @{user.username}
+          </div>
         </div>
-      </div>
-      {user.bio && (
-        <div className="mt-2 text-xs text-gray-600 dark:text-gray-300 line-clamp-3">
-          {user.bio}
-        </div>
+      </Link>
+      {!isMe && (
+        <button
+          onClick={handleWrite}
+          disabled={opening}
+          className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+            isOwn
+              ? 'bg-white/20 hover:bg-white/30 text-white'
+              : 'bg-primary-500 hover:bg-primary-600 text-white'
+          }`}
+        >
+          {opening ? <Loader2 size={12} className="animate-spin" /> : <MessageCircle size={12} />}
+          <span>Написать</span>
+        </button>
       )}
-    </div>,
-    document.body,
+    </div>
   );
+}
+
+/** Extract unique usernames mentioned in a text block, preserving order. */
+export function extractMentions(text: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const m of text.matchAll(MENTION_REGEX)) {
+    const u = m[1];
+    if (!seen.has(u.toLowerCase())) {
+      seen.add(u.toLowerCase());
+      out.push(u);
+    }
+  }
+  return out;
 }
 
 // ─── /command chip — click sends the command ────────────────────────

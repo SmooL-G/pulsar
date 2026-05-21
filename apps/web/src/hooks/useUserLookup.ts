@@ -33,7 +33,9 @@ export async function lookupUser(username: string): Promise<ResolvedUser | null>
   if (existing) return existing;
   const p = (async () => {
     try {
-      const data = await api.get<ResolvedUser>(`/u/${encodeURIComponent(username)}`);
+      // axios response shape: { data: ResolvedUser, status, ... }
+      const res = await api.get<ResolvedUser>(`/u/${encodeURIComponent(username)}`);
+      const data = (res as any)?.data ?? res; // tolerate both wrapped + bare
       cache.set(key, data);
       return data;
     } catch {

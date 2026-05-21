@@ -19,7 +19,7 @@ import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
 import { decryptMessage } from '../../crypto/e2eEncrypt';
-import { RichText } from './RichText';
+import { RichText, MentionContactCard, extractMentions } from './RichText';
 import toast from 'react-hot-toast';
 
 interface MessageBubbleProps {
@@ -851,9 +851,13 @@ function MessageContent({ content, isOwn, metadata, chatId }: { content: string;
     );
   }
 
+  const mentions = extractMentions(content);
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <p className="whitespace-pre-wrap break-words"><RichText content={content} isOwn={isOwn} chatId={chatId} /></p>
+      {mentions.map((u) => (
+        <MentionContactCard key={u} username={u} isOwn={isOwn} />
+      ))}
       {linkPreview && <LinkPreviewCard preview={linkPreview} isOwn={isOwn} />}
     </div>
   );
