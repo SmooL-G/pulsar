@@ -852,9 +852,16 @@ function MessageContent({ content, isOwn, metadata, chatId }: { content: string;
   }
 
   const mentions = extractMentions(content);
+  // If the message is *only* @mentions (and whitespace), skip the text
+  // paragraph — the cards below already display the same handles, so
+  // showing pills + cards would just duplicate the information.
+  const textWithoutMentions = content.replace(/@([a-zA-Z0-9_][a-zA-Z0-9_.-]{0,30}[a-zA-Z0-9_])/g, '').trim();
+  const onlyMentions = mentions.length > 0 && textWithoutMentions === '';
   return (
     <div className="space-y-1">
-      <p className="whitespace-pre-wrap break-words"><RichText content={content} isOwn={isOwn} chatId={chatId} /></p>
+      {!onlyMentions && (
+        <p className="whitespace-pre-wrap break-words"><RichText content={content} isOwn={isOwn} chatId={chatId} /></p>
+      )}
       {mentions.map((u) => (
         <MentionContactCard key={u} username={u} isOwn={isOwn} />
       ))}
