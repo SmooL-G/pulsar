@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { getSocket } from '../../hooks/useSocket';
@@ -154,8 +155,10 @@ function MentionPill({ username, isOwn, isMe }: { username: string; isOwn: boole
       ? 'bg-white/15 text-blue-100 hover:bg-white/25'
       : 'bg-primary-500/15 text-primary-600 dark:text-primary-300 hover:bg-primary-500/25';
 
+  const initial = (user?.displayName || username || '?')[0].toUpperCase();
+
   return (
-    <span className="inline-block relative">
+    <>
       <Link
         ref={linkRef}
         to={`/${username}`}
@@ -168,50 +171,86 @@ function MentionPill({ username, isOwn, isMe }: { username: string; isOwn: boole
           <img
             src={user.avatarUrl}
             alt=""
-            className="w-3.5 h-3.5 rounded-full object-cover"
+            className="w-4 h-4 rounded-full object-cover"
             loading="lazy"
           />
-        ) : null}
+        ) : (
+          <span className="w-4 h-4 rounded-full bg-black/20 dark:bg-white/20 flex items-center justify-center text-[8px] font-bold leading-none">
+            {initial}
+          </span>
+        )}
         <span>@{user?.username || username}</span>
         {user?.isBot && <span className="text-[9px] opacity-70 font-bold">BOT</span>}
       </Link>
-      {hovering && user && supportsHover && (
-        <MentionPreviewCard user={user} onEnter={showCard} onLeave={hideCard} />
+      {hovering && user && supportsHover && linkRef.current && (
+        <MentionPreviewCard
+          user={user}
+          anchor={linkRef.current}
+          onEnter={showCard}
+          onLeave={hideCard}
+        />
       )}
-    </span>
+    </>
   );
 }
 
-function MentionPreviewCard({ user, onEnter, onLeave }: { user: ResolvedUser; onEnter: () => void; onLeave: () => void }) {
-  return (
-    <span
+function MentionPreviewCard({
+  user, anchor, onEnter, onLeave,
+}: {
+  user: ResolvedUser;
+  anchor: HTMLElement;
+  onEnter: () => void;
+  onLeave: () => void;
+}) {
+  // Compute position from anchor's bounding rect — render via portal
+  // so we escape any clipping ancestor (overflow:hidden on chat panel,
+  // message bubble z-stacking, etc).
+  const rect = anchor.getBoundingClientRect();
+  const cardWidth = 256; // w-64
+  const cardHeight = 100; // approx
+  // Prefer above the pill; fall back to below if no room.
+  const placeAbove = rect.top > cardHeight + 16;
+  const top = placeAbove
+    ? rect.top - cardHeight - 8
+    : rect.bottom + 8;
+  // Clamp left so card doesn't go off-screen.
+  let left = rect.left;
+  if (left + cardWidth > window.innerWidth - 16) {
+    left = window.innerWidth - cardWidth - 16;
+  }
+  if (left < 16) left = 16;
+
+  return createPortal(
+    <div
       role="tooltip"
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      className="absolute z-50 left-0 bottom-full mb-1 w-64 rounded-xl bg-white dark:bg-dark-700 shadow-xl ring-1 ring-black/10 dark:ring-white/10 p-3 text-left animate-fade-in"
+      style={{ position: 'fixed', top, left, width: cardWidth, zIndex: 9999 }}
+      className="rounded-xl bg-white dark:bg-dark-700 shadow-xl ring-1 ring-black/10 dark:ring-white/10 p-3 text-left animate-fade-in"
     >
-      <span className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
         {user.avatarUrl ? (
           <img src={user.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
         ) : (
-          <span className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-500 font-semibold shrink-0">
+          <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-500 font-semibold shrink-0">
             {(user.displayName || user.username || '?')[0].toUpperCase()}
-          </span>
+          </div>
         )}
-        <span className="flex-1 min-w-0">
-          <span className="block text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
             {user.displayName || user.username}
             {user.isBot && <span className="ml-1 text-[10px] font-bold text-amber-500">BOT</span>}
-          </span>
-          <span className="block text-xs text-gray-500 dark:text-gray-400 truncate">@{user.username}</span>
-        </span>
-      </span>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">@{user.username}</div>
+        </div>
+      </div>
       {user.bio && (
-        <span className="block mt-2 text-xs text-gray-600 dark:text-gray-300 line-clamp-3">
+        <div className="mt-2 text-xs text-gray-600 dark:text-gray-300 line-clamp-3">
           {user.bio}
-        </span>
+        </div>
       )}
-    </span>
+    </div>,
+    document.body,
   );
 }
 
