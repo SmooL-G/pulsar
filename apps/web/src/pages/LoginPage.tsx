@@ -8,7 +8,7 @@ import { UserCountInformer } from '../components/auth/UserCountInformer';
 import { SplashScreen } from '../components/auth/SplashScreen';
 import { PlsPriceBadge } from '../components/price/PlsPriceCard';
 import { LiveActivityPulse } from '../components/economy/LiveActivityPulse';
-import { ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, X, Rocket } from 'lucide-react';
 import { AudienceTiles, TokenTease } from '../components/landing/PitchSections';
 
 function navigateAfterLogin(navigate: ReturnType<typeof useNavigate>) {
@@ -35,6 +35,16 @@ export function LoginPage() {
   const [showSplash, setShowSplash] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
+  // Auth-modal toggle: landing-first UX. Form is hidden behind a bright
+  // CTA button at the bottom of the page; click to reveal.
+  const [authOpen, setAuthOpen] = useState(false);
+  // Close modal on Escape for desktop UX parity with native dialogs.
+  useEffect(() => {
+    if (!authOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAuthOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [authOpen]);
 
   // Referral capture: ?ref=<code> in the URL pre-fills the field on
   // the register form and shows a "you're invited by @X" preview.
@@ -99,13 +109,14 @@ export function LoginPage() {
   return (
     // Explicit h-dvh + overflow-y-auto because body has position:fixed
     // (needed for the chat page) and would otherwise prevent scrolling.
-    <div className="h-dvh overflow-y-auto bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900">
-    {/* Auth section — fills first viewport, scrolls into pitch sections below */}
-    <div className="min-h-dvh flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="h-dvh overflow-y-auto bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900 pb-32">
+    {/* Hero section — Pulsar identity, badges, lang switcher. No more
+        first-viewport auth card — auth lives behind the bottom CTA. */}
+    <section className="pt-16 pb-4 px-4">
+      <div className="w-full max-w-md mx-auto">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">{t('auth.title')}</h1>
+        <div className="text-center mb-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{t('auth.title')}</h1>
           <p className="text-gray-400">{t('auth.subtitle')}</p>
           {/* Positioning hook — single sentence visitors read in <2s */}
           <p className="text-xs text-gray-500 mt-2 max-w-sm mx-auto leading-snug">
@@ -126,7 +137,7 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* Выбор языка — над формой */}
+        {/* Lang switcher — between hero and pitch sections */}
         <div ref={langRef} className="relative flex justify-center mb-4 z-30">
           <button
             onClick={() => setLangOpen(!langOpen)}
@@ -158,9 +169,66 @@ export function LoginPage() {
             </>
           )}
         </div>
+      </div>
+    </section>
 
-        {/* Card */}
-        <div className="bg-dark-700 rounded-2xl p-6 shadow-2xl relative z-10">
+    {/* Pitch sections — main content of the landing page */}
+    <AudienceTiles showFeaturesLink={true} compact={false} />
+    <TokenTease deep={false} />
+
+    {/* Mini-footer */}
+    <footer className="border-t border-white/5 py-6 text-center text-xs text-gray-500">
+      <div className="flex flex-wrap justify-center gap-4">
+        <Link to="/features" className="hover:text-white transition-colors">
+          {locale === 'ru' ? 'Возможности' : 'Features'}
+        </Link>
+        <Link to="/privacy" className="hover:text-white transition-colors">
+          {locale === 'ru' ? 'Приватность' : 'Privacy'}
+        </Link>
+        <Link to="/roadmap" className="hover:text-white transition-colors">
+          {locale === 'ru' ? 'Дорожная карта' : 'Roadmap'}
+        </Link>
+        <Link to="/info" className="hover:text-white transition-colors">
+          {locale === 'ru' ? 'О проекте' : 'About'}
+        </Link>
+      </div>
+    </footer>
+
+    {/* CTA button — yellow + green 3D pressable. Always visible at the
+        bottom of the viewport, opens the auth modal. */}
+    <button
+      onClick={() => setAuthOpen(true)}
+      className="
+        fixed bottom-6 left-1/2 -translate-x-1/2 z-30
+        px-7 py-3.5 rounded-2xl
+        bg-gradient-to-b from-yellow-300 to-yellow-400
+        border-[3px] border-emerald-500
+        text-yellow-950 font-extrabold text-base tracking-wide
+        shadow-[0_6px_0_0_rgb(5,150,105),0_10px_24px_-4px_rgba(250,204,21,0.45)]
+        hover:translate-y-[2px] hover:shadow-[0_4px_0_0_rgb(5,150,105),0_6px_18px_-4px_rgba(250,204,21,0.55)]
+        active:translate-y-[5px] active:shadow-[0_1px_0_0_rgb(5,150,105)]
+        transition-all duration-150
+        flex items-center gap-2
+      "
+    >
+      <Rocket size={18} />
+      <span>{locale === 'ru' ? 'Войти / Регистрация' : 'Sign in / Register'}</span>
+    </button>
+
+    {/* Auth modal — backdrop closes on click, ESC also closes (handler above) */}
+    {authOpen && (
+      <div
+        onClick={(e) => { if (e.target === e.currentTarget) setAuthOpen(false); }}
+        className="fixed inset-0 z-40 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+      >
+        <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-dark-700 rounded-2xl p-6 shadow-2xl">
+          <button
+            onClick={() => setAuthOpen(false)}
+            className="absolute top-3 right-3 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors z-10"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
           {/* Tabs */}
           <div className="flex gap-1 bg-dark-600 rounded-lg p-1 mb-6">
             {(['login', 'register'] as const).map((tab) => (
@@ -321,48 +389,30 @@ export function LoginPage() {
           )}
         </div>
       </div>
-      <UserCountInformer />
-      <div className="fixed top-[72px] right-4 z-20 flex gap-2">
-        <Link
-          to="/features"
-          className="px-3 py-1.5 rounded-lg border border-primary-500/20 bg-dark-800/80 backdrop-blur-md text-xs font-medium text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all shadow-[0_0_12px_rgba(92,124,250,0.08)]"
-        >
-          {locale === 'ru' ? 'Возможности' : 'Features'}
-        </Link>
-        <Link
-          to="/info"
-          className="px-3 py-1.5 rounded-lg border border-primary-500/20 bg-dark-800/80 backdrop-blur-md text-xs font-medium text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all shadow-[0_0_12px_rgba(92,124,250,0.08)]"
-        >
-          {t('info.link')}
-        </Link>
-        <Link
-          to="/roadmap"
-          className="px-3 py-1.5 rounded-lg border border-primary-500/20 bg-dark-800/80 backdrop-blur-md text-xs font-medium text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all shadow-[0_0_12px_rgba(92,124,250,0.08)]"
-        >
-          {t('roadmap.link')}
-        </Link>
-      </div>
+    )}
+
+    {/* Fixed top-right secondary nav — features / info / roadmap */}
+    <div className="fixed top-4 right-4 z-20 flex gap-2">
+      <Link
+        to="/features"
+        className="px-3 py-1.5 rounded-lg border border-primary-500/20 bg-dark-800/80 backdrop-blur-md text-xs font-medium text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all shadow-[0_0_12px_rgba(92,124,250,0.08)]"
+      >
+        {locale === 'ru' ? 'Возможности' : 'Features'}
+      </Link>
+      <Link
+        to="/info"
+        className="px-3 py-1.5 rounded-lg border border-primary-500/20 bg-dark-800/80 backdrop-blur-md text-xs font-medium text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all shadow-[0_0_12px_rgba(92,124,250,0.08)]"
+      >
+        {t('info.link')}
+      </Link>
+      <Link
+        to="/roadmap"
+        className="px-3 py-1.5 rounded-lg border border-primary-500/20 bg-dark-800/80 backdrop-blur-md text-xs font-medium text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all shadow-[0_0_12px_rgba(92,124,250,0.08)]"
+      >
+        {t('roadmap.link')}
+      </Link>
     </div>
-    {/* Pitch sections — scroll into view below the auth viewport */}
-    <AudienceTiles showFeaturesLink={true} compact={false} />
-    <TokenTease deep={false} />
-    {/* Spacer + mini-footer */}
-    <footer className="border-t border-white/5 py-6 text-center text-xs text-gray-500">
-      <div className="flex flex-wrap justify-center gap-4">
-        <Link to="/features" className="hover:text-white transition-colors">
-          {locale === 'ru' ? 'Возможности' : 'Features'}
-        </Link>
-        <Link to="/privacy" className="hover:text-white transition-colors">
-          {locale === 'ru' ? 'Приватность' : 'Privacy'}
-        </Link>
-        <Link to="/roadmap" className="hover:text-white transition-colors">
-          {locale === 'ru' ? 'Дорожная карта' : 'Roadmap'}
-        </Link>
-        <Link to="/info" className="hover:text-white transition-colors">
-          {locale === 'ru' ? 'О проекте' : 'About'}
-        </Link>
-      </div>
-    </footer>
+    <UserCountInformer />
     </div>
   );
 }
