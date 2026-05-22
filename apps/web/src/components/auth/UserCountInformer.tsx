@@ -80,7 +80,7 @@ export function UserCountInformer() {
   if (!stats) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-20">
+    <div className="hidden md:block fixed top-4 right-4 z-20">
       <div
         className={`relative overflow-hidden rounded-xl border border-emerald-500/20 bg-dark-800/80 backdrop-blur-md
           shadow-[0_0_20px_rgba(0,255,170,0.08)] transition-all duration-300
