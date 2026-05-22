@@ -28,7 +28,7 @@ const RESERVED = new Set([
   'login', 'invite', 'privacy', 'roadmap', 'developers', 'docs', 'info',
   'donate', 'terms', 'cookies', 'bots', 'forgot-password', 'reset-password',
   'api', 'socket.io', 'sw.js', 'manifest.webmanifest', 'favicon.svg',
-  'icons', 'assets', '.well-known', 'u', 'mining', 'download',
+  'icons', 'assets', '.well-known', 'u', 'mining', 'download', 'features',
 ]);
 
 export function ProfileSharePage() {

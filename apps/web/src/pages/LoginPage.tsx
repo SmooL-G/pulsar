@@ -9,6 +9,7 @@ import { SplashScreen } from '../components/auth/SplashScreen';
 import { PlsPriceBadge } from '../components/price/PlsPriceCard';
 import { LiveActivityPulse } from '../components/economy/LiveActivityPulse';
 import { ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { AudienceTiles, TokenTease } from '../components/landing/PitchSections';
 
 function navigateAfterLogin(navigate: ReturnType<typeof useNavigate>) {
   const pending = sessionStorage.getItem('pendingInvite');
@@ -96,7 +97,9 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900">
+    {/* Auth section — fills first viewport, scrolls into pitch sections below */}
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -319,6 +322,12 @@ export function LoginPage() {
       <UserCountInformer />
       <div className="fixed top-[72px] right-4 z-20 flex gap-2">
         <Link
+          to="/features"
+          className="px-3 py-1.5 rounded-lg border border-primary-500/20 bg-dark-800/80 backdrop-blur-md text-xs font-medium text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all shadow-[0_0_12px_rgba(92,124,250,0.08)]"
+        >
+          {locale === 'ru' ? 'Возможности' : 'Features'}
+        </Link>
+        <Link
           to="/info"
           className="px-3 py-1.5 rounded-lg border border-primary-500/20 bg-dark-800/80 backdrop-blur-md text-xs font-medium text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all shadow-[0_0_12px_rgba(92,124,250,0.08)]"
         >
@@ -331,6 +340,27 @@ export function LoginPage() {
           {t('roadmap.link')}
         </Link>
       </div>
+    </div>
+    {/* Pitch sections — scroll into view below the auth viewport */}
+    <AudienceTiles showFeaturesLink={true} compact={false} />
+    <TokenTease deep={false} />
+    {/* Spacer + mini-footer */}
+    <footer className="border-t border-white/5 py-6 text-center text-xs text-gray-500">
+      <div className="flex flex-wrap justify-center gap-4">
+        <Link to="/features" className="hover:text-white transition-colors">
+          {locale === 'ru' ? 'Возможности' : 'Features'}
+        </Link>
+        <Link to="/privacy" className="hover:text-white transition-colors">
+          {locale === 'ru' ? 'Приватность' : 'Privacy'}
+        </Link>
+        <Link to="/roadmap" className="hover:text-white transition-colors">
+          {locale === 'ru' ? 'Дорожная карта' : 'Roadmap'}
+        </Link>
+        <Link to="/info" className="hover:text-white transition-colors">
+          {locale === 'ru' ? 'О проекте' : 'About'}
+        </Link>
+      </div>
+    </footer>
     </div>
   );
 }
