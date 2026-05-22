@@ -97,9 +97,11 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900">
+    // Explicit h-dvh + overflow-y-auto because body has position:fixed
+    // (needed for the chat page) and would otherwise prevent scrolling.
+    <div className="h-dvh overflow-y-auto bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900">
     {/* Auth section — fills first viewport, scrolls into pitch sections below */}
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-dvh flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">

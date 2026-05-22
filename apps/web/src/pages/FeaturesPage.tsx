@@ -16,7 +16,7 @@ export function FeaturesPage() {
   const t = (r: string, e: string) => (ru ? r : e);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900/30 text-white">
+    <div className="h-dvh overflow-y-auto bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900/30 text-white">
       {/* Header */}
       <header className="sticky top-0 z-20 backdrop-blur-xl bg-dark-900/70 border-b border-white/5">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
