@@ -394,7 +394,7 @@ export function LoginPage() {
     {/* Fixed top-right secondary nav. On desktop sits below the
         UserCountInformer (top-20); on mobile the informer is hidden so
         we sit at the top (top-4). */}
-    <div className="fixed top-4 md:top-20 right-4 z-20 flex gap-2">
+    <div className="fixed top-4 md:top-28 right-4 z-20 flex gap-2">
       <Link
         to="/features"
         className="px-3 py-1.5 rounded-lg border border-primary-500/20 bg-dark-800/80 backdrop-blur-md text-xs font-medium text-primary-400 hover:text-primary-300 hover:border-primary-500/40 transition-all shadow-[0_0_12px_rgba(92,124,250,0.08)]"
