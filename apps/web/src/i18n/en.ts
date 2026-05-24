@@ -239,6 +239,16 @@ export const en = {
   'info.shareWith': 'Share with...',
   'info.copied': 'Link copied!',
   'info.inviteToGroup': 'Join my group',
+  'info.settings': 'Settings',
+  'info.editGroup': 'Edit group',
+  'info.avatarLabel': 'Group avatar',
+  'info.avatarHint': 'Click to upload, up to 5MB',
+  'info.nameLabel': 'Name',
+  'info.namePlaceholder': 'Group name',
+  'info.descriptionLabel': 'Description',
+  'info.descriptionPlaceholder': 'Tell members about the group…',
+  'info.saveChanges': 'Save changes',
+  'info.noDescriptionHint': 'No description yet',
 
   // Profile
   'profile.title': 'Profile',

@@ -239,6 +239,16 @@ export const ru = {
   'info.shareWith': 'Поделиться с...',
   'info.copied': 'Ссылка скопирована!',
   'info.inviteToGroup': 'Присоединяйся к группе',
+  'info.settings': 'Настройки',
+  'info.editGroup': 'Редактировать группу',
+  'info.avatarLabel': 'Аватарка группы',
+  'info.avatarHint': 'Нажми чтобы загрузить, до 5 МБ',
+  'info.nameLabel': 'Название',
+  'info.namePlaceholder': 'Название группы',
+  'info.descriptionLabel': 'Описание',
+  'info.descriptionPlaceholder': 'Расскажи о группе…',
+  'info.saveChanges': 'Сохранить',
+  'info.noDescriptionHint': 'Описание не задано',
 
   // Profile
   'profile.title': 'Профиль',

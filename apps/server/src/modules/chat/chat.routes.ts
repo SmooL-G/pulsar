@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { authMiddleware } from '../../middleware/auth.js';
 import { prisma } from '../../config/database.js';
+import { getIO } from '../../socket/index.js';
 
 export async function chatRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authMiddleware);
@@ -302,6 +303,66 @@ export async function chatRoutes(app: FastifyInstance) {
 
     return { chat };
   });
+
+  // Edit group profile — owner-only. Updates name / description /
+  // avatarUrl in any combination; unspecified fields are left alone.
+  app.patch<{
+    Params: { chatId: string };
+    Body: { name?: string; description?: string | null; avatarUrl?: string | null };
+  }>(
+    '/:chatId/group',
+    async (request, reply) => {
+      const userId = request.user!.userId;
+      const { chatId } = request.params;
+      const { name, description, avatarUrl } = request.body || {};
+
+      const chat = await prisma.chat.findUnique({
+        where: { id: chatId },
+        select: { id: true, type: true, ownerId: true },
+      });
+      if (!chat) return reply.status(404).send({ error: 'NOT_FOUND' });
+      if (chat.type !== 'GROUP' && chat.type !== 'CHANNEL') {
+        return reply.status(400).send({ error: 'NOT_A_GROUP' });
+      }
+      if (chat.ownerId !== userId) {
+        return reply.status(403).send({ error: 'FORBIDDEN', message: 'Only owner can edit' });
+      }
+
+      const data: Record<string, unknown> = {};
+      if (typeof name === 'string') {
+        const trimmed = name.trim();
+        if (trimmed.length < 1 || trimmed.length > 64) {
+          return reply.status(400).send({ error: 'INVALID_NAME', message: '1-64 chars' });
+        }
+        data.name = trimmed;
+      }
+      if (description !== undefined) {
+        if (description !== null && description.length > 512) {
+          return reply.status(400).send({ error: 'INVALID_DESCRIPTION', message: 'max 512 chars' });
+        }
+        data.description = description || null;
+      }
+      if (avatarUrl !== undefined) {
+        if (avatarUrl !== null && (typeof avatarUrl !== 'string' || avatarUrl.length > 1024)) {
+          return reply.status(400).send({ error: 'INVALID_AVATAR' });
+        }
+        data.avatarUrl = avatarUrl || null;
+      }
+      if (Object.keys(data).length === 0) return { ok: true, chat };
+
+      const updated = await prisma.chat.update({
+        where: { id: chatId },
+        data,
+        select: { id: true, name: true, description: true, avatarUrl: true },
+      });
+
+      // Broadcast so other members' UIs update live.
+      const io = getIO();
+      io?.to(`chat:${chatId}`).emit('chat:updated', { chatId, ...updated });
+
+      return { ok: true, chat: updated };
+    },
+  );
 
   // Mute / unmute chat
   app.patch<{ Params: { chatId: string }; Body: { muted: boolean } }>(

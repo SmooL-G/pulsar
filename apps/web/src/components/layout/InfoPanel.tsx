@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Users, Bell, BellOff, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2, ExternalLink, ChevronDown, UserMinus, Image, FileText } from 'lucide-react';
+import { X, Users, Bell, BellOff, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2, ExternalLink, ChevronDown, UserMinus, Image, FileText, Settings as SettingsIcon, Camera } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -32,6 +32,14 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
   const [muted, setMuted] = useState(false);
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+  // Group settings (owner-only inline editor)
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editAvatarUrl, setEditAvatarUrl] = useState<string | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const isGroup = activeChat?.type === 'GROUP';
 
@@ -160,6 +168,58 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
   };
 
   const isOwner = isGroup && activeChat.ownerId === user?.id;
+
+  // ─── Group settings handlers (owner only) ─────────────
+  const openEdit = () => {
+    if (!activeChat) return;
+    setEditName(activeChat.name || '');
+    setEditDescription((activeChat as any).description || '');
+    setEditAvatarUrl((activeChat as any).avatarUrl || null);
+    setEditOpen(true);
+  };
+
+  const uploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await api.post('/upload/avatar', formData);
+      if (data?.avatarUrl) setEditAvatarUrl(data.avatarUrl);
+    } catch (e: any) {
+      console.warn('avatar upload failed', e);
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!activeChat) return;
+    setSavingEdit(true);
+    try {
+      const body: Record<string, any> = {};
+      if (editName.trim() !== (activeChat.name || '').trim()) body.name = editName.trim();
+      if (editDescription !== ((activeChat as any).description || '')) body.description = editDescription || null;
+      if (editAvatarUrl !== ((activeChat as any).avatarUrl || null)) body.avatarUrl = editAvatarUrl || null;
+      if (Object.keys(body).length === 0) {
+        setEditOpen(false);
+        return;
+      }
+      const { data } = await api.patch(`/chats/${activeChat.id}/group`, body);
+      // Update active chat locally so UI reflects immediately.
+      if (data?.chat) {
+        setActiveChat({ ...activeChat, ...data.chat });
+        fetchChats();
+      }
+      setEditOpen(false);
+    } catch (e: any) {
+      console.warn('group edit failed', e);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const ROLE_HIERARCHY: Record<string, number> = { MEMBER: 0, AUTHOR: 1, MODERATOR: 2, ADMIN: 3, OWNER: 4 };
   const ROLE_LABELS: Record<string, string> = { OWNER: 'Admin', ADMIN: 'Admin', MODERATOR: t('group.moderator'), AUTHOR: t('group.author'), MEMBER: t('group.user') };
@@ -375,9 +435,133 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
               )}
             </button>
             <h4 className="font-semibold text-lg">{activeChat.name || t('chat.directMessage')}</h4>
-            {activeChat.description && (
-              <p className="text-sm text-gray-400 mt-1">{activeChat.description}</p>
+            {(activeChat as any).description ? (
+              <p className="text-sm text-gray-400 mt-1 px-2 max-w-md">
+                {(activeChat as any).description}
+              </p>
+            ) : isOwner ? (
+              <p className="text-xs text-gray-500 italic mt-1">
+                {t('info.noDescriptionHint')}
+              </p>
+            ) : null}
+
+            {/* Quick actions row — Share (everyone) + Settings (owner only) */}
+            {isGroup && (
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <button
+                  onClick={openSharePanel}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 text-xs font-medium transition-colors"
+                >
+                  <Share2 size={14} />
+                  {t('info.share')}
+                </button>
+                {isOwner && (
+                  <button
+                    onClick={openEdit}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-dark-600 hover:bg-gray-200 dark:hover:bg-dark-500 text-gray-700 dark:text-gray-200 text-xs font-medium transition-colors"
+                  >
+                    <SettingsIcon size={14} />
+                    {t('info.settings')}
+                  </button>
+                )}
+              </div>
             )}
+          </div>
+        )}
+
+        {/* Group settings editor — inline collapsible, owner-only */}
+        {isGroup && isOwner && editOpen && (
+          <div className="bg-gray-50 dark:bg-dark-600 rounded-2xl p-4 space-y-3 animate-fade-in border border-primary-500/20">
+            <div className="flex items-center justify-between">
+              <h5 className="text-sm font-semibold flex items-center gap-1.5">
+                <SettingsIcon size={14} className="text-primary-500" />
+                {t('info.editGroup')}
+              </h5>
+              <button
+                onClick={() => setEditOpen(false)}
+                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-dark-500 text-gray-500"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Avatar picker */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="relative w-16 h-16 rounded-full bg-primary-500/10 border-2 border-dashed border-primary-500/40 flex items-center justify-center text-primary-500 hover:bg-primary-500/20 transition-colors overflow-hidden shrink-0"
+              >
+                {editAvatarUrl ? (
+                  <img src={editAvatarUrl} alt="" className="w-full h-full object-cover rounded-full" />
+                ) : (
+                  <Camera size={20} />
+                )}
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                    <Loader2 size={18} className="animate-spin text-white" />
+                  </div>
+                )}
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                onChange={uploadAvatar}
+                className="hidden"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  {t('info.avatarLabel')}
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  {t('info.avatarHint')}
+                </p>
+              </div>
+            </div>
+
+            {/* Name */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('info.nameLabel')}
+              </label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                maxLength={64}
+                className="w-full px-3 py-2 text-sm bg-white dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-lg focus:border-primary-500 focus:outline-none"
+                placeholder={t('info.namePlaceholder')}
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('info.descriptionLabel')}
+              </label>
+              <textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                maxLength={512}
+                rows={3}
+                className="w-full px-3 py-2 text-sm bg-white dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-lg focus:border-primary-500 focus:outline-none resize-none"
+                placeholder={t('info.descriptionPlaceholder')}
+              />
+              <p className="text-[10px] text-gray-500 text-right mt-1">
+                {editDescription.length}/512
+              </p>
+            </div>
+
+            {/* Save */}
+            <button
+              onClick={saveEdit}
+              disabled={savingEdit || uploadingAvatar}
+              className="w-full py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              {t('info.saveChanges')}
+            </button>
           </div>
         )}
 
