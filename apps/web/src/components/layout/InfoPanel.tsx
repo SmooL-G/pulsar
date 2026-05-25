@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Users, Bell, BellOff, Shield, Copy, Check, Trash2, Share2, MessageCircle, Calendar, Wallet, AtSign, UserPlus, UserCheck, Loader2, ExternalLink, ChevronDown, UserMinus, Image, FileText, Settings as SettingsIcon, Camera } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
+import toast from 'react-hot-toast';
 import { useI18n } from '../../i18n';
 import { api } from '../../services/api';
 import { PulsarBadge } from '../ui/PulsarBadge';
@@ -146,6 +147,40 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
       const { data } = await api.get('/friends');
       setFriends(data.friends || []);
     } catch {}
+  };
+
+  /** Resolve the right link to share based on chat type, copy it to
+   *  the clipboard with a visible toast, then also open the friend-
+   *  picker so the user can share into a chat in one click. */
+  const handleShareClick = async () => {
+    if (!activeChat) return;
+    let link = '';
+    if (isGroup && activeChat.inviteCode) {
+      link = `${window.location.origin}/invite/${activeChat.inviteCode}`;
+    } else if (!isGroup) {
+      const username = (activeChat as any)?.otherUser?.username || activeChat.name;
+      if (username) link = `${window.location.origin}/${username}`;
+    } else if (isGroup && activeChat.name) {
+      // Group without invite code — fall back to share-as-name link
+      link = `${window.location.origin}/${activeChat.name}`;
+    }
+    if (link) {
+      try {
+        await navigator.clipboard.writeText(link);
+      } catch {
+        // Fallback for non-HTTPS / older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = link;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try { document.execCommand('copy'); } catch {}
+        document.body.removeChild(textarea);
+      }
+      toast.success(t('info.copied'), { duration: 2000 });
+    }
+    await openSharePanel();
   };
 
   const shareToUser = async (userId: string) => {
@@ -387,7 +422,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
               {/* Share contact — universal in DM hero */}
               <div className="flex items-center justify-center gap-2">
                 <button
-                  onClick={openSharePanel}
+                  onClick={handleShareClick}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 text-xs font-medium transition-colors"
                 >
                   <Share2 size={14} />
@@ -483,7 +518,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                 Everyone else → "Поделиться" + (DM only) "Открыть профиль" */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
               <button
-                onClick={openSharePanel}
+                onClick={handleShareClick}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 text-xs font-medium transition-colors"
               >
                 <Share2 size={14} />
@@ -654,7 +689,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                 {copied ? <Check size={16} /> : <Copy size={16} />}
               </button>
               <button
-                onClick={openSharePanel}
+                onClick={handleShareClick}
                 className="p-2 rounded-lg bg-dark-500 hover:bg-dark-400 text-white transition-colors shrink-0"
                 title={t('info.share')}
               >
