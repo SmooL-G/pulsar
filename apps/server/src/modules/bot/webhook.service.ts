@@ -68,9 +68,11 @@ export async function dispatchBotUpdates(message: MessagePayload) {
       const updateType = isCommand ? 'command' : 'message';
       const payload = buildUpdatePayload(updateType, message);
 
-      // Сохранить в очередь long-poll
+      // Сохранить в очередь long-poll. payload is typed; Prisma JsonValue
+      // doesn't accept typed objects with non-index-signature properties
+      // (MessageAttachment[]), so cast to any for the column write.
       const update = await prisma.botUpdate.create({
-        data: { botId: bot.id, type: updateType, payload },
+        data: { botId: bot.id, type: updateType, payload: payload as any },
       });
 
       // Сигнал waiting long-pollers
