@@ -2,6 +2,14 @@ import { prisma } from '../../config/database.js';
 import { redis } from '../../config/redis.js';
 import { getIO } from '../../socket/index.js';
 
+export interface MessageAttachment {
+  id?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  url: string;
+}
+
 export interface MessagePayload {
   id: string;
   chatId: string;
@@ -15,6 +23,7 @@ export interface MessagePayload {
     username: string;
     displayName: string | null;
   };
+  attachments?: MessageAttachment[];
 }
 
 function buildUpdatePayload(type: string, message: MessagePayload) {
@@ -29,6 +38,7 @@ function buildUpdatePayload(type: string, message: MessagePayload) {
       text: message.content,
       date: message.createdAt,
       replyToId: message.replyToId,
+      attachments: message.attachments ?? [],
     },
   };
 }

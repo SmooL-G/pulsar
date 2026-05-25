@@ -327,7 +327,9 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
       })();
 
       // Dispatch to bots in the chat (PulsarBot system handler + user bot webhooks)
-      if (data.content) {
+      // Trigger on text OR attachments — bots may want to react to an
+      // image-only message (e.g. Animate flow waiting for a photo).
+      if (data.content || (data.attachments && data.attachments.length > 0)) {
         (async () => {
           try {
             const { PULSAR_BOT_USER_ID } = await import('../../modules/bot/pulsarBot.seed.js');
