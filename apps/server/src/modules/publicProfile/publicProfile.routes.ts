@@ -39,3 +39,50 @@ export async function publicProfileRoutes(app: FastifyInstance) {
     };
   });
 }
+
+/**
+ * Public-by-name lookup for groups/channels. Returns enough to render
+ * a landing card when someone shares `https://pulsar-chat.fun/<name>`
+ * and it turns out to be a group rather than a user. Mounted at /g/.
+ *
+ * Anyone can hit this — it doesn't reveal members, just the public
+ * "shop window" of the group. inviteCode is included so the landing
+ * page can offer a one-click "Join" if the group is open.
+ */
+export async function publicGroupRoutes(app: FastifyInstance) {
+  app.get<{ Params: { name: string } }>('/:name', async (request, reply) => {
+    const raw = request.params.name || '';
+    if (!/^[\p{L}\p{N} _-]{1,64}$/u.test(raw)) {
+      return reply.status(404).send({ error: 'NOT_FOUND' });
+    }
+    const group = await prisma.chat.findFirst({
+      where: {
+        name: { equals: raw, mode: 'insensitive' },
+        type: { in: ['GROUP', 'CHANNEL'] },
+      },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        description: true,
+        avatarUrl: true,
+        inviteCode: true,
+        ownerId: true,
+        createdAt: true,
+        _count: { select: { members: { where: { leftAt: null } } } },
+      },
+    });
+    if (!group) return reply.status(404).send({ error: 'NOT_FOUND' });
+    return {
+      id: group.id,
+      name: group.name,
+      type: group.type,
+      description: group.description,
+      avatarUrl: group.avatarUrl,
+      inviteCode: group.inviteCode,
+      ownerId: group.ownerId,
+      membersCount: group._count.members,
+      createdAt: group.createdAt.toISOString(),
+    };
+  });
+}
