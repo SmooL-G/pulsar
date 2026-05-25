@@ -250,6 +250,10 @@ export const en = {
   'info.saveChanges': 'Save changes',
   'info.noDescriptionHint': 'No description yet',
   'info.openProfile': 'Open profile',
+  'info.groupSettings': 'Group settings',
+  'info.stats': 'Stats',
+  'info.created': 'Created',
+  'info.inviteCode': 'Invite code',
 
   // Profile
   'profile.title': 'Profile',

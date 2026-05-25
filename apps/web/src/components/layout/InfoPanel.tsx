@@ -178,6 +178,9 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
   };
 
   const isOwner = isGroup && activeChat.ownerId === user?.id;
+  // Broader check: any chat where the current user is the owner.
+  // Works for GROUP and CHANNEL types (DMs have no ownerId).
+  const canEdit = !!user && activeChat?.ownerId === user.id;
 
   // ─── Group settings handlers (owner only) ─────────────
   const openEdit = () => {
@@ -475,9 +478,9 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
               </p>
             ) : null}
 
-            {/* Quick actions — Share (everyone) + Settings (group owner) +
-                "Open profile" for DM contacts where the full profile page
-                has way more info than this sidebar can show. */}
+            {/* Quick actions row.
+                Owner of a group/channel → "Настройки группы" (edit panel)
+                Everyone else → "Поделиться" + (DM only) "Открыть профиль" */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
               <button
                 onClick={openSharePanel}
@@ -486,7 +489,15 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                 <Share2 size={14} />
                 {t('info.share')}
               </button>
-              {!isGroup && activeChat.name && (
+              {canEdit ? (
+                <button
+                  onClick={openEdit}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 text-xs font-medium transition-colors"
+                >
+                  <SettingsIcon size={14} />
+                  {t('info.groupSettings')}
+                </button>
+              ) : !isGroup && activeChat.name ? (
                 <a
                   href={`/${activeChat.name}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 text-xs font-medium transition-colors no-underline"
@@ -494,22 +505,14 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                   <ExternalLink size={14} />
                   {t('info.openProfile')}
                 </a>
-              )}
-              {isOwner && (
-                <button
-                  onClick={openEdit}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-dark-600 hover:bg-gray-200 dark:hover:bg-dark-500 text-gray-700 dark:text-gray-200 text-xs font-medium transition-colors"
-                >
-                  <SettingsIcon size={14} />
-                  {t('info.settings')}
-                </button>
-              )}
+              ) : null}
             </div>
           </div>
         )}
 
-        {/* Group settings editor — inline collapsible, owner-only */}
-        {isGroup && isOwner && editOpen && (
+        {/* Group settings editor — inline collapsible, owner-only.
+            canEdit covers GROUP and CHANNEL owners (broader than isOwner). */}
+        {canEdit && editOpen && (
           <div className="bg-gray-50 dark:bg-dark-600 rounded-2xl p-4 space-y-3 animate-fade-in border border-primary-500/20">
             <div className="flex items-center justify-between">
               <h5 className="text-sm font-semibold flex items-center gap-1.5">
@@ -601,6 +604,37 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
               {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
               {t('info.saveChanges')}
             </button>
+
+            {/* Mini-stats — visible to the owner inside the editor.
+                Read from already-loaded data (members + activeChat) so
+                no extra API hits. */}
+            <div className="mt-2 pt-3 border-t border-gray-200 dark:border-dark-500">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 mb-2">
+                {t('info.stats')}
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-white dark:bg-dark-700 rounded-lg px-2.5 py-2">
+                  <div className="text-[10px] text-gray-500 uppercase">{t('info.members')}</div>
+                  <div className="font-bold text-base">{members.length || '—'}</div>
+                </div>
+                <div className="bg-white dark:bg-dark-700 rounded-lg px-2.5 py-2">
+                  <div className="text-[10px] text-gray-500 uppercase">{t('info.created')}</div>
+                  <div className="font-bold text-xs leading-tight pt-1">
+                    {activeChat.createdAt
+                      ? new Date(activeChat.createdAt).toLocaleDateString()
+                      : '—'}
+                  </div>
+                </div>
+                {activeChat.inviteCode && (
+                  <div className="col-span-2 bg-white dark:bg-dark-700 rounded-lg px-2.5 py-2">
+                    <div className="text-[10px] text-gray-500 uppercase">{t('info.inviteCode')}</div>
+                    <div className="font-mono text-xs truncate text-primary-500">
+                      {activeChat.inviteCode}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

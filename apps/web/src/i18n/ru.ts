@@ -250,6 +250,10 @@ export const ru = {
   'info.saveChanges': 'Сохранить',
   'info.noDescriptionHint': 'Описание не задано',
   'info.openProfile': 'Открыть профиль',
+  'info.groupSettings': 'Настройки группы',
+  'info.stats': 'Статистика',
+  'info.created': 'Создана',
+  'info.inviteCode': 'Код приглашения',
 
   // Profile
   'profile.title': 'Профиль',
