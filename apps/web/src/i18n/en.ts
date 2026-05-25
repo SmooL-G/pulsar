@@ -249,6 +249,7 @@ export const en = {
   'info.descriptionPlaceholder': 'Tell members about the group…',
   'info.saveChanges': 'Save changes',
   'info.noDescriptionHint': 'No description yet',
+  'info.openProfile': 'Open profile',
 
   // Profile
   'profile.title': 'Profile',

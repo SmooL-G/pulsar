@@ -149,9 +149,19 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
   };
 
   const shareToUser = async (userId: string) => {
-    if (!inviteLink) return;
+    // Group → share invite link. DM → share contact's profile URL.
+    let shareText: string;
+    if (isGroup && inviteLink) {
+      shareText = `${t('info.inviteToGroup')} "${activeChat.name}"\n${inviteLink}`;
+    } else if (!isGroup) {
+      const otherUsername = (activeChat as any)?.otherUser?.username || activeChat.name;
+      if (!otherUsername) return;
+      const profileUrl = `${window.location.origin}/${otherUsername}`;
+      shareText = `@${otherUsername}\n${profileUrl}`;
+    } else {
+      return; // group without invite code — nothing to share yet
+    }
     try {
-      // Send invite link as a DM
       const { data } = await api.post('/chats/direct', { targetUserId: userId });
       const chat = data.chat || data;
       const { getSocket } = await import('../../hooks/useSocket');
@@ -159,7 +169,7 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
       if (socket?.connected) {
         socket.emit('message:send', {
           chatId: chat.id,
-          content: `${t('info.inviteToGroup')} "${activeChat.name}"\n${inviteLink}`,
+          content: shareText,
           type: 'TEXT',
         });
       }
@@ -371,6 +381,26 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
                 )}
               </div>
 
+              {/* Share contact — universal in DM hero */}
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={openSharePanel}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 text-xs font-medium transition-colors"
+                >
+                  <Share2 size={14} />
+                  {t('info.share')}
+                </button>
+                {other.username && (
+                  <a
+                    href={`/${other.username}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 text-xs font-medium transition-colors no-underline"
+                  >
+                    <ExternalLink size={14} />
+                    {t('info.openProfile')}
+                  </a>
+                )}
+              </div>
+
               {/* Add friend button */}
               {friendStatus === 'none' && (
                 <button
@@ -445,27 +475,36 @@ export function InfoPanel({ onClose }: InfoPanelProps) {
               </p>
             ) : null}
 
-            {/* Quick actions row — Share (everyone) + Settings (owner only) */}
-            {isGroup && (
-              <div className="flex items-center justify-center gap-2 mt-3">
-                <button
-                  onClick={openSharePanel}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 text-xs font-medium transition-colors"
+            {/* Quick actions — Share (everyone) + Settings (group owner) +
+                "Open profile" for DM contacts where the full profile page
+                has way more info than this sidebar can show. */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+              <button
+                onClick={openSharePanel}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 text-xs font-medium transition-colors"
+              >
+                <Share2 size={14} />
+                {t('info.share')}
+              </button>
+              {!isGroup && activeChat.name && (
+                <a
+                  href={`/${activeChat.name}`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 text-xs font-medium transition-colors no-underline"
                 >
-                  <Share2 size={14} />
-                  {t('info.share')}
+                  <ExternalLink size={14} />
+                  {t('info.openProfile')}
+                </a>
+              )}
+              {isOwner && (
+                <button
+                  onClick={openEdit}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-dark-600 hover:bg-gray-200 dark:hover:bg-dark-500 text-gray-700 dark:text-gray-200 text-xs font-medium transition-colors"
+                >
+                  <SettingsIcon size={14} />
+                  {t('info.settings')}
                 </button>
-                {isOwner && (
-                  <button
-                    onClick={openEdit}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-dark-600 hover:bg-gray-200 dark:hover:bg-dark-500 text-gray-700 dark:text-gray-200 text-xs font-medium transition-colors"
-                  >
-                    <SettingsIcon size={14} />
-                    {t('info.settings')}
-                  </button>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
 

@@ -249,6 +249,7 @@ export const ru = {
   'info.descriptionPlaceholder': 'Расскажи о группе…',
   'info.saveChanges': 'Сохранить',
   'info.noDescriptionHint': 'Описание не задано',
+  'info.openProfile': 'Открыть профиль',
 
   // Profile
   'profile.title': 'Профиль',
