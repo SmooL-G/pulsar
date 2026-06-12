@@ -127,15 +127,32 @@ export async function adminRoutes(app: FastifyInstance) {
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const [userCount, onlineCount, newUsersWeek, messagesToday, totalMessages, totalGroups] =
-      await Promise.all([
-        prisma.user.count({ where: { status: 'ACTIVE' } }),
-        prisma.user.count({ where: { isOnline: true } }),
-        prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
-        prisma.message.count({ where: { createdAt: { gte: todayStart } } }),
-        prisma.message.count(),
-        prisma.chat.count({ where: { type: 'GROUP' } }),
-      ]);
+    const [
+      userCount, onlineCount, newUsersWeek, messagesToday, totalMessages, totalGroups,
+      realUserCount, realOnlineCount, fakeUserCount, fakeOnlineCount,
+    ] = await Promise.all([
+      prisma.user.count({ where: { status: 'ACTIVE' } }),
+      prisma.user.count({ where: { isOnline: true } }),
+      prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
+      prisma.message.count({ where: { createdAt: { gte: todayStart } } }),
+      prisma.message.count(),
+      prisma.chat.count({ where: { type: 'GROUP' } }),
+      // Real-only transparency block — what the team needs to see.
+      // Public-facing userCount/onlineCount above still include fakes
+      // (that's the whole point of the illusion).
+      prisma.user.count({ where: { status: 'ACTIVE', isFake: false, isBot: false } }),
+      prisma.user.count({ where: { status: 'ACTIVE', isFake: false, isBot: false, isOnline: true } }),
+      prisma.user.count({ where: { status: 'ACTIVE', isFake: true } }),
+      prisma.user.count({ where: { status: 'ACTIVE', isFake: true, isOnline: true } }),
+    ]);
+    // Current fake target from the dissolution formula. Imported
+    // lazily so the admin dashboard works even when the feature is
+    // disabled (module just returns 0 in that case).
+    let fakeTargetCount = 0;
+    try {
+      const { computeTargetFakeCount } = await import('../fakeActivity/fakeActivity.seed.js');
+      fakeTargetCount = await computeTargetFakeCount();
+    } catch { /* feature module not loaded yet */ }
 
     // Messages per day (last 7 days)
     const messagesPerDay: { date: string; count: number }[] = [];
@@ -151,13 +168,14 @@ export async function adminRoutes(app: FastifyInstance) {
       });
     }
 
-    // New users per day (last 7 days)
+    // New REAL users per day (last 7 days). Fakes excluded so the
+    // growth chart shows actual organic signups.
     const usersPerDay: { date: string; count: number }[] = [];
     for (let i = 6; i >= 0; i--) {
       const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       const count = await prisma.user.count({
-        where: { createdAt: { gte: dayStart, lt: dayEnd } },
+        where: { createdAt: { gte: dayStart, lt: dayEnd }, isFake: false, isBot: false },
       });
       usersPerDay.push({
         date: dayStart.toISOString().split('T')[0],
@@ -174,6 +192,14 @@ export async function adminRoutes(app: FastifyInstance) {
       totalGroups,
       messagesPerDay,
       usersPerDay,
+      // Transparency block — admin sees both the public number and
+      // the truth side-by-side. Frontend can read these to render
+      // a "real / fake / target" breakdown on the dashboard.
+      realUserCount,
+      realOnlineCount,
+      fakeUserCount,
+      fakeOnlineCount,
+      fakeTargetCount,
     };
 
     await redis.set('admin:dashboard', JSON.stringify(result), 'EX', 30);

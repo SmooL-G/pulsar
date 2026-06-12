@@ -113,6 +113,11 @@ services:
       # KIE_API_BASE_TASKS should point at the relay's /kie path.
       AI_RELAY_URL: ${AI_RELAY_URL:-}
       AI_RELAY_TOKEN: ${AI_RELAY_TOKEN:-}
+      # Fake-activity (growth illusion) — see fakeActivity.{seed,worker}.ts
+      FAKE_ACTIVITY_ENABLED: ${FAKE_ACTIVITY_ENABLED:-false}
+      FAKE_ACTIVITY_BASE: ${FAKE_ACTIVITY_BASE:-500}
+      FAKE_ACTIVITY_THRESHOLD: ${FAKE_ACTIVITY_THRESHOLD:-100}
+      FAKE_ACTIVITY_ONLINE_PCT: ${FAKE_ACTIVITY_ONLINE_PCT:-15}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}

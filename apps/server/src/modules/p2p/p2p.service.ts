@@ -152,6 +152,20 @@ export async function openTrade(args: OpenTradeArgs) {
     if (!offer) throw new P2PError('NOT_FOUND', 'Offer not found');
     if (offer.status !== P2POfferStatus.ACTIVE) throw new P2PError('NOT_ACTIVE', 'Offer is not active');
     if (offer.sellerId === args.responderId) throw new P2PError('SELF_TRADE', "Can't trade with yourself");
+    // Fake-activity intercept: fake-seeded offers must never reach the
+    // PLS lock or trade-row insert. The error code is deliberately
+    // ambiguous (looks like a real concurrency event) to avoid
+    // exposing the seed.
+    const seller = await tx.user.findUnique({
+      where: { id: offer.sellerId },
+      select: { isFake: true },
+    });
+    if (seller?.isFake) {
+      throw new P2PError(
+        'MERCHANT_BUSY',
+        'У этого мерчанта уже идёт сделка. Попробуйте позже или выберите другое предложение.',
+      );
+    }
     if (args.amount <= 0n) throw new P2PError('INVALID_AMOUNT', 'Amount must be positive');
     if (args.amount > offer.remainingAmount) {
       throw new P2PError('INSUFFICIENT_OFFER', `Only ${offer.remainingAmount} PLS available`);

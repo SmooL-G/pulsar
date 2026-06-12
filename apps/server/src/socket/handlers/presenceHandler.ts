@@ -20,9 +20,10 @@ export async function cleanupPresenceOnStart() {
   }
 
   // Reset ALL users to offline on server start (they'll reconnect via socket)
-  // Bots stay online always
+  // Bots stay online always. Fakes are excluded — their online state is
+  // managed by fakeActivity.worker on its own schedule.
   await prisma.user.updateMany({
-    where: { isOnline: true, isBot: false },
+    where: { isOnline: true, isBot: false, isFake: false },
     data: { isOnline: false, lastSeenAt: new Date() },
   });
 
@@ -44,7 +45,10 @@ export async function cleanupPresenceOnStart() {
   setInterval(async () => {
     try {
       const onlineUsers = await prisma.user.findMany({
-        where: { isOnline: true, isBot: false },
+        // Skip fakes — their presence is owned by fakeActivity.worker
+        // and isn't backed by a Redis key, so this cleanup would
+        // unconditionally flip them offline.
+        where: { isOnline: true, isBot: false, isFake: false },
         select: { id: true },
       });
       for (const user of onlineUsers) {

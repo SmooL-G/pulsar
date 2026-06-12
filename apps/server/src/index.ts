@@ -46,6 +46,24 @@ async function main() {
   }
   // (Pulsar GPT bot now runs out-of-process; no seed/probe here.)
 
+  // Fake-activity seed (growth illusion) — env-gated, default OFF.
+  // Idempotent: only adds fakes when current count < computed target.
+  if (env.FAKE_ACTIVITY_ENABLED) {
+    try {
+      const { seedFakeUsers, seedFakeOffers } = await import(
+        './modules/fakeActivity/fakeActivity.seed.js'
+      );
+      const u = await seedFakeUsers();
+      const o = await seedFakeOffers();
+      console.log(
+        `[fake-activity] seed: users existing=${u.existing} target=${u.target} created=${u.created}; ` +
+        `offers existing=${o.existing} target=${o.target} created=${o.created}`,
+      );
+    } catch (e) {
+      console.error('[fake-activity] seed failed:', e);
+    }
+  }
+
   // Start webhook worker (bot webhooks delivery)
   startWebhookWorker().catch((err) => console.error('Webhook worker error:', err));
   console.log('Webhook worker started');
@@ -87,6 +105,21 @@ async function main() {
 
   // P2P merchant: hourly TRUSTED-tier sweep + daily expiry sweep.
   startMerchantWorker();
+
+  // Fake-activity worker (online rotation + growth + dissolution).
+  // Internal env check makes it a no-op when ENABLED=false, but we
+  // still gate the import to skip module load entirely in that case.
+  if (env.FAKE_ACTIVITY_ENABLED) {
+    try {
+      const { startFakeActivityWorker } = await import(
+        './modules/fakeActivity/fakeActivity.worker.js'
+      );
+      startFakeActivityWorker();
+      console.log('Fake activity worker started');
+    } catch (e) {
+      console.error('[fake-activity] worker start failed:', e);
+    }
+  }
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {
