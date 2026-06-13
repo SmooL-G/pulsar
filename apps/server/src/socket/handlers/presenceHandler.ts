@@ -13,44 +13,76 @@ export async function cleanupPresenceOnStart() {
   if (cleanedUp) return;
   cleanedUp = true;
 
-  // Clear this instance's socket sets
-  const keys = await redis.keys(`user:sockets:*:${INSTANCE_ID}`);
-  if (keys.length > 0) {
-    await redis.del(...keys);
+  try {
+    // Clear this instance's socket sets
+    const keys = await redis.keys(`user:sockets:*:${INSTANCE_ID}`);
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+
+    // Reset ALL users to offline on server start (they'll reconnect via socket)
+    // Bots stay online always. Fakes are excluded — their online state is
+    // managed by fakeActivity.worker on its own schedule.
+    // Fall back to a no-fake-filter query if the column doesn't exist yet
+    // (mid-deploy: containers restarted before prisma db push could finish).
+    try {
+      await prisma.user.updateMany({
+        where: { isOnline: true, isBot: false, isFake: false },
+        data: { isOnline: false, lastSeenAt: new Date() },
+      });
+    } catch (e: any) {
+      if (String(e?.message || '').includes('is_fake')) {
+        console.warn('[presence] is_fake column missing — fallback to bot-only filter');
+        await prisma.user.updateMany({
+          where: { isOnline: true, isBot: false },
+          data: { isOnline: false, lastSeenAt: new Date() },
+        });
+      } else {
+        throw e;
+      }
+    }
+
+    // Ensure all bots are online
+    await prisma.user.updateMany({
+      where: { isBot: true },
+      data: { isOnline: true, lastSeenAt: new Date() },
+    });
+
+    // Clear all online keys
+    const onlineKeys = await redis.keys('user:online:*');
+    if (onlineKeys.length > 0) {
+      await redis.del(...onlineKeys);
+    }
+
+    console.log(`Presence cleanup [${INSTANCE_ID}]: cleared ${keys.length} socket sets, reset all users offline`);
+  } catch (err) {
+    // Never let presence cleanup crash the process — unhandled rejection
+    // here used to take the whole server down.
+    console.error('[presence] cleanupPresenceOnStart failed (continuing):', err);
   }
-
-  // Reset ALL users to offline on server start (they'll reconnect via socket)
-  // Bots stay online always. Fakes are excluded — their online state is
-  // managed by fakeActivity.worker on its own schedule.
-  await prisma.user.updateMany({
-    where: { isOnline: true, isBot: false, isFake: false },
-    data: { isOnline: false, lastSeenAt: new Date() },
-  });
-
-  // Ensure all bots are online
-  await prisma.user.updateMany({
-    where: { isBot: true },
-    data: { isOnline: true, lastSeenAt: new Date() },
-  });
-
-  // Clear all online keys
-  const onlineKeys = await redis.keys('user:online:*');
-  if (onlineKeys.length > 0) {
-    await redis.del(...onlineKeys);
-  }
-
-  console.log(`Presence cleanup [${INSTANCE_ID}]: cleared ${keys.length} socket sets, reset all users offline`);
 
   // Periodic stale presence cleanup (every 2 minutes)
   setInterval(async () => {
     try {
-      const onlineUsers = await prisma.user.findMany({
-        // Skip fakes — their presence is owned by fakeActivity.worker
-        // and isn't backed by a Redis key, so this cleanup would
-        // unconditionally flip them offline.
-        where: { isOnline: true, isBot: false, isFake: false },
-        select: { id: true },
-      });
+      let onlineUsers;
+      try {
+        onlineUsers = await prisma.user.findMany({
+          // Skip fakes — their presence is owned by fakeActivity.worker
+          // and isn't backed by a Redis key, so this cleanup would
+          // unconditionally flip them offline.
+          where: { isOnline: true, isBot: false, isFake: false },
+          select: { id: true },
+        });
+      } catch (e: any) {
+        if (String(e?.message || '').includes('is_fake')) {
+          onlineUsers = await prisma.user.findMany({
+            where: { isOnline: true, isBot: false },
+            select: { id: true },
+          });
+        } else {
+          throw e;
+        }
+      }
       for (const user of onlineUsers) {
         const isReallyOnline = await redis.get(`user:online:${user.id}`);
         if (!isReallyOnline) {
