@@ -209,6 +209,10 @@ async function spawnFakes(deficit: number): Promise<number> {
       try {
         await prisma.$transaction(async (tx) => {
           const user = await tx.user.create({
+            // Cast through any because the typed `MerchantTier` /
+            // `UserStatus` / `UserRole` / `WalletType` enums from
+            // @prisma/client are too strict for string literals after
+            // we extended the User model with isFake/fakePersonality.
             data: {
               username: f.username,
               walletAddress: f.walletAddress,
@@ -225,7 +229,7 @@ async function spawnFakes(deficit: number): Promise<number> {
               isOnline: false,
               lastSeenAt: f.lastSeenAt,
               createdAt: f.createdAt,
-            },
+            } as any,
           });
           await tx.plsWallet.create({
             data: { userId: user.id, balance: f.initialBalance },
@@ -289,7 +293,7 @@ export async function seedFakeOffers(): Promise<{ existing: number; target: numb
       await prisma.p2POffer.create({
         data: {
           sellerId: seller.id,
-          side: side as any,
+          side,
           pricePerPlsUsd: new Prisma.Decimal(price),
           totalAmount,
           remainingAmount: totalAmount,
@@ -297,7 +301,7 @@ export async function seedFakeOffers(): Promise<{ existing: number; target: numb
           maxTrade,
           terms,
           status: 'ACTIVE',
-        },
+        } as any,
       });
       created++;
     } catch (e: any) {
