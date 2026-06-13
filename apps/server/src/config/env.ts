@@ -81,10 +81,13 @@ export const env = cleanEnv(process.env, {
   // Default OFF — must be set explicitly per environment.
   FAKE_ACTIVITY_ENABLED: bool({ default: false }),
   // Peak number of fake users when real-active is at THRESHOLD.
-  FAKE_ACTIVITY_BASE: num({ default: 500 }),
+  FAKE_ACTIVITY_BASE: num({ default: 2500 }),
   // Real-active user count at which dissolution begins. Each real
   // user above this point removes ~one fake from the target until 0.
-  FAKE_ACTIVITY_THRESHOLD: num({ default: 100 }),
-  // Approximate % of fakes online at any moment (rotated by worker).
-  FAKE_ACTIVITY_ONLINE_PCT: num({ default: 15 }),
+  // Scaled with BASE: 500 real → fakes start dropping, 3000 real → 0.
+  FAKE_ACTIVITY_THRESHOLD: num({ default: 500 }),
+  // Currently informative — actual rotation uses personality-based
+  // schedule in fakeActivity.worker (high baseline so online count
+  // hugs the total user count with natural per-tick fluctuation).
+  FAKE_ACTIVITY_ONLINE_PCT: num({ default: 90 }),
 });

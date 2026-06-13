@@ -23,9 +23,25 @@ import { computeTargetFakeCount, seedFakeUsers, seedFakeOffers } from './fakeAct
 const ONLINE_TICK_MS = 30_000;
 const GROWTH_TICK_MS = 6 * 60 * 60 * 1000;
 const DISSOLVE_TICK_MS = 60 * 60 * 1000;
-const DISSOLVE_PER_TICK = 5;
+// Scaled to BASE=2500: at 5/hour we'd take ~20 days to fully drain.
+// 25/hour drains 2500 in ~4 days, which matches the dissolution feel
+// the original 500-base aimed at (smooth, not abrupt).
+const DISSOLVE_PER_TICK = 25;
 
-// ─── Personality → schedule helpers ────────────────────────────────
+// ─── Personality → online probability ──────────────────────────────
+//
+// Each tick re-rolls per-fake online status with a personality-biased
+// probability. The constant per-tick churn (some fakes go online, some
+// go offline) is what makes the public counter *feel* alive instead
+// of locked at a number. We also nudge the target up/down with a slow
+// sin-wave + small per-tick jitter so the overall count visibly
+// breathes over the day instead of camping a single value.
+//
+// Personality (0..3):
+//   0 — morning person (peak 6-11 UTC)
+//   1 — evening person (peak 17-23 UTC)
+//   2 — always-on power user (peak everywhere)
+//   3 — night owl (peak 22-04 UTC)
 
 type Schedule = 'morning' | 'evening' | 'always' | 'night';
 function schedule(personality: number): Schedule {
@@ -33,26 +49,28 @@ function schedule(personality: number): Schedule {
   return m === 0 ? 'morning' : m === 1 ? 'evening' : m === 2 ? 'always' : 'night';
 }
 
-function inWindow(sched: Schedule, hourUtc: number): boolean {
-  if (sched === 'always') return true;
-  if (sched === 'morning') return hourUtc >= 6 && hourUtc < 11;
-  if (sched === 'evening') return hourUtc >= 17 && hourUtc < 23;
-  // night-owl: 22:00..03:59 UTC
-  return hourUtc >= 22 || hourUtc < 4;
-}
-
-function probabilityForSchedule(sched: Schedule): number {
-  return sched === 'always' ? 0.9 : 0.6;
-}
-
-function shouldBeOnlineNow(personality: number, hourUtc: number): boolean {
+/** Returns 0..1 — probability this fake is online right now. The
+ *  numbers are deliberately HIGH so the visible "online" count hugs
+ *  the total user count (per request — the user wanted "стабильно
+ *  2500" with up/down jitter). If you want the classic ~15% online
+ *  feel, lower the in-window number to ~0.15. */
+function onlineProbability(personality: number, hourUtc: number): number {
   const sched = schedule(personality);
-  if (!inWindow(sched, hourUtc)) return false;
-  // Jittered probability so the visible online count flutters naturally
-  // rather than locking at a fixed percentage every refresh.
-  const base = probabilityForSchedule(sched);
-  const jittered = base * (0.9 + 0.2 * Math.random());
-  return Math.random() < jittered;
+  if (sched === 'always') return 0.97;
+  if (sched === 'morning') {
+    if (hourUtc >= 6 && hourUtc < 11) return 0.95;
+    if (hourUtc >= 4 && hourUtc < 14) return 0.80;
+    return 0.65;
+  }
+  if (sched === 'evening') {
+    if (hourUtc >= 17 && hourUtc < 23) return 0.95;
+    if (hourUtc >= 14 && hourUtc < 24) return 0.80;
+    return 0.65;
+  }
+  // night owl
+  if (hourUtc >= 22 || hourUtc < 4) return 0.95;
+  if (hourUtc >= 20 || hourUtc < 6) return 0.80;
+  return 0.65;
 }
 
 // ─── Tick 1: online rotation ───────────────────────────────────────
@@ -65,12 +83,22 @@ async function onlineRotationTick(): Promise<void> {
   });
   if (fakes.length === 0) return;
 
+  // Small global multiplier varies the overall online ceiling smoothly.
+  // sin-wave over a 90-minute period adds ±3% to the baseline, plus
+  // a small per-tick uniform jitter. Net effect: the visible online
+  // count drifts up and down by tens of users every minute.
+  const minutes = Date.now() / 60000;
+  const wave = 0.97 + 0.03 * Math.sin(minutes * Math.PI / 45);
+  const jitter = 0.99 + 0.02 * Math.random();
+  const globalScale = wave * jitter; // ~0.95..1.02
+
   const toOnline: string[] = [];
   const toOffline: string[] = [];
   for (const f of fakes) {
-    const should = shouldBeOnlineNow(f.fakePersonality ?? 0, hour);
-    if (should && !f.isOnline) toOnline.push(f.id);
-    if (!should && f.isOnline) toOffline.push(f.id);
+    const p = onlineProbability(f.fakePersonality ?? 0, hour) * globalScale;
+    const shouldOn = Math.random() < Math.min(1, p);
+    if (shouldOn && !f.isOnline) toOnline.push(f.id);
+    if (!shouldOn && f.isOnline) toOffline.push(f.id);
   }
   const now = new Date();
   if (toOnline.length > 0) {
