@@ -86,13 +86,23 @@ jobs:
             fi
 
             if [ "$SCHEMA" = "true" ]; then
-              echo "[deploy] schema changed → prisma db push"
+              echo "[deploy] schema changed → prisma db push (one-shot container)"
               sleep 5
-              # NODE_OPTIONS heap bump: prisma engine OOM-killed (exit 137)
-              # on bigger schema diffs with the default 1.5G ceiling.
-              docker compose -f docker-compose.prod.yml exec -T \
-                -e NODE_OPTIONS=--max-old-space-size=4096 \
-                server npx prisma db push --skip-generate --schema=prisma/schema.prisma
+              # Run prisma db push in a FRESH one-shot container — not via
+              # `exec` into the long-running server — so we don't compete
+              # with the server's working set for RAM and avoid host-side
+              # OOM kill (exit 137). The ephemeral container inherits the
+              # server image (has prisma + schema) and uses its own clean
+              # heap.
+              docker compose -f docker-compose.prod.yml run --rm --no-deps \
+                -e NODE_OPTIONS=--max-old-space-size=2048 \
+                server npx prisma db push --skip-generate --schema=prisma/schema.prisma \
+                || {
+                  echo "[deploy] one-shot push failed, retrying via exec with lower heap"
+                  docker compose -f docker-compose.prod.yml exec -T \
+                    -e NODE_OPTIONS=--max-old-space-size=2048 \
+                    server npx prisma db push --skip-generate --schema=prisma/schema.prisma
+                }
             fi
 
             echo "[deploy] done $(date -u +%FT%TZ)"
