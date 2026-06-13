@@ -195,11 +195,13 @@ export async function computeTargetFakeCount(): Promise<number> {
 
 // ─── Seeders ───────────────────────────────────────────────────────
 
-/** Create `deficit` fake users + their PLS wallets in batches.
+/** Create exactly N fake users + their PLS wallets in batches.
  *  Username/walletAddress collisions retried per-row (rare at this
- *  scale but cheap to handle).
+ *  scale but cheap to handle). Exported so the worker can call it
+ *  directly for the per-week growth ticks without going through the
+ *  full top-up-to-target path.
  */
-async function spawnFakes(deficit: number): Promise<number> {
+export async function spawnFakes(deficit: number): Promise<number> {
   let created = 0;
   for (let i = 0; i < deficit; i += BATCH_SIZE) {
     const batch = Math.min(BATCH_SIZE, deficit - i);
@@ -246,17 +248,27 @@ async function spawnFakes(deficit: number): Promise<number> {
   return created;
 }
 
-/** Idempotent seed: tops up fakes toward computed target. */
+/** Cold-start seed only. Creates an initial bootstrap pool of fakes
+ *  if the table is nearly empty so the platform doesn't look like a
+ *  graveyard the first time it boots with FAKE_ACTIVITY_ENABLED=true.
+ *  After that, growth is driven exclusively by the worker's gradual
+ *  10-20-per-tick growth ticks (~2× per week).
+ *
+ *  Idempotent: safe to call on every boot — only spawns when the
+ *  current count is below INITIAL_MIN.
+ */
+const INITIAL_MIN = 50;
 export async function seedFakeUsers(): Promise<{ existing: number; target: number; created: number }> {
   if (!env.FAKE_ACTIVITY_ENABLED) return { existing: 0, target: 0, created: 0 };
   const existing = await prisma.user.count({
     where: { isFake: true, status: 'ACTIVE' },
   });
-  const target = await computeTargetFakeCount();
-  if (existing >= target) {
+  const target = await computeTargetFakeCount(); // returned for visibility, not used to top up
+  if (existing >= INITIAL_MIN) {
     return { existing, target, created: 0 };
   }
-  const created = await spawnFakes(target - existing);
+  // Only fill up to INITIAL_MIN — never up to full BASE on boot.
+  const created = await spawnFakes(INITIAL_MIN - existing);
   return { existing, target, created };
 }
 

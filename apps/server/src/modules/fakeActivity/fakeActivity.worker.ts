@@ -1,6 +1,6 @@
 import { prisma } from '../../config/database.js';
 import { env } from '../../config/env.js';
-import { computeTargetFakeCount, seedFakeUsers, seedFakeOffers } from './fakeActivity.seed.js';
+import { computeTargetFakeCount, spawnFakes, seedFakeOffers } from './fakeActivity.seed.js';
 
 /**
  * Fake-activity background worker. Runs three independent ticks:
@@ -21,11 +21,14 @@ import { computeTargetFakeCount, seedFakeUsers, seedFakeOffers } from './fakeAct
  */
 
 const ONLINE_TICK_MS = 30_000;
-const GROWTH_TICK_MS = 6 * 60 * 60 * 1000;
+// 12h tick + p=0.15 fire ≈ 2 spawns/week (target "2 раза в неделю").
+const GROWTH_TICK_MS = 12 * 60 * 60 * 1000;
+const GROWTH_FIRE_P = 0.15;
+const GROWTH_MIN = 10;
+const GROWTH_MAX = 20;
 const DISSOLVE_TICK_MS = 60 * 60 * 1000;
-// Scaled to BASE=2500: at 5/hour we'd take ~20 days to fully drain.
-// 25/hour drains 2500 in ~4 days, which matches the dissolution feel
-// the original 500-base aimed at (smooth, not abrupt).
+// Scaled to BASE=2500: 25/hour drains 2500 in ~4 days when real
+// users overtake the threshold curve. Same shape as the old 500-base.
 const DISSOLVE_PER_TICK = 25;
 
 // ─── Personality → online probability ──────────────────────────────
@@ -118,32 +121,21 @@ async function onlineRotationTick(): Promise<void> {
 // ─── Tick 2: growth ────────────────────────────────────────────────
 
 async function growthTick(): Promise<void> {
-  // Stochastic firing — only ~20% of ticks actually spawn. With a 6h
-  // tick interval this averages ~2 spawns/week, which is what we want
-  // for "organic-looking" growth.
-  if (Math.random() > 0.2) return;
+  // Stochastic firing — most ticks no-op. With 12h interval + p=0.15
+  // we average ~2 spawns/week, which is what the user asked for
+  // ("прирост по 10-20 пользователей 2 раза в неделю"). Each fire adds
+  // exactly 10-20 fakes, never the whole BASE-existing deficit.
+  if (Math.random() > GROWTH_FIRE_P) return;
   const existing = await prisma.user.count({
     where: { isFake: true, status: 'ACTIVE' },
   });
-  const target = await computeTargetFakeCount();
+  const target = await computeTargetFakeCount(); // acts purely as a CAP
   if (existing >= target) return;
-  const wanted = 10 + Math.floor(Math.random() * 11); // 10..20
-  const capped = Math.min(wanted, target - existing);
-  if (capped <= 0) return;
-  // Re-use the seed's spawnFakes via top-up; bumping isFake count
-  // toward `existing + capped` rather than the full target. Cheapest
-  // path: just call the same idempotent seedFakeUsers but with a
-  // limit. Since seedFakeUsers reads target itself, and target is
-  // currently > existing, it'll add the gap — but we want to cap at
-  // `capped`. Easiest: call directly through a partial seed.
-  const before = await prisma.user.count({ where: { isFake: true, status: 'ACTIVE' } });
-  await seedFakeUsers(); // tops up toward target — same as a full reseed
-  const after = await prisma.user.count({ where: { isFake: true, status: 'ACTIVE' } });
-  const added = after - before;
-  // Note: if more than `capped` were added in one go (rare, when seed
-  // overshoots), we accept it — the dissolution tick will smooth the
-  // visible count back down later.
-  console.log(`[fake-activity] growth: target=${target} before=${before} after=${after} (+${added})`);
+  const wanted = GROWTH_MIN + Math.floor(Math.random() * (GROWTH_MAX - GROWTH_MIN + 1));
+  const toAdd = Math.min(wanted, target - existing);
+  if (toAdd <= 0) return;
+  const created = await spawnFakes(toAdd);
+  console.log(`[fake-activity] growth: existing=${existing} cap=${target} added=${created}`);
 }
 
 // ─── Tick 3: dissolution ───────────────────────────────────────────
