@@ -248,27 +248,26 @@ export async function spawnFakes(deficit: number): Promise<number> {
   return created;
 }
 
-/** Cold-start seed only. Creates an initial bootstrap pool of fakes
- *  if the table is nearly empty so the platform doesn't look like a
- *  graveyard the first time it boots with FAKE_ACTIVITY_ENABLED=true.
- *  After that, growth is driven exclusively by the worker's gradual
- *  10-20-per-tick growth ticks (~2× per week).
+/** Idempotent baseline seed: tops up fakes to FAKE_ACTIVITY_BASE on
+ *  every boot. After the baseline is reached, the worker keeps adding
+ *  10-20/week organically on top via growth ticks.
  *
- *  Idempotent: safe to call on every boot — only spawns when the
- *  current count is below INITIAL_MIN.
+ *  Skipped (no-op) when real users have already grown past THRESHOLD
+ *  enough that the dissolution curve drops the target below current
+ *  count — in that case we let dissolution take over instead of
+ *  re-seeding right back to baseline.
  */
-const INITIAL_MIN = 50;
 export async function seedFakeUsers(): Promise<{ existing: number; target: number; created: number }> {
   if (!env.FAKE_ACTIVITY_ENABLED) return { existing: 0, target: 0, created: 0 };
   const existing = await prisma.user.count({
     where: { isFake: true, status: 'ACTIVE' },
   });
-  const target = await computeTargetFakeCount(); // returned for visibility, not used to top up
-  if (existing >= INITIAL_MIN) {
+  const target = await computeTargetFakeCount();
+  if (existing >= target) {
     return { existing, target, created: 0 };
   }
-  // Only fill up to INITIAL_MIN — never up to full BASE on boot.
-  const created = await spawnFakes(INITIAL_MIN - existing);
+  // Top up to baseline (or whatever the dissolution-adjusted target is).
+  const created = await spawnFakes(target - existing);
   return { existing, target, created };
 }
 

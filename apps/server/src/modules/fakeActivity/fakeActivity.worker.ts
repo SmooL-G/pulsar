@@ -52,28 +52,27 @@ function schedule(personality: number): Schedule {
   return m === 0 ? 'morning' : m === 1 ? 'evening' : m === 2 ? 'always' : 'night';
 }
 
-/** Returns 0..1 — probability this fake is online right now. The
- *  numbers are deliberately HIGH so the visible "online" count hugs
- *  the total user count (per request — the user wanted "стабильно
- *  2500" with up/down jitter). If you want the classic ~15% online
- *  feel, lower the in-window number to ~0.15. */
+/** Returns 0..1 — probability this fake is online right now.
+ *  Average across personalities + hours-of-day ≈ 0.85 (the user
+ *  wanted ~85% online with jitter). To shift the average, scale
+ *  every literal by the same factor. */
 function onlineProbability(personality: number, hourUtc: number): number {
   const sched = schedule(personality);
-  if (sched === 'always') return 0.97;
+  if (sched === 'always') return 0.92;
   if (sched === 'morning') {
     if (hourUtc >= 6 && hourUtc < 11) return 0.95;
-    if (hourUtc >= 4 && hourUtc < 14) return 0.80;
-    return 0.65;
+    if (hourUtc >= 4 && hourUtc < 14) return 0.85;
+    return 0.72;
   }
   if (sched === 'evening') {
     if (hourUtc >= 17 && hourUtc < 23) return 0.95;
-    if (hourUtc >= 14 && hourUtc < 24) return 0.80;
-    return 0.65;
+    if (hourUtc >= 14 && hourUtc < 24) return 0.85;
+    return 0.72;
   }
   // night owl
   if (hourUtc >= 22 || hourUtc < 4) return 0.95;
-  if (hourUtc >= 20 || hourUtc < 6) return 0.80;
-  return 0.65;
+  if (hourUtc >= 20 || hourUtc < 6) return 0.85;
+  return 0.72;
 }
 
 // ─── Tick 1: online rotation ───────────────────────────────────────
@@ -124,23 +123,34 @@ async function growthTick(): Promise<void> {
   // Stochastic firing — most ticks no-op. With 12h interval + p=0.15
   // we average ~2 spawns/week, which is what the user asked for
   // ("прирост по 10-20 пользователей 2 раза в неделю"). Each fire adds
-  // exactly 10-20 fakes, never the whole BASE-existing deficit.
+  // exactly 10-20 fakes on TOP of the baseline. No hard cap — the
+  // total grows linearly until real users overtake THRESHOLD, at
+  // which point the dissolveTick takes over.
   if (Math.random() > GROWTH_FIRE_P) return;
-  const existing = await prisma.user.count({
-    where: { isFake: true, status: 'ACTIVE' },
+  // Pause growth once dissolution is active (real users already
+  // overtaking) — otherwise growth would just feed the dissolver.
+  const realActive = await prisma.user.count({
+    where: { status: 'ACTIVE', isFake: false, isBot: false },
   });
-  const target = await computeTargetFakeCount(); // acts purely as a CAP
-  if (existing >= target) return;
+  if (realActive > env.FAKE_ACTIVITY_THRESHOLD) {
+    return;
+  }
   const wanted = GROWTH_MIN + Math.floor(Math.random() * (GROWTH_MAX - GROWTH_MIN + 1));
-  const toAdd = Math.min(wanted, target - existing);
-  if (toAdd <= 0) return;
-  const created = await spawnFakes(toAdd);
-  console.log(`[fake-activity] growth: existing=${existing} cap=${target} added=${created}`);
+  const created = await spawnFakes(wanted);
+  const total = await prisma.user.count({ where: { isFake: true, status: 'ACTIVE' } });
+  console.log(`[fake-activity] growth: +${created} (total fakes=${total}, real=${realActive})`);
 }
 
 // ─── Tick 3: dissolution ───────────────────────────────────────────
 
 async function dissolveTick(): Promise<void> {
+  // Dissolution only fires once real users overtake the THRESHOLD.
+  // Below that, the growth tick is free to push total fakes ABOVE
+  // baseline organically without dissolution clawing them back.
+  const realActive = await prisma.user.count({
+    where: { status: 'ACTIVE', isFake: false, isBot: false },
+  });
+  if (realActive <= env.FAKE_ACTIVITY_THRESHOLD) return;
   const total = await prisma.user.count({
     where: { isFake: true, status: 'ACTIVE' },
   });
