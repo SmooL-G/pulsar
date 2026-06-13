@@ -1,0 +1,56 @@
+# Pulsar Home — LAN reverse proxy.
+# v1: HTTP only on pulsar.local. Browsers can't trust self-signed certs
+# for .local without manual CA install, so we don't pretend.
+# v2 will switch to Caddy's `tls internal` + a wizard step that pushes
+# the root CA into the user's trust store.
+
+{
+	# Disable automatic HTTPS — we're LAN-only on v1.
+	auto_https off
+	admin off
+}
+
+:80 {
+	# Health probe for the install script.
+	respond /_pulsar_home_alive 200
+
+	# Static media served from MinIO bucket.
+	handle_path /media/* {
+		reverse_proxy minio:9000 {
+			header_up Host {upstream_hostport}
+		}
+	}
+
+	# Backend API.
+	handle /api/* {
+		reverse_proxy server:3001
+	}
+
+	# Socket.IO — needs WebSocket upgrade.
+	handle /socket.io/* {
+		reverse_proxy server:3001
+	}
+
+	# Node-agent status endpoint.
+	handle /node/* {
+		reverse_proxy node-agent:4000
+	}
+
+	# Everything else → React app.
+	handle {
+		reverse_proxy web:80
+	}
+
+	# Loosen body limits to match server (50MB media uploads).
+	request_body {
+		max_size 50MB
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 10MB
+			roll_keep 5
+		}
+		format console
+	}
+}
