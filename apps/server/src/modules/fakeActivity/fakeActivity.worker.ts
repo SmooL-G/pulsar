@@ -53,26 +53,26 @@ function schedule(personality: number): Schedule {
 }
 
 /** Returns 0..1 — probability this fake is online right now.
- *  Average across personalities + hours-of-day ≈ 0.85 (the user
- *  wanted ~85% online with jitter). To shift the average, scale
- *  every literal by the same factor. */
+ *  Average across personalities + hours-of-day ≈ 0.88 (target 85-90%
+ *  with the sin-wave + jitter on top, so the visible % naturally
+ *  oscillates inside the 85-90 band). */
 function onlineProbability(personality: number, hourUtc: number): number {
   const sched = schedule(personality);
-  if (sched === 'always') return 0.92;
+  if (sched === 'always') return 0.94;
   if (sched === 'morning') {
-    if (hourUtc >= 6 && hourUtc < 11) return 0.95;
-    if (hourUtc >= 4 && hourUtc < 14) return 0.85;
-    return 0.72;
+    if (hourUtc >= 6 && hourUtc < 11) return 0.96;
+    if (hourUtc >= 4 && hourUtc < 14) return 0.89;
+    return 0.78;
   }
   if (sched === 'evening') {
-    if (hourUtc >= 17 && hourUtc < 23) return 0.95;
-    if (hourUtc >= 14 && hourUtc < 24) return 0.85;
-    return 0.72;
+    if (hourUtc >= 17 && hourUtc < 23) return 0.96;
+    if (hourUtc >= 14 && hourUtc < 24) return 0.89;
+    return 0.78;
   }
   // night owl
-  if (hourUtc >= 22 || hourUtc < 4) return 0.95;
-  if (hourUtc >= 20 || hourUtc < 6) return 0.85;
-  return 0.72;
+  if (hourUtc >= 22 || hourUtc < 4) return 0.96;
+  if (hourUtc >= 20 || hourUtc < 6) return 0.89;
+  return 0.78;
 }
 
 // ─── Tick 1: online rotation ───────────────────────────────────────
