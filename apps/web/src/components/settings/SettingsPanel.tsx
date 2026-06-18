@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, User, Globe, Palette, Bell, Wallet, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2, Star, Coins, Trophy, Vote, Cpu } from 'lucide-react';
+import { X, ArrowLeft, ChevronRight, Camera, User, Globe, Palette, Bell, Wallet, Copy, Check, Sun, Moon, Monitor, Shield, Download, Upload, Lock, KeyRound, Link2, ShieldCheck, Award, Loader2, Star, Coins, Trophy, Vote, Cpu, LogOut } from 'lucide-react';
 
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -40,12 +40,26 @@ type Tab = 'profile' | 'appearance' | 'notifications' | 'wallet' | 'premium' | '
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { t, locale, setLocale } = useI18n();
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
   const { enabled: notificationsEnabled, soundEnabled, toggle, toggleSound } = useNotificationStore();
   const [tab, setTab] = useState<Tab>('profile');
+  // Mobile drill-down: null = section-list view; Tab value = drilled in.
+  // Desktop ignores this state (always shows sidebar + content).
+  const [mobileDrilled, setMobileDrilled] = useState<Tab | null>(null);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [bio, setBio] = useState(user?.bio || '');
+  const initialLinks = (user as any)?.socialLinks || {};
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({
+    telegram: initialLinks.telegram || '',
+    twitter: initialLinks.twitter || '',
+    youtube: initialLinks.youtube || '',
+    instagram: initialLinks.instagram || '',
+    github: initialLinks.github || '',
+    website: initialLinks.website || '',
+  });
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showDeposit, setShowDeposit] = useState(false);
@@ -62,9 +76,15 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
+      // Drop empty social-link strings — keep payload tight.
+      const cleanLinks: Record<string, string> = {};
+      for (const [k, v] of Object.entries(socialLinks)) {
+        if (v.trim()) cleanLinks[k] = v.trim();
+      }
       const { data } = await api.patch('/users/me', {
         displayName: displayName || null,
         bio: bio || null,
+        socialLinks: cleanLinks,
       });
       setUser({ ...user, ...data });
       toast.success(t('profile.saved'));
@@ -72,6 +92,27 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       toast.error(t('profile.saveError'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data: uploadData } = await api.post('/upload/avatar', formData);
+      const { data } = await api.patch('/users/me', {
+        avatarUrl: uploadData.avatarUrl,
+      });
+      setUser({ ...user, ...data });
+      toast.success(t('profile.saved'));
+    } catch {
+      toast.error(t('profile.saveError'));
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarFileRef.current) avatarFileRef.current.value = '';
     }
   };
 
@@ -120,27 +161,75 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     ...(isStaff ? [{ id: 'admin' as Tab, icon: Shield, label: t('admin.title') }] : []),
   ];
 
+  const currentTabLabel = tabs.find((t) => t.id === tab)?.label || '';
+  // On mobile the list-view shows when no section is drilled into; on
+  // desktop drill state is ignored — sidebar+content always visible.
+  const mobileShowList = mobileDrilled === null;
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-dark-700 rounded-2xl w-full max-w-lg shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
-        {/* Header */}
+        {/* Header — on mobile, replaces title with back button when drilled in */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-dark-500">
-          <h3 className="font-semibold text-lg">{t('settings.title')}</h3>
+          {mobileDrilled ? (
+            <button
+              onClick={() => setMobileDrilled(null)}
+              className="md:hidden flex items-center gap-2 -ml-2 px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500"
+            >
+              <ArrowLeft size={18} />
+              <span className="font-semibold">{currentTabLabel}</span>
+            </button>
+          ) : (
+            <h3 className="font-semibold text-lg">{t('settings.title')}</h3>
+          )}
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500">
             <X size={18} />
           </button>
         </div>
 
         <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-          {/* Tabs: horizontal scroll on mobile, vertical sidebar on md+ */}
-          <div className="shrink-0 border-b md:border-b-0 md:border-r border-gray-200 dark:border-dark-500
-                          flex md:block md:w-44 gap-1 md:gap-0 md:space-y-1 p-2
-                          overflow-x-auto md:overflow-x-visible scrollbar-hidden">
+          {/* Mobile: full-width list of large buttons (only when not drilled in).
+              Desktop: vertical sidebar of compact tab buttons (always). */}
+          {/* Mobile list view */}
+          {mobileShowList && (
+            <div className="md:hidden flex-1 overflow-y-auto p-3 space-y-1">
+              {tabs.map(({ id, icon: Icon, label }) => (
+                <button
+                  key={id}
+                  onClick={() => {
+                    if (id === 'admin') { setShowAdmin(true); return; }
+                    setTab(id);
+                    setMobileDrilled(id);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-gray-50 dark:bg-dark-600 hover:bg-gray-100 dark:hover:bg-dark-500 text-left transition-colors"
+                >
+                  <span className="w-9 h-9 rounded-lg bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
+                    <Icon size={18} />
+                  </span>
+                  <span className="flex-1 font-medium text-sm">{label}</span>
+                  <ChevronRight size={16} className="text-gray-400" />
+                </button>
+              ))}
+              {/* Logout — bottom of mobile list */}
+              <button
+                onClick={logout}
+                className="w-full mt-4 flex items-center gap-3 px-4 py-3.5 rounded-xl bg-red-500/5 hover:bg-red-500/10 text-red-500 text-left transition-colors"
+              >
+                <span className="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
+                  <LogOut size={18} />
+                </span>
+                <span className="flex-1 font-medium text-sm">{t('settings.logout')}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Desktop sidebar tabs */}
+          <div className="hidden md:block shrink-0 border-r border-gray-200 dark:border-dark-500 w-44 space-y-1 p-2 overflow-y-auto scrollbar-hidden">
             {tabs.map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
                 onClick={() => id === 'admin' ? setShowAdmin(true) : setTab(id)}
-                className={`shrink-0 md:w-full flex items-center gap-2 md:gap-2.5 px-3 py-2 md:py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                   ${tab === id && id !== 'admin'
                     ? 'bg-primary-500/10 text-primary-500'
                     : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-600 hover:text-gray-700 dark:hover:text-gray-300'}`}
@@ -149,18 +238,46 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 {label}
               </button>
             ))}
-
+            {/* Logout — bottom of desktop sidebar */}
+            <button
+              onClick={logout}
+              className="w-full mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors"
+            >
+              <LogOut size={18} className="shrink-0" />
+              {t('settings.logout')}
+            </button>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-5">
+          {/* Content — desktop always shows; mobile shows only when drilled in */}
+          <div className={`${mobileShowList ? 'hidden md:block' : ''} flex-1 overflow-y-auto p-5`}>
             {/* Profile */}
             {tab === 'profile' && (
               <div className="space-y-5">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold shrink-0">
-                    {user.username[0].toUpperCase()}
-                  </div>
+                  <button
+                    onClick={() => avatarFileRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="relative w-16 h-16 rounded-full bg-primary-500 flex items-center justify-center text-white text-2xl font-bold shrink-0 overflow-hidden group hover:ring-2 hover:ring-primary-400 transition-all"
+                    title={t('profile.changeAvatar')}
+                  >
+                    {(user as any).avatarUrl ? (
+                      <img src={(user as any).avatarUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      user.username[0].toUpperCase()
+                    )}
+                    <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      {uploadingAvatar
+                        ? <Loader2 size={18} className="animate-spin text-white" />
+                        : <Camera size={18} className="text-white" />}
+                    </span>
+                  </button>
+                  <input
+                    ref={avatarFileRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
                   <div>
                     <p className="font-semibold text-lg flex items-center gap-1.5">@{user.username}<PulsarBadge level={(user as any).verificationLevel || 0} size={16} /></p>
                     <p className="text-xs text-gray-400">{t('profile.memberSince')} {memberSince}</p>
@@ -189,6 +306,32 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                     className="w-full px-4 py-2.5 bg-gray-100 dark:bg-dark-600 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                   />
                   <p className="text-xs text-gray-400 text-right mt-1">{bio.length}/500</p>
+                </div>
+
+                {/* Social Links */}
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">{t('profile.socialLinks')}</label>
+                  <div className="space-y-2">
+                    {([
+                      { key: 'telegram',  icon: '✈️', placeholder: '@username' },
+                      { key: 'twitter',   icon: '𝕏',  placeholder: '@handle' },
+                      { key: 'youtube',   icon: '▶️', placeholder: 'youtube.com/...' },
+                      { key: 'instagram', icon: '📷', placeholder: '@username' },
+                      { key: 'github',    icon: '🐙', placeholder: 'github.com/...' },
+                      { key: 'website',   icon: '🌐', placeholder: 'https://...' },
+                    ] as const).map(({ key, icon, placeholder }) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <span className="text-sm w-6 text-center shrink-0">{icon}</span>
+                        <input
+                          type="text"
+                          value={socialLinks[key] || ''}
+                          onChange={(e) => setSocialLinks((prev) => ({ ...prev, [key]: e.target.value }))}
+                          placeholder={placeholder}
+                          className="flex-1 px-3 py-2 bg-gray-100 dark:bg-dark-600 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <button
