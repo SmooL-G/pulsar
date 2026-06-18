@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useMessageStore } from '../../store/messageStore';
 import { MessageBubble } from './MessageBubble';
 import { BotStartButton } from './BotStartButton';
@@ -21,7 +22,28 @@ export function MessageList({ chatId, chatType, otherUserId, otherUserIsBot, onO
   const user = useAuthStore((s) => s.user);
   const locale = useI18n((s) => s.locale);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showJumpDown, setShowJumpDown] = useState(false);
   const chatMessages = messages[chatId] || [];
+
+  // Show "jump to bottom" pill when user has scrolled up past ~300px.
+  // Listens on the scroll container so the button reflects current
+  // scroll position even if new messages arrive.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handler = () => {
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+      setShowJumpDown(distance > 300);
+    };
+    el.addEventListener('scroll', handler, { passive: true });
+    handler();
+    return () => el.removeEventListener('scroll', handler);
+  }, [chatId, chatMessages.length]);
+
+  const scrollToBottom = () => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
     fetchMessages(chatId);
@@ -56,7 +78,8 @@ export function MessageList({ chatId, chatType, otherUserId, otherUserIsBot, onO
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
+    <div className="relative flex-1 min-h-0">
+    <div ref={scrollRef} className="absolute inset-0 overflow-y-auto scrollbar-hidden px-4 py-2 space-y-1">
       {chatMessages.map((message, index) => {
         const prevMessage = chatMessages[index - 1];
         const showAvatar = !prevMessage || prevMessage.senderId !== message.senderId;
@@ -82,6 +105,18 @@ export function MessageList({ chatId, chatType, otherUserId, otherUserIsBot, onO
         );
       })}
       <div ref={bottomRef} />
+    </div>
+    {/* Floating "jump to bottom" pill — fades in when the user has
+        scrolled up. Click smooth-scrolls to the latest message. */}
+    {showJumpDown && (
+      <button
+        onClick={scrollToBottom}
+        className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-white/85 dark:bg-dark-700/85 backdrop-blur-md shadow-lg border border-white/40 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-dark-600 transition-all animate-fade-in"
+        aria-label="Scroll to bottom"
+      >
+        <ChevronDown size={18} />
+      </button>
+    )}
     </div>
   );
 }
