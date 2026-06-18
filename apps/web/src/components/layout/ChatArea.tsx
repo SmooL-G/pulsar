@@ -90,8 +90,10 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
           like a comfy book column instead of stretching wall to wall.
           Wallpaper outside this wrapper still covers the full width. */}
       <div className="flex flex-col flex-1 min-h-0 w-full mx-auto max-w-4xl">
-      {/* Chat Header */}
-      <div className="flex items-center gap-3 pl-5 pr-3 py-3 pt-3-safe border-b border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
+      {/* Chat Header — glassmorphic (semi-transparent + backdrop-blur),
+          rounded corners, floats inside the centered column with small
+          top margin so the wallpaper peeks behind it on the sides. */}
+      <div className="mt-2 mx-2 md:mx-3 rounded-2xl flex items-center gap-3 pl-5 pr-3 py-3 pt-3-safe border border-white/40 dark:border-white/10 bg-white/70 dark:bg-dark-700/55 backdrop-blur-xl shadow-lg shadow-black/5 dark:shadow-black/20 shrink-0">
         <button
           onClick={onBack}
           className="md:hidden p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500"
