@@ -86,6 +86,10 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
           </div>
         </div>
       )}
+      {/* Centered max-width column so on wide desktops the chat reads
+          like a comfy book column instead of stretching wall to wall.
+          Wallpaper outside this wrapper still covers the full width. */}
+      <div className="flex flex-col flex-1 min-h-0 w-full mx-auto max-w-4xl">
       {/* Chat Header */}
       <div className="flex items-center gap-3 pl-5 pr-3 py-3 pt-3-safe border-b border-gray-200 dark:border-dark-500 bg-white dark:bg-dark-700 shrink-0">
         <button
@@ -208,6 +212,7 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         recipientIsBot={!!(activeChat as any).otherUser?.isBot}
       />
 
+      </div>
       {showTransfer && (
         <TransferModal
           onClose={() => setShowTransfer(false)}

@@ -1,17 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, Settings, LogOut, Users, Globe, Wallet, Megaphone, Bot, User, MessageSquare } from 'lucide-react';
+import { Search, Plus, Globe, Megaphone, Bot, User, MessageSquare } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
-import { useAuthStore } from '../../store/authStore';
 import { ChatListItem } from '../chat/ChatListItem';
 import { NewChatModal } from '../chat/NewChatModal';
-import { ProfilePanel } from '../profile/ProfilePanel';
-import { SettingsPanel } from '../settings/SettingsPanel';
-import { FriendsPanel } from '../friends/FriendsPanel';
-
-import { WalletPanel } from '../wallet/WalletPanel';
 import { BotPanel } from '../bot/BotPanel';
-import { PulsarBadge } from '../ui/PulsarBadge';
-import { PremiumBadge } from '../ui/PremiumBadge';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { api } from '../../services/api';
 import { useMessageStore } from '../../store/messageStore';
@@ -24,14 +16,8 @@ interface SidebarProps {
 export function Sidebar({ onChatSelect }: SidebarProps) {
   const { t, locale, setLocale } = useI18n();
   const { chats, fetchChats, setActiveChat, activeChat } = useChatStore();
-  const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showFriends, setShowFriends] = useState(false);
-
-  const [showWallet, setShowWallet] = useState(false);
   const [showBots, setShowBots] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -150,21 +136,9 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
         >
           Pulsar
         </button>
+        {/* Sidebar header now keeps only chat-creation actions.
+            Wallet / Friends / Settings moved to the global BottomNav. */}
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setShowWallet(true)}
-            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
-            title={t('profile.wallet')}
-          >
-            <Wallet size={20} />
-          </button>
-          <button
-            onClick={() => setShowFriends(true)}
-            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
-            title={t('friends.title')}
-          >
-            <Users size={20} />
-          </button>
           <button
             onClick={() => setShowBots(true)}
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
@@ -178,13 +152,6 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
             title={t('chat.newChat')}
           >
             <Plus size={20} />
-          </button>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
-            title={t('settings.title')}
-          >
-            <Settings size={20} />
           </button>
         </div>
       </div>
@@ -354,47 +321,11 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
         )}
       </div>
 
-      {/* User info */}
-      {user && (
-        <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-200 dark:border-dark-500">
-          <button
-            onClick={() => setShowProfile(true)}
-            className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
-          >
-            <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium overflow-hidden shrink-0">
-              {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                user.username[0].toUpperCase()
-              )}
-            </div>
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium truncate flex items-center gap-1">
-                {user.displayName || user.username}
-                <PulsarBadge level={(user as any).verificationLevel || 0} size={13} role={(user as any).role} />
-                <PremiumBadge isPremium={(user as any).isPremium} size={13} />
-              </p>
-              <p className="text-xs text-gray-400 truncate font-mono">
-                {user.walletAddress.slice(0, 4)}...{user.walletAddress.slice(-4)}
-              </p>
-            </div>
-          </button>
-          <button
-            onClick={logout}
-            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors text-gray-400"
-            title={t('settings.logout')}
-          >
-            <LogOut size={18} />
-          </button>
-        </div>
-      )}
+      {/* Bottom user-info block removed — profile editing lives in the
+          Settings tab now (BottomNav). Logout moved into Settings too. */}
 
-      {/* Modals */}
+      {/* Chat-creation modals still triggered here */}
       {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
-      {showProfile && <ProfilePanel onClose={() => setShowProfile(false)} />}
-      {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
-      {showFriends && <FriendsPanel onClose={() => setShowFriends(false)} />}
-      {showWallet && <WalletPanel onClose={() => setShowWallet(false)} />}
       {showBots && <BotPanel onClose={() => setShowBots(false)} />}
     </div>
   );
