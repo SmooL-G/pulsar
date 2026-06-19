@@ -149,6 +149,12 @@ export function useSocket() {
       addChat(chat);
     });
 
+    // Pinned-messages updated (someone in this chat pinned/unpinned a
+    // message — refresh the banner without polling).
+    socket.on('chat:pinned-updated', ({ chatId, pinned }: { chatId: string; pinned: any[] }) => {
+      useChatStore.getState().setPinnedMessages(chatId, pinned);
+    });
+
     // Wallet events
     socket.on('wallet:balance-updated', (data: { balance: string; change: string; type: string }) => {
       const currentUser = useAuthStore.getState().user;

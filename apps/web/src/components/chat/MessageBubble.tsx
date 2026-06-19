@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Message } from '@pulsar/shared';
 import { format } from 'date-fns';
-import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck, Lock, MessageCircle, Bookmark } from 'lucide-react';
+import { Users, Trash2, Copy, Forward, CheckSquare, X, ExternalLink, Check, CheckCheck, Gift, Loader2, ShieldCheck, Lock, MessageCircle, Bookmark, Pin } from 'lucide-react';
 import { InlineBotButtons } from './InlineBotButtons';
 import { AudioAttachment } from './AudioAttachment';
 import { ReactionsBar } from './ReactionsBar';
@@ -172,6 +172,21 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
   const handleForward = () => {
     setContextMenu(null);
     setShowForward(true);
+  };
+
+  const handlePin = async () => {
+    setContextMenu(null);
+    try {
+      await api.post(`/messages/${message.id}/pin`);
+      toast.success(t('chat.pinned') || 'Закреплено');
+    } catch (e: any) {
+      const code = e?.response?.data?.error;
+      if (code === 'FORBIDDEN') {
+        toast.error(t('chat.pinForbidden') || 'Только админ может закреплять');
+      } else {
+        toast.error(t('common.error'));
+      }
+    }
   };
 
   const handleSaveToFavorites = async () => {
@@ -442,6 +457,13 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
           >
             <Forward size={16} className="text-gray-400" />
             {t('chat.forward')}
+          </button>
+          <button
+            onClick={handlePin}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-600 transition-colors"
+          >
+            <Pin size={16} className="text-primary-400" />
+            {t('chat.pin') || 'Закрепить'}
           </button>
           <button
             onClick={handleSelect}

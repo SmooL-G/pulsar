@@ -751,4 +751,126 @@ export async function messageRoutes(app: FastifyInstance) {
       }
     },
   );
+
+  // ─── PIN / UNPIN MESSAGES ────────────────────────────────
+  //
+  // Auth: any member in DMs; in groups/channels only OWNER/ADMIN/MODERATOR
+  // role on ChatMember. Max 3 pinned per chat (older ones get unpinned
+  // automatically on a new pin — chronological FIFO).
+  //
+  // Returns the same PinnedMessage shape the frontend banner consumes:
+  // { id, chatId, message: { id, content, type, senderId, sender:{...} } }
+
+  const PIN_LIMIT = 3;
+  const PIN_ROLES = new Set(['OWNER', 'ADMIN', 'MODERATOR']);
+
+  async function loadPinnedRows(chatId: string) {
+    const rows = await prisma.pinnedMessage.findMany({
+      where: { chatId },
+      orderBy: { pinnedAt: 'desc' },
+      take: PIN_LIMIT,
+      include: {
+        message: {
+          include: {
+            sender: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+          },
+        },
+      },
+    });
+    // Filter out pins whose underlying message was soft-deleted.
+    return rows.filter((r) => !r.message?.isDeleted);
+  }
+
+  app.get<{ Params: { chatId: string } }>('/chat/:chatId/pinned', async (request, reply) => {
+    const userId = request.user!.userId;
+    const { chatId } = request.params;
+    const membership = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId, userId } },
+      select: { id: true, leftAt: true },
+    });
+    if (!membership || membership.leftAt) return reply.status(403).send({ error: 'FORBIDDEN' });
+    const pinned = await loadPinnedRows(chatId);
+    return { pinned };
+  });
+
+  app.post<{ Params: { messageId: string } }>('/:messageId/pin', async (request, reply) => {
+    const userId = request.user!.userId;
+    const { messageId } = request.params;
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      select: { id: true, chatId: true, isDeleted: true, chat: { select: { type: true } } },
+    });
+    if (!message || message.isDeleted) return reply.status(404).send({ error: 'NOT_FOUND' });
+
+    const membership = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId: message.chatId, userId } },
+      select: { role: true, leftAt: true },
+    });
+    if (!membership || membership.leftAt) return reply.status(403).send({ error: 'NOT_A_MEMBER' });
+
+    // DMs: any party can pin. Groups/channels: privileged roles only.
+    const isDM = message.chat.type === 'DIRECT';
+    if (!isDM && !PIN_ROLES.has(membership.role)) {
+      return reply.status(403).send({ error: 'FORBIDDEN', message: 'Only admins/moderators can pin' });
+    }
+
+    // FIFO eviction at PIN_LIMIT — delete oldest first to make room.
+    const existing = await prisma.pinnedMessage.count({ where: { chatId: message.chatId } });
+    if (existing >= PIN_LIMIT) {
+      const oldest = await prisma.pinnedMessage.findMany({
+        where: { chatId: message.chatId },
+        orderBy: { pinnedAt: 'asc' },
+        take: existing - PIN_LIMIT + 1,
+        select: { id: true },
+      });
+      await prisma.pinnedMessage.deleteMany({ where: { id: { in: oldest.map((o) => o.id) } } });
+    }
+
+    try {
+      await prisma.pinnedMessage.create({
+        data: { chatId: message.chatId, messageId, pinnedBy: userId },
+      });
+    } catch (e: any) {
+      // P2002 unique violation = already pinned. Idempotent: no-op.
+      if (e?.code !== 'P2002') throw e;
+    }
+
+    const pinned = await loadPinnedRows(message.chatId);
+    const io = getIO();
+    io?.to(`chat:${message.chatId}`).emit('chat:pinned-updated', { chatId: message.chatId, pinned } as any);
+
+    return { ok: true, pinned };
+  });
+
+  app.delete<{ Params: { messageId: string } }>('/:messageId/pin', async (request, reply) => {
+    const userId = request.user!.userId;
+    const { messageId } = request.params;
+    const pin = await prisma.pinnedMessage.findUnique({
+      where: { messageId },
+      select: {
+        id: true, chatId: true,
+        chat: { select: { type: true } },
+      },
+    });
+    if (!pin) return reply.status(404).send({ error: 'NOT_FOUND' });
+
+    const membership = await prisma.chatMember.findUnique({
+      where: { chatId_userId: { chatId: pin.chatId, userId } },
+      select: { role: true, leftAt: true },
+    });
+    if (!membership || membership.leftAt) return reply.status(403).send({ error: 'NOT_A_MEMBER' });
+
+    const isDM = pin.chat.type === 'DIRECT';
+    if (!isDM && !PIN_ROLES.has(membership.role)) {
+      return reply.status(403).send({ error: 'FORBIDDEN' });
+    }
+
+    await prisma.pinnedMessage.delete({ where: { id: pin.id } });
+
+    const pinned = await loadPinnedRows(pin.chatId);
+    const io = getIO();
+    io?.to(`chat:${pin.chatId}`).emit('chat:pinned-updated', { chatId: pin.chatId, pinned } as any);
+
+    return { ok: true, pinned };
+  });
 }
