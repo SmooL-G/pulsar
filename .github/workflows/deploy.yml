@@ -48,7 +48,7 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
-          command_timeout: 30m
+          command_timeout: 60m
           envs: SRV_CHANGED,WEB_CHANGED,SCHEMA_CHANGED,COMPOSE_CHANGED
           script: |
             set -e
