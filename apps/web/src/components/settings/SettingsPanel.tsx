@@ -4,6 +4,7 @@ import { X, ArrowLeft, ChevronRight, Camera, User, Globe, Palette, Bell, Wallet,
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { CHAT_WALLPAPERS, getStoredWallpaperId, setStoredWallpaperId } from '../../hooks/useChatTheme';
+import { THEME_PRESETS, applyThemeColor, getStoredThemeColor, type ThemeColorId } from '../../hooks/useThemeColor';
 import { StakingSection } from './StakingSection';
 import { LotterySection } from './LotterySection';
 import { TreasurySection } from './TreasurySection';
@@ -70,6 +71,12 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [theme, setThemeState] = useState<'dark' | 'light' | 'system'>(
     () => (localStorage.getItem('theme') as any) || 'dark'
   );
+  const [themeColor, setThemeColorState] = useState<ThemeColorId>(() => getStoredThemeColor());
+
+  const pickThemeColor = (id: ThemeColorId) => {
+    setThemeColorState(id);
+    applyThemeColor(id);
+  };
 
   if (!user) return null;
 
@@ -391,6 +398,36 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Primary color */}
+                <div>
+                  <label className="block text-sm font-medium mb-3">
+                    {t('settings.primaryColor') || 'Цвет акцента'}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {THEME_PRESETS.map((p) => {
+                      const isActive = themeColor === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => pickThemeColor(p.id)}
+                          title={p.label}
+                          className={`relative w-12 h-12 rounded-full transition-all ${
+                            isActive ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-dark-700 ring-gray-500 scale-110' : 'hover:scale-105'
+                          }`}
+                          style={{ backgroundColor: p.swatch }}
+                        >
+                          {isActive && (
+                            <Check size={18} className="absolute inset-0 m-auto text-white drop-shadow" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-2">
+                    {t('settings.primaryColorHint') || 'Применяется ко всем кнопкам, ссылкам и акцентам интерфейса.'}
+                  </p>
                 </div>
 
                 {/* Language */}

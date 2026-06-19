@@ -20,6 +20,7 @@ import { P2PPage } from './pages/P2PPage';
 import { P2PTermsPage } from './pages/P2PTermsPage';
 // Pulsar GPT page retired — bot lives at @pulsargpt_pls (DM via bot SDK).
 import { FeaturesPage } from './pages/FeaturesPage';
+import { useThemeColorBoot } from './hooks/useThemeColor';
 import { DevelopersPage } from './pages/DevelopersPage';
 import { InfoPage } from './pages/InfoPage';
 import { DonatePage } from './pages/DonatePage';
@@ -44,6 +45,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export function App() {
   const { isAuthenticated, fetchMe } = useAuthStore();
+  // Apply user's saved primary color (CSS vars) once on mount.
+  useThemeColorBoot();
 
   // Solana wallet setup
   const endpoint = useMemo(() => clusterApiUrl('devnet'), []);

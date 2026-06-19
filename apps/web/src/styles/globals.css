@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Primary palette as CSS variables so the user can swap themes at
+   runtime via Settings → Appearance. Each shade stored as
+   space-separated RGB so Tailwind's rgb(var(...) / <alpha-value>)
+   syntax works (preserves bg-primary-500/20 opacity utilities).
+   Defaults = the original blue/indigo palette. */
+:root {
+  --c-primary-50:  240 244 255;
+  --c-primary-100: 219 228 255;
+  --c-primary-200: 186 200 255;
+  --c-primary-300: 145 167 255;
+  --c-primary-400: 116 143 252;
+  --c-primary-500: 92 124 250;
+  --c-primary-600: 76 110 245;
+  --c-primary-700: 66 99 235;
+  --c-primary-800: 59 91 219;
+  --c-primary-900: 54 79 199;
+}
+
 @layer base {
   * {
     box-sizing: border-box;
