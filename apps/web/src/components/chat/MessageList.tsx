@@ -9,6 +9,20 @@ import { getSocket } from '../../hooks/useSocket';
 import { useI18n } from '../../i18n';
 import { isSameDay, dayLabel } from '../../utils/messageDateLabel';
 
+/**
+ * Highlight a message + scroll it into view. Imported by
+ * PinnedMessageBanner so a click on a pin jumps the reader to the
+ * source message. Lives here because MessageList owns the highlight
+ * styling via messageStore.highlightMessageId.
+ */
+export function highlightMessage(messageId: string) {
+  useMessageStore.getState().setHighlightMessage(messageId);
+  setTimeout(() => {
+    const el = document.getElementById(`msg-${messageId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 30);
+}
+
 interface MessageListProps {
   chatId: string;
   chatType?: 'DIRECT' | 'GROUP' | 'CHANNEL' | 'SAVED';
