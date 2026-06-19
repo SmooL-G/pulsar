@@ -4,6 +4,7 @@ import { ArrowLeft, Info, Phone, Video, Send, Bookmark } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { MessageList } from '../chat/MessageList';
 import { MessageInput } from '../chat/MessageInput';
+import { PinnedMessageBanner } from '../chat/PinnedMessageBanner';
 import { ScheduledMessagesBanner } from '../chat/ScheduledMessagesBanner';
 import { BotReplyKeyboard } from '../chat/BotReplyKeyboard';
 import { getSocket } from '../../hooks/useSocket';
@@ -182,6 +183,14 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
           </button>
         </div>
       </div>
+
+      {activeChat.type !== 'SAVED' && (
+        <PinnedMessageBanner
+          chatId={activeChat.id}
+          chatType={activeChat.type as 'DIRECT' | 'GROUP' | 'CHANNEL'}
+          myRole={(activeChat as any).myRole}
+        />
+      )}
 
       <MessageList
         chatId={activeChat.id}
