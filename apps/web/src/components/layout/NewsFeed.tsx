@@ -109,11 +109,9 @@ export function NewsFeed() {
               <ArrowUpRight size={16} className="text-primary-400" />
             </div>
           </button>
-
-          {/* Close profile tile gate */}
           )}
+
           {showWalletTile && (
-          /* Wallet tile */
           <button
             onClick={() => setShowWallet(true)}
             className="group relative bg-gradient-to-br from-amber-500/15 to-amber-600/5 dark:from-amber-500/20 dark:to-amber-600/10 rounded-2xl p-5 text-left shadow-sm border border-amber-500/20 hover:border-amber-400 hover:shadow-md transition-all"

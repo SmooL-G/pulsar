@@ -85,6 +85,11 @@ export interface ServerToClientEvents {
 
   'chat:updated': (data: Chat) => void;
 
+  // Pinned messages list changed in a chat (someone pinned/unpinned).
+  // Payload mirrors the GET /messages/chat/:id/pinned response so the
+  // banner can replace its state in one set.
+  'chat:pinned-updated': (data: { chatId: string; pinned: unknown[] }) => void;
+
   'wallet:balance-updated': (data: {
     balance: string;
     change: string;
