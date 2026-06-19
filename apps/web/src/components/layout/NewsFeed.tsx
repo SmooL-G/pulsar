@@ -11,6 +11,7 @@ import { ShieldCheck, Award, Wallet, ArrowUpRight, ArrowDownLeft, Copy, Check } 
 import { PlsPriceCard } from '../price/PlsPriceCard';
 import { BurnedSupplyCard } from '../economy/BurnedSupplyCard';
 import { LiveActivityPulse } from '../economy/LiveActivityPulse';
+import { useHomeTileVisible } from '../../hooks/useHomeTiles';
 import toast from 'react-hot-toast';
 
 export function NewsFeed() {
@@ -19,6 +20,16 @@ export function NewsFeed() {
   const [showSettings, setShowSettings] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Per-user tile visibility — set in Settings → Appearance → Главная.
+  const showProfile = useHomeTileVisible('profile');
+  const showWalletTile = useHomeTileVisible('wallet');
+  const showPlsPrice = useHomeTileVisible('plsPrice');
+  const showBurns = useHomeTileVisible('burns');
+  const showActivity = useHomeTileVisible('activity');
+  const showQuickActions = useHomeTileVisible('quickActions');
+  const showP2P = useHomeTileVisible('p2p');
+  const showGpt = useHomeTileVisible('gpt');
+  const showMarketplace = useHomeTileVisible('marketplace');
 
   if (!user) return null;
 
@@ -47,7 +58,8 @@ export function NewsFeed() {
         {/* Tiles grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-          {/* Profile tile */}
+          {showProfile && (
+          /* Profile tile */
           <button
             onClick={() => setShowSettings(true)}
             className="group relative bg-white dark:bg-dark-700 rounded-2xl p-5 text-left shadow-sm border border-gray-100 dark:border-dark-600 hover:border-primary-400 hover:shadow-md transition-all"
@@ -98,7 +110,10 @@ export function NewsFeed() {
             </div>
           </button>
 
-          {/* Wallet tile */}
+          {/* Close profile tile gate */}
+          )}
+          {showWalletTile && (
+          /* Wallet tile */
           <button
             onClick={() => setShowWallet(true)}
             className="group relative bg-gradient-to-br from-amber-500/15 to-amber-600/5 dark:from-amber-500/20 dark:to-amber-600/10 rounded-2xl p-5 text-left shadow-sm border border-amber-500/20 hover:border-amber-400 hover:shadow-md transition-all"
@@ -142,19 +157,16 @@ export function NewsFeed() {
               <ArrowUpRight size={16} className="text-amber-400" />
             </div>
           </button>
+          )}
 
         </div>
 
-        {/* PLS price informer — current rate + balance worth in fiat */}
-        <PlsPriceCard balancePls={plsBalance} />
+        {showPlsPrice && <PlsPriceCard balancePls={plsBalance} />}
+        {showBurns && <BurnedSupplyCard />}
+        {showActivity && <LiveActivityPulse />}
 
-        {/* Burn ledger — total PLS permanently removed from supply */}
-        <BurnedSupplyCard />
-
-        {/* Live pulse — typing now / online now (proof-of-life) */}
-        <LiveActivityPulse />
-
-        {/* Quick actions */}
+        {showQuickActions && (
+        /* Quick actions */
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setShowWallet(true)}
@@ -171,8 +183,10 @@ export function NewsFeed() {
             {t('wallet.transfer')}
           </button>
         </div>
+        )}
 
-        {/* P2P exchange tile — sell/buy PLS for fiat */}
+        {showP2P && (
+        /* P2P exchange tile — sell/buy PLS for fiat */
         <a
           href="/p2p"
           className="group bg-gradient-to-br from-amber-500/10 to-emerald-500/10 dark:from-amber-500/15 dark:to-emerald-500/15 rounded-2xl p-5 border border-amber-500/30 hover:border-amber-400 hover:shadow-md transition-all flex items-center gap-4"
@@ -193,8 +207,10 @@ export function NewsFeed() {
           </span>
           <ArrowUpRight size={16} className="text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
         </a>
+        )}
 
-        {/* Pulsar GPT — multi-model AI bot, lives as @pulsargpt_pls DM */}
+        {showGpt && (
+        /* Pulsar GPT — multi-model AI bot, lives as @pulsargpt_pls DM */
         <a
           href="/pulsargpt_pls"
           className="group bg-gradient-to-br from-primary-500/10 to-cyan-500/10 dark:from-primary-500/15 dark:to-cyan-500/15 rounded-2xl p-5 border border-primary-500/30 hover:border-primary-400 hover:shadow-md transition-all flex items-center gap-4"
@@ -215,8 +231,10 @@ export function NewsFeed() {
           </span>
           <ArrowUpRight size={16} className="text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
         </a>
+        )}
 
-        {/* Marketplace placeholder tile */}
+        {showMarketplace && (
+        /* Marketplace placeholder tile */
         <div className="bg-white dark:bg-dark-700 rounded-2xl p-5 border border-dashed border-gray-200 dark:border-dark-500 flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center shrink-0">
             <span className="text-2xl">🛍</span>
@@ -229,6 +247,7 @@ export function NewsFeed() {
             {t('dashboard.wip')}
           </span>
         </div>
+        )}
 
       </div>
 

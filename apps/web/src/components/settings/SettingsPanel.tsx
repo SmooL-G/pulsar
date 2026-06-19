@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
 import { CHAT_WALLPAPERS, getStoredWallpaperId, setStoredWallpaperId } from '../../hooks/useChatTheme';
 import { THEME_PRESETS, applyThemeColor, getStoredThemeColor, type ThemeColorId } from '../../hooks/useThemeColor';
+import { HOME_TILES, useHomeTilesConfig } from '../../hooks/useHomeTiles';
 import { StakingSection } from './StakingSection';
 import { LotterySection } from './LotterySection';
 import { TreasurySection } from './TreasurySection';
@@ -77,6 +78,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     setThemeColorState(id);
     applyThemeColor(id);
   };
+  const homeTiles = useHomeTilesConfig();
 
   if (!user) return null;
 
@@ -450,6 +452,35 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                     <option value="ja">日本語</option>
                     <option value="ko">한국어</option>
                   </select>
+                </div>
+
+                {/* Home tile visibility */}
+                <div>
+                  <label className="block text-sm font-medium mb-3">
+                    {t('settings.homeTiles') || 'Главная — карточки'}
+                  </label>
+                  <div className="space-y-1.5">
+                    {HOME_TILES.map(({ key, label }) => {
+                      const visible = homeTiles.isVisible(key);
+                      return (
+                        <label
+                          key={key}
+                          className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 dark:bg-dark-600 hover:bg-gray-100 dark:hover:bg-dark-500 cursor-pointer"
+                        >
+                          <span className="text-sm">{label}</span>
+                          <input
+                            type="checkbox"
+                            checked={visible}
+                            onChange={() => homeTiles.toggle(key)}
+                            className="w-4 h-4 accent-primary-500"
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-2">
+                    {t('settings.homeTilesHint') || 'Сними галочку чтобы скрыть карточку с главного экрана.'}
+                  </p>
                 </div>
               </div>
             )}
