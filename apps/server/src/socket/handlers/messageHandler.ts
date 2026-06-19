@@ -434,16 +434,51 @@ export function registerMessageHandlers(io: Server, socket: Socket) {
 
   socket.on('message:delete', async (data) => {
     try {
-      const message = await prisma.message.update({
-        where: { id: data.messageId, senderId: userId },
+      const target = await prisma.message.findUnique({
+        where: { id: data.messageId },
+        select: { id: true, senderId: true, chatId: true, createdAt: true, chat: { select: { type: true } } },
+      });
+      if (!target) {
+        socket.emit('error', { code: 'MESSAGE_NOT_FOUND', message: 'Message not found' });
+        return;
+      }
+      const isOwn = target.senderId === userId;
+      // 24-hour delete-for-everyone window for own messages (Telegram-style).
+      const ageMs = Date.now() - target.createdAt.getTime();
+      const within24h = ageMs <= 24 * 60 * 60 * 1000;
+
+      let allowed = isOwn && within24h;
+      // Group/channel admins can delete anyone's message at any time
+      // (mods clean up spam/abuse). Not allowed in DMs.
+      if (!allowed && target.chat.type !== 'DIRECT') {
+        const membership = await prisma.chatMember.findUnique({
+          where: { chatId_userId: { chatId: target.chatId, userId } },
+          select: { role: true, leftAt: true },
+        });
+        if (membership && !membership.leftAt && ['OWNER', 'ADMIN', 'MODERATOR'].includes(membership.role)) {
+          allowed = true;
+        }
+      }
+      if (!allowed) {
+        const code = isOwn && !within24h ? 'TOO_OLD' : 'FORBIDDEN';
+        socket.emit('error', {
+          code: `MESSAGE_DELETE_${code}`,
+          message: code === 'TOO_OLD' ? 'Можно удалить только в первые 24 часа' : 'Нет прав на удаление',
+        });
+        return;
+      }
+
+      await prisma.message.update({
+        where: { id: data.messageId },
         data: { isDeleted: true, content: null },
       });
 
-      io.to(`chat:${message.chatId}`).emit('message:deleted', {
-        messageId: message.id,
-        chatId: message.chatId,
+      io.to(`chat:${target.chatId}`).emit('message:deleted', {
+        messageId: target.id,
+        chatId: target.chatId,
       });
-    } catch {
+    } catch (err) {
+      console.error('[message:delete] error:', err);
       socket.emit('error', { code: 'MESSAGE_DELETE_FAILED', message: 'Failed to delete message' });
     }
   });

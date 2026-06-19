@@ -502,13 +502,13 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
                 <Trash2 size={16} />
                 {t('chat.deleteForMe')}
               </button>
-              {isOwn && (
+              {(isOwn || (isStaff && chatType !== 'DIRECT')) && (
                 <button
                   onClick={handleDeleteForAll}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-dark-600 transition-colors"
                 >
                   <Trash2 size={16} className="text-red-500" />
-                  {t('chat.deleteForAll')}
+                  {isOwn ? t('chat.deleteForAll') : (t('chat.deleteForAllAdmin') || 'Удалить (модератор)')}
                 </button>
               )}
             </div>
