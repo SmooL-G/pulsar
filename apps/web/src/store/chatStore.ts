@@ -2,11 +2,32 @@ import { create } from 'zustand';
 import type { Chat } from '@pulsar/shared';
 import { api } from '../services/api';
 
+export interface PinnedMsg {
+  id: string;
+  chatId: string;
+  pinnedAt: string;
+  message: {
+    id: string;
+    content: string | null;
+    type: string;
+    senderId: string;
+    sender?: {
+      id: string;
+      username: string;
+      displayName: string | null;
+      avatarUrl: string | null;
+    };
+  };
+}
+
 interface ChatState {
   chats: Chat[];
   activeChat: Chat | null;
   isLoading: boolean;
   savedChatId: string | null;
+  /** Pinned messages keyed by chat id. Populated by socket
+   *  "chat:pinned-updated" + initial GET /messages/chat/:id/pinned. */
+  pinnedMessages: Record<string, PinnedMsg[]>;
   setActiveChat: (chat: Chat | null) => void;
   fetchChats: () => Promise<void>;
   openSavedChat: () => Promise<void>;
@@ -14,6 +35,8 @@ interface ChatState {
   updateChat: (chatId: string, updates: Partial<Chat>) => void;
   removeChat: (chatId: string) => void;
   updateUserPresence: (userId: string, isOnline: boolean) => void;
+  setPinnedMessages: (chatId: string, pinned: PinnedMsg[]) => void;
+  removePinnedMessage: (chatId: string, messageId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -21,6 +44,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeChat: null,
   isLoading: false,
   savedChatId: null,
+  pinnedMessages: {},
+
+  setPinnedMessages: (chatId, pinned) => {
+    set((state) => ({ pinnedMessages: { ...state.pinnedMessages, [chatId]: pinned } }));
+  },
+
+  removePinnedMessage: (chatId, messageId) => {
+    set((state) => ({
+      pinnedMessages: {
+        ...state.pinnedMessages,
+        [chatId]: (state.pinnedMessages[chatId] || []).filter(
+          (p) => p.message.id !== messageId,
+        ),
+      },
+    }));
+  },
 
   setActiveChat: (chat) => {
     // Reset unread count when opening a chat
