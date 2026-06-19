@@ -48,6 +48,12 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
   const [showChecklist, setShowChecklist] = useState(false);
   const [showPoll, setShowPoll] = useState(false);
   const voice = useVoiceRecorder();
+  // Hold-to-record state. Quick tap (<250ms) on the mic locks the
+  // recorder so the user can release pointer and finish via Send/Cancel
+  // buttons (good for desktop). Hold ≥1s + release sends. <1s release
+  // cancels (treats as accidental tap-and-release).
+  const [voiceLocked, setVoiceLocked] = useState(false);
+  const voiceStartedAtRef = useRef<number | null>(null);
   // Mention autocomplete state — populated when the user is mid-typing an `@`.
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [showSchedule, setShowSchedule] = useState(false);
@@ -232,6 +238,39 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
         toast.error(t('voice.recordFailed'));
       }
     }
+  };
+
+  // Hold-to-record handlers. Pointer events unify mouse + touch.
+  const handleVoicePointerDown = async (e: React.PointerEvent) => {
+    e.preventDefault();
+    voiceStartedAtRef.current = Date.now();
+    setVoiceLocked(false);
+    await handleStartVoice();
+  };
+
+  const handleVoicePointerUp = async () => {
+    if (voiceLocked) return;
+    const startedAt = voiceStartedAtRef.current;
+    if (!startedAt) return;
+    const heldMs = Date.now() - startedAt;
+    voiceStartedAtRef.current = null;
+    if (heldMs < 250) {
+      // Quick tap → lock; user can finish via Send/Cancel buttons.
+      setVoiceLocked(true);
+      return;
+    }
+    if (heldMs < 1000) {
+      // Too short to be a real message — treat as accidental.
+      voice.cancel();
+      return;
+    }
+    await handleSendVoice();
+  };
+
+  const handleVoicePointerCancel = () => {
+    if (voiceLocked) return;
+    voice.cancel();
+    voiceStartedAtRef.current = null;
   };
 
   const handleSendVoice = async () => {
@@ -535,7 +574,7 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
       {voice.recording ? (
         <div className="flex items-center gap-3 py-2 px-2">
           <button
-            onClick={() => voice.cancel()}
+            onClick={() => { voice.cancel(); setVoiceLocked(false); }}
             title={t('voice.cancel')}
             className="p-2.5 rounded-full bg-red-500 hover:bg-red-600 text-white shrink-0 transition-colors"
           >
@@ -546,6 +585,11 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
             <span className="text-sm text-gray-700 dark:text-gray-200 font-mono tabular-nums">
               {Math.floor(voice.duration / 60)}:{String(voice.duration % 60).padStart(2, '0')}
             </span>
+            {!voiceLocked && (
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 italic ml-1 hidden sm:inline">
+                {t('voice.holdHint') || 'отпусти чтобы отправить'}
+              </span>
+            )}
             <div className="flex-1 flex items-center justify-end gap-[2px] h-5 overflow-hidden">
               {voice.levels.slice(-24).map((lvl, i) => (
                 <span
@@ -557,7 +601,7 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
             </div>
           </div>
           <button
-            onClick={handleSendVoice}
+            onClick={async () => { await handleSendVoice(); setVoiceLocked(false); }}
             disabled={uploading}
             title={t('voice.send')}
             className="p-2.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white
@@ -696,11 +740,16 @@ export function MessageInput({ chatId, chatType, recipientUserId, recipientIsBot
           </>
         ) : (
           <button
-            onClick={handleStartVoice}
+            onPointerDown={handleVoicePointerDown}
+            onPointerUp={handleVoicePointerUp}
+            onPointerLeave={handleVoicePointerCancel}
+            onPointerCancel={handleVoicePointerCancel}
             disabled={uploading}
             title={t('voice.record')}
             className="p-2.5 rounded-full bg-primary-500 hover:bg-primary-600 text-white
-              disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+              disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0
+              select-none touch-none"
+            style={{ WebkitUserSelect: 'none' }}
           >
             <Mic size={18} />
           </button>
