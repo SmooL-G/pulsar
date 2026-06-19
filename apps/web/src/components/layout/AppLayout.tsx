@@ -8,6 +8,7 @@ import { FriendsPanel } from '../friends/FriendsPanel';
 import { WalletPanel } from '../wallet/WalletPanel';
 import { SettingsPanel } from '../settings/SettingsPanel';
 import { useChatStore } from '../../store/chatStore';
+import { useShortcut } from '../../hooks/useKeyboardShortcuts';
 
 /**
  * Authenticated app shell. Five-tab BottomNav drives the main view:
@@ -33,6 +34,24 @@ export function AppLayout() {
       setShowInfo(false);
     }
   }, [activeChat]);
+
+  // Global shortcuts:
+  //   Ctrl+K → jump to Chat tab + focus the chat-search input
+  //   Escape → if any modal-tab is active, return to Home
+  useShortcut('ctrl+k', () => {
+    setTab('chat');
+    setShowSidebar(true);
+    // Defer so the Sidebar mounts first, then we grab its search field.
+    setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>(
+        'input[placeholder*="оиск"], input[placeholder*="earch"]',
+      );
+      input?.focus();
+    }, 30);
+  });
+  useShortcut('escape', () => {
+    if (tab === 'contacts' || tab === 'wallet' || tab === 'settings') setTab('home');
+  }, { enabled: tab !== 'home' && tab !== 'chat' });
 
   // Switching to "chat" tab while no chat selected → show list.
   // Switching to any other tab while a chat is active is fine — we
