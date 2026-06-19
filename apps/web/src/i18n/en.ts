@@ -223,7 +223,10 @@ export const en = {
   'chat.deleteForAllAdmin': 'Delete (moderator)',
   'chat.pin': 'Pin message',
   'chat.pinned': 'Pinned',
+  'chat.pinnedMessage': 'Pinned',
+  'chat.unpin': 'Unpin',
   'chat.pinForbidden': 'Only admins can pin',
+  'chat.file': 'Attachment',
 
   // Info Panel
   'info.groupInfo': 'Group Info',

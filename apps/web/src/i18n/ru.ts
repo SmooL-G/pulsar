@@ -223,7 +223,10 @@ export const ru = {
   'chat.deleteForAllAdmin': 'Удалить (модератор)',
   'chat.pin': 'Закрепить',
   'chat.pinned': 'Закреплено',
+  'chat.pinnedMessage': 'Закреплённое',
+  'chat.unpin': 'Открепить',
   'chat.pinForbidden': 'Только админ может закреплять',
+  'chat.file': 'Вложение',
 
   // Info Panel
   'info.groupInfo': 'Информация о группе',

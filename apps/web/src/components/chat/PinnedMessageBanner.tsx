@@ -60,50 +60,83 @@ export function PinnedMessageBanner({ chatId, chatType, myRole }: PinnedMessageB
   const prev = () => setCurrentIdx((i) => (i + 1) % pinned.length);
   const next = () => setCurrentIdx((i) => (i - 1 + pinned.length) % pinned.length);
 
-  const text = current.message.content || t('chat.file');
+  const text = current.message.content
+    || (current.message.type === 'VOICE' ? `🎤 ${t('voice.message') || 'Голосовое'}`
+        : current.message.type === 'FILE' || current.message.type === 'IMAGE'
+          ? `📎 ${t('chat.file') || 'Вложение'}`
+          : t('chat.file') || 'Сообщение');
   const senderName = current.message.sender?.displayName || current.message.sender?.username || '';
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-dark-700 border-b border-gray-200 dark:border-dark-500 shrink-0">
-      {/* Pin icon + count */}
-      <div className="flex flex-col items-center shrink-0">
-        <Pin size={13} className="text-primary-400 mb-0.5" />
-        {pinned.length > 1 && (
-          <span className="text-[9px] text-gray-400">{currentIdx + 1}/{pinned.length}</span>
-        )}
-      </div>
+    <div className="mx-2 md:mx-3 mt-2 shrink-0">
+      <div
+        className="
+          relative flex items-stretch gap-2 px-3 py-2
+          rounded-2xl overflow-hidden
+          bg-white/70 dark:bg-dark-700/55 backdrop-blur-xl
+          border border-white/40 dark:border-white/10
+          shadow-md shadow-black/5 dark:shadow-black/20
+        "
+      >
+        {/* Left accent stripe */}
+        <span className="w-1 rounded-full bg-primary-500 shrink-0" />
 
-      {/* Кликабельный контент — скролл к сообщению */}
-      <div className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={handleScrollTo}>
-        <p className="text-[10px] font-semibold text-primary-400 mb-0.5">
-          {t('chat.pinnedMessage')} {senderName ? `· ${senderName}` : ''}
-        </p>
-        <p className="text-xs text-gray-600 dark:text-gray-300 truncate">{text}</p>
-      </div>
-
-      {/* Навигация если несколько */}
-      {pinned.length > 1 && (
-        <div className="flex flex-col shrink-0">
-          <button onClick={next} className="text-gray-400 hover:text-gray-200 transition-colors">
-            <ChevronUp size={14} />
-          </button>
-          <button onClick={prev} className="text-gray-400 hover:text-gray-200 transition-colors">
-            <ChevronDown size={14} />
-          </button>
-        </div>
-      )}
-
-      {/* Открепить */}
-      {canUnpin && (
+        {/* Body — click jumps to source message */}
         <button
-          onClick={handleUnpin}
-          disabled={loading}
-          className="shrink-0 p-1 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-          title={t('chat.unpin')}
+          onClick={handleScrollTo}
+          className="flex-1 min-w-0 text-left hover:opacity-90 transition-opacity flex flex-col justify-center py-0.5"
         >
-          <X size={14} />
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Pin size={11} className="text-primary-500 shrink-0" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary-500">
+              {t('chat.pinnedMessage') || 'Закреплено'}
+              {pinned.length > 1 && (
+                <span className="ml-1.5 text-gray-400 dark:text-gray-500 normal-case tracking-normal">
+                  {currentIdx + 1}/{pinned.length}
+                </span>
+              )}
+            </span>
+            {senderName && (
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                · {senderName}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-700 dark:text-gray-200 truncate">{text}</p>
         </button>
-      )}
+
+        {/* Nav + unpin column */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          {pinned.length > 1 && (
+            <div className="flex flex-col -mr-0.5">
+              <button
+                onClick={prev}
+                className="text-gray-400 hover:text-primary-500 transition-colors leading-none"
+                aria-label="Previous pin"
+              >
+                <ChevronUp size={14} />
+              </button>
+              <button
+                onClick={next}
+                className="text-gray-400 hover:text-primary-500 transition-colors leading-none"
+                aria-label="Next pin"
+              >
+                <ChevronDown size={14} />
+              </button>
+            </div>
+          )}
+          {canUnpin && (
+            <button
+              onClick={handleUnpin}
+              disabled={loading}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+              title={t('chat.unpin') || 'Открепить'}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
