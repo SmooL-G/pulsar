@@ -352,13 +352,13 @@ export async function walletRoutes(app: FastifyInstance) {
       });
     } catch {}
 
-    // If a direct chat already exists between sender & recipient, drop
-    // a SYSTEM message with plsTransfer metadata so the transfer is
-    // visible in the conversation (Telegram-style "Sent 100 PLS"
-    // bubble). We do NOT auto-create the DM — that would surprise the
-    // recipient with an empty chat appearing in their list.
+    // Drop a SYSTEM message with plsTransfer metadata into the DM
+    // between sender & recipient so the transfer is visible in chat
+    // (Telegram-style "Sent 100 PLS" bubble). If no DM exists yet we
+    // create one — a money transfer is enough context to warrant a
+    // conversation thread.
     try {
-      const dm = await prisma.chat.findFirst({
+      let dm = await prisma.chat.findFirst({
         where: {
           type: 'DIRECT',
           AND: [
@@ -368,6 +368,30 @@ export async function walletRoutes(app: FastifyInstance) {
         },
         select: { id: true },
       });
+      if (!dm) {
+        const created = await prisma.chat.create({
+          data: {
+            type: 'DIRECT',
+            members: {
+              create: [
+                { userId: fromUserId, role: 'MEMBER' },
+                { userId: toUserId, role: 'MEMBER' },
+              ],
+            },
+          },
+          select: { id: true },
+        });
+        dm = created;
+        // The chat was created mid-session, so neither user's
+        // already-connected socket has joined `chat:<id>` yet (that
+        // join happens at connect). Force both into the new room so
+        // the upcoming `message:new` emit reaches them.
+        try {
+          const io = getIO();
+          await io.in(`user:${fromUserId}`).socketsJoin(`chat:${created.id}`);
+          await io.in(`user:${toUserId}`).socketsJoin(`chat:${created.id}`);
+        } catch {}
+      }
       if (dm) {
         const sysMsg = await prisma.message.create({
           data: {

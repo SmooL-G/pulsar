@@ -96,6 +96,12 @@ export function useSocket() {
       const activeChatId = useChatStore.getState().activeChat?.id;
       const isActiveChat = activeChatId === message.chatId;
       const chat = useChatStore.getState().chats.find((c) => c.id === message.chatId);
+      // Unknown chat — most likely a fresh DM just auto-created by
+      // /wallet/transfer or a contact-add flow. Pull the chat list
+      // so the new entry shows up in the sidebar.
+      if (!chat) {
+        useChatStore.getState().fetchChats?.();
+      }
       const newUnread = (!isOwnMessage && !isActiveChat)
         ? ((chat?.unreadCount || 0) + 1)
         : (isActiveChat ? 0 : (chat?.unreadCount || 0));
