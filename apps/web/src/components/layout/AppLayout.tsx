@@ -7,6 +7,7 @@ import { NewsFeed } from './NewsFeed';
 import { FriendsPanel } from '../friends/FriendsPanel';
 import { WalletPanel } from '../wallet/WalletPanel';
 import { SettingsPanel } from '../settings/SettingsPanel';
+import { CallOverlay } from '../call/CallOverlay';
 import { useChatStore } from '../../store/chatStore';
 import { useShortcut } from '../../hooks/useKeyboardShortcuts';
 
@@ -132,6 +133,9 @@ export function AppLayout() {
 
       {/* Bottom navigation — pinned, always visible */}
       <BottomNav active={tab} onChange={handleTabChange} />
+
+      {/* Global voice/video call overlay — covers everything when active */}
+      <CallOverlay />
     </div>
   );
 }

@@ -46,6 +46,15 @@ export interface ClientToServerEvents {
   'webrtc:answer': (data: { to: string; sdp: RTCSessionDescriptionInit }) => void;
   'webrtc:ice': (data: { to: string; candidate: RTCIceCandidateInit }) => void;
   'webrtc:close': (data: { to: string; reason?: string }) => void;
+
+  // ─── Voice/video calls (high-level state, separate from raw SDP) ─
+  // The actual media stream is negotiated via webrtc:* above; these
+  // events drive the call lifecycle (invite → accept/reject → end).
+  'call:invite': (data: { to: string; callId: string; kind: 'audio' | 'video' }) => void;
+  'call:accept': (data: { to: string; callId: string }) => void;
+  'call:reject': (data: { to: string; callId: string; reason?: 'declined' | 'busy' }) => void;
+  'call:cancel': (data: { to: string; callId: string }) => void;
+  'call:end':    (data: { to: string; callId: string; duration: number }) => void;
 }
 
 // Server → Client events
@@ -148,4 +157,13 @@ export interface ServerToClientEvents {
   'webrtc:answer': (data: { from: string; sdp: RTCSessionDescriptionInit }) => void;
   'webrtc:ice': (data: { from: string; candidate: RTCIceCandidateInit }) => void;
   'webrtc:close': (data: { from: string; reason?: string }) => void;
+
+  // ─── Voice/video call lifecycle (relayed) ─────────────────
+  'call:incoming':    (data: { from: string; callId: string; kind: 'audio' | 'video' }) => void;
+  'call:ringing':     (data: { callId: string }) => void;
+  'call:unavailable': (data: { callId: string; reason: 'offline' | 'busy' }) => void;
+  'call:accepted':    (data: { from: string; callId: string }) => void;
+  'call:rejected':    (data: { from: string; callId: string; reason?: 'declined' | 'busy' }) => void;
+  'call:cancelled':   (data: { from: string; callId: string }) => void;
+  'call:ended':       (data: { from: string; callId: string; duration: number }) => void;
 }

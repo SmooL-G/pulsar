@@ -113,6 +113,44 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
   }
 
   if (message.type === 'SYSTEM') {
+    // Special-case: voice/video call summary (metadata.call written
+    // by callHandler when the call ends — answered / missed /
+    // rejected / cancelled).
+    const call = (message.metadata as any)?.call;
+    if (call) {
+      const status = call.status as 'answered' | 'missed' | 'rejected' | 'cancelled';
+      const isVideo = call.kind === 'video';
+      const isOutgoing = message.senderId === currentUser?.id;
+      const isMissed = status === 'missed';
+      const isRejected = status === 'rejected' || status === 'cancelled';
+      const dur = Math.max(0, Number(call.duration) || 0);
+      const mm = Math.floor(dur / 60).toString().padStart(2, '0');
+      const ss = (dur % 60).toString().padStart(2, '0');
+      const label = (() => {
+        if (status === 'answered') return locale === 'ru' ? 'Звонок' : 'Call';
+        if (status === 'missed')    return locale === 'ru' ? (isOutgoing ? 'Не отвечен' : 'Пропущенный') : (isOutgoing ? 'No answer' : 'Missed call');
+        if (status === 'rejected')  return locale === 'ru' ? 'Отклонён' : 'Declined';
+        if (status === 'cancelled') return locale === 'ru' ? 'Отменён' : 'Cancelled';
+        return locale === 'ru' ? 'Звонок' : 'Call';
+      })();
+      const tone = isMissed
+        ? 'bg-red-500/10 ring-red-500/30 text-red-500'
+        : isRejected
+          ? 'bg-gray-500/10 ring-gray-500/30 text-gray-500'
+          : 'bg-emerald-500/10 ring-emerald-500/30 text-emerald-500';
+      return (
+        <div id={`msg-${message.id}`} className="flex justify-center my-3">
+          <div className={`flex items-center gap-3 px-4 py-2 rounded-2xl backdrop-blur-xl shadow-sm ring-1 ${tone}`}>
+            <span className="text-xl leading-none">{isVideo ? '📹' : '📞'}</span>
+            <div className="flex flex-col leading-tight">
+              <span className="text-[11px] uppercase tracking-wider font-semibold opacity-70">{label}</span>
+              {status === 'answered' && <span className="text-sm font-mono font-bold">{mm}:{ss}</span>}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Special-case: PLS transfer notification (metadata.plsTransfer
     // populated by /wallet/transfer when a DM already exists). Render
     // a glassy card with the diamond + amount; arrow flips direction

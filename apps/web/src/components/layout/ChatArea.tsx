@@ -18,6 +18,7 @@ import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { P2PIndicator } from '../chat/P2PIndicator';
 import { NewsFeed } from './NewsFeed';
 import { useI18n } from '../../i18n';
+import { startCall } from '../../p2p/callController';
 
 interface ChatAreaProps {
   onBack: () => void;
@@ -25,7 +26,7 @@ interface ChatAreaProps {
 }
 
 export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const setActiveChat = useChatStore((s) => s.setActiveChat);
   const activeChat = useChatStore((s) => s.activeChat);
   const [showTransfer, setShowTransfer] = useState(false);
@@ -165,12 +166,20 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
               <Send size={18} />
             </button>
           )}
-          {!isSaved && (
+          {!isSaved && activeChat.type === 'DIRECT' && (activeChat as any).otherUser?.id && !(activeChat as any).otherUser?.isBot && (
             <>
-              <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500">
+              <button
+                onClick={() => startCall((activeChat as any).otherUser.id, 'audio')}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500 hover:text-emerald-500"
+                title={locale === 'ru' ? 'Голосовой звонок' : 'Audio call'}
+              >
                 <Phone size={18} />
               </button>
-              <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500">
+              <button
+                onClick={() => startCall((activeChat as any).otherUser.id, 'video')}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500 hover:text-emerald-500"
+                title={locale === 'ru' ? 'Видеозвонок' : 'Video call'}
+              >
                 <Video size={18} />
               </button>
             </>

@@ -5,6 +5,7 @@ import { useMessageStore } from '../store/messageStore';
 import { useChatStore } from '../store/chatStore';
 import type { Message } from '@pulsar/shared';
 import * as p2p from '../p2p/PeerConnection';
+import { registerCallSocketHandlers } from '../p2p/callController';
 
 let socket: Socket | null = null;
 
@@ -49,6 +50,8 @@ export function useSocket() {
 
     socket.on('connect', () => {
       connectedRef.current = true;
+      // Wire call:* socket handlers once the socket is up (idempotent).
+      registerCallSocketHandlers();
       // Refetch active chat messages — we may have missed pushes while disconnected
       const activeChatId = useChatStore.getState().activeChat?.id;
       if (activeChatId) {

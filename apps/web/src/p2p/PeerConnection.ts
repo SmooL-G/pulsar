@@ -52,6 +52,16 @@ export class PeerConnection {
   private ignoreOffer = false;
   private connectTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // Media (calls). Empty until addLocalStream() is called.
+  private localStream: MediaStream | null = null;
+  private localSenders: RTCRtpSender[] = [];
+  private remoteStream: MediaStream | null = null;
+  /** Called once when the first remote track arrives so the UI can
+   *  bind the stream to an <audio>/<video> element. Idempotent — we
+   *  keep adding tracks to the same MediaStream so subsequent calls
+   *  receive the *same* reference. */
+  public onRemoteStream: ((stream: MediaStream) => void) | null = null;
+
   constructor(localUserId: string, remoteUserId: string) {
     this.localUserId = localUserId;
     this.remoteUserId = remoteUserId;
@@ -113,6 +123,14 @@ export class PeerConnection {
 
     pc.ondatachannel = (e) => {
       this.attachDataChannel(e.channel);
+    };
+
+    pc.ontrack = (e) => {
+      if (!this.remoteStream) this.remoteStream = new MediaStream();
+      this.remoteStream.addTrack(e.track);
+      try { this.onRemoteStream?.(this.remoteStream); } catch (err) {
+        console.warn('[p2p] onRemoteStream handler threw:', err);
+      }
     };
 
     // 8s opening budget; if not 'open' by then, mark failed and let
@@ -210,10 +228,49 @@ export class PeerConnection {
     return true;
   }
 
+  // ─── Media (calls) ────────────────────────────────────────────────
+
+  /** Attach a local media stream. Fires onnegotiationneeded which
+   *  triggers a renegotiation through the existing offer/answer path,
+   *  so the remote side starts receiving tracks automatically. */
+  addLocalStream(stream: MediaStream) {
+    this.localStream = stream;
+    for (const track of stream.getTracks()) {
+      const sender = this.pc.addTrack(track, stream);
+      this.localSenders.push(sender);
+    }
+  }
+
+  removeLocalStream() {
+    for (const sender of this.localSenders) {
+      try { this.pc.removeTrack(sender); } catch { /* ignore */ }
+    }
+    this.localSenders = [];
+    if (this.localStream) {
+      try { this.localStream.getTracks().forEach((t) => t.stop()); } catch { /* ignore */ }
+      this.localStream = null;
+    }
+  }
+
+  setAudioMuted(muted: boolean) {
+    if (!this.localStream) return;
+    for (const track of this.localStream.getAudioTracks()) track.enabled = !muted;
+  }
+
+  setVideoMuted(muted: boolean) {
+    if (!this.localStream) return;
+    for (const track of this.localStream.getVideoTracks()) track.enabled = !muted;
+  }
+
+  getRemoteStream(): MediaStream | null {
+    return this.remoteStream;
+  }
+
   close(reason?: string) {
     try {
       emitSignaling('webrtc:close', this.remoteUserId, { reason });
     } catch { /* ignore */ }
+    try { this.removeLocalStream(); } catch { /* ignore */ }
     try { this.channel?.close(); } catch { /* ignore */ }
     try { this.pc.close(); } catch { /* ignore */ }
     if (this.connectTimer) clearTimeout(this.connectTimer);
