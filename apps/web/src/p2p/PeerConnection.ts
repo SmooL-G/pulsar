@@ -3,6 +3,7 @@ import { usePeerStore } from './peerStore';
 import { getSocket } from '../hooks/useSocket';
 import { useMessageStore } from '../store/messageStore';
 import { useAuthStore } from '../store/authStore';
+import { useCallStore } from '../store/callStore';
 import { relayClient } from './RelayClient';
 import type { Message } from '@pulsar/shared';
 
@@ -273,6 +274,39 @@ export class PeerConnection {
       const sender = this.pc.addTrack(track, stream);
       this.localSenders.push(sender);
     }
+    // Don't trust onnegotiationneeded to fire reliably across browser
+    // versions / WebRTC adapter quirks. Kick off renegotiation
+    // explicitly. If signaling is busy, schedule for when it's stable.
+    void this.renegotiate('addLocalStream');
+  }
+
+  private async renegotiate(reason: string) {
+    if (this.pc.signalingState === 'closed') return;
+    if (this.pc.signalingState !== 'stable') {
+      console.log(`[p2p] renegotiate(${reason}) deferred — state ${this.pc.signalingState}`);
+      // Try again on next stable state. signalingstatechange covers it.
+      const onStable = () => {
+        if (this.pc.signalingState === 'stable') {
+          this.pc.removeEventListener('signalingstatechange', onStable);
+          void this.renegotiate(reason + ':deferred');
+        }
+      };
+      this.pc.addEventListener('signalingstatechange', onStable);
+      return;
+    }
+    if (this.makingOffer) return;
+    try {
+      this.makingOffer = true;
+      console.log(`[p2p] explicit renegotiate(${reason}) for ${this.remoteUserId}`);
+      const offer = await this.pc.createOffer();
+      await this.pc.setLocalDescription(offer);
+      console.log(`[p2p] sending offer to ${this.remoteUserId} (explicit)`);
+      emitSignaling('webrtc:offer', this.remoteUserId, { sdp: this.pc.localDescription! });
+    } catch (err) {
+      console.error(`[p2p] renegotiate(${reason}) failed:`, err);
+    } finally {
+      this.makingOffer = false;
+    }
   }
 
   removeLocalStream() {
@@ -378,6 +412,19 @@ export function ensurePeer(userId: string): PeerConnection {
 }
 
 export function dropPeer(userId: string, reason?: string) {
+  // Never tear down the PC while a call is active with this user.
+  // Defensive against old-version clients still emitting webrtc:close
+  // on their data-channel timeout — that would kill our media tracks
+  // mid-call. Explicit endCall() handles cleanup; this is purely a
+  // peer-state event.
+  const callState = useCallStore.getState();
+  const inCallWithThisUser =
+    callState.phase !== 'idle' && callState.phase !== 'ended' &&
+    callState.peer?.userId === userId;
+  if (inCallWithThisUser) {
+    console.log(`[p2p] suppressing dropPeer(${userId}) — active call (reason: ${reason})`);
+    return;
+  }
   const p = peers.get(userId);
   if (!p) return;
   p.close(reason);
