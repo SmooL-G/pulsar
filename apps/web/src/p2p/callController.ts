@@ -29,6 +29,12 @@ import { api } from '../services/api';
 
 let activePeerUserId: string | null = null;
 let ringtoneEl: HTMLAudioElement | null = null;
+let outgoingTimeout: ReturnType<typeof setTimeout> | null = null;
+
+/** Hard ceiling on how long we wait for the callee to pick up before
+ *  auto-cancelling. Prevents the UI from sticking in 'outgoing' forever
+ *  if the callee drops their socket mid-ring. */
+const OUTGOING_TIMEOUT_MS = 45_000;
 
 function newCallId(): string {
   // Short opaque id — collision risk negligible at human scale.
@@ -94,13 +100,25 @@ async function loadPeer(userId: string): Promise<CallPeer> {
 // ─── Public API (called by UI) ─────────────────────────────────────
 
 export async function startCall(peerUserId: string, kind: CallKind) {
+  console.log('[call] startCall', { peerUserId, kind, phase: useCallStore.getState().phase });
   const store = useCallStore.getState();
+
+  // If the store is stuck in a non-idle phase (e.g. previous call's
+  // socket reply got lost), reset and proceed instead of silently
+  // ignoring the click — the user is explicitly asking for a new call.
   if (store.phase !== 'idle') {
-    console.warn('[call] startCall while non-idle:', store.phase);
-    return;
+    console.warn('[call] resetting stale phase before new call:', store.phase);
+    cleanupAndReset();
   }
+
   const me = useAuthStore.getState().user;
   if (!me || me.id === peerUserId) return;
+
+  const socket = getSocket();
+  if (!socket?.connected) {
+    alert('Нет соединения с сервером. Перезагрузите страницу.');
+    return;
+  }
 
   const stream = await getUserMediaSafe(kind);
   if (!stream) {
@@ -110,14 +128,25 @@ export async function startCall(peerUserId: string, kind: CallKind) {
 
   const callId = newCallId();
   const peer = await loadPeer(peerUserId);
-  store.setCall({ callId, kind, peer, phase: 'outgoing' });
+  useCallStore.getState().setCall({ callId, kind, peer, phase: 'outgoing' });
   useCallStore.getState().setLocalStream(stream);
   activePeerUserId = peerUserId;
 
   attachMediaToPeer(peerUserId, stream);
 
-  getSocket()?.emit('call:invite', { to: peerUserId, callId, kind });
+  socket.emit('call:invite', { to: peerUserId, callId, kind });
+  console.log('[call] emitted call:invite', { to: peerUserId, callId });
   playRingtone(true);
+
+  // Safety timer: if no reply within 45s, auto-cancel.
+  if (outgoingTimeout) clearTimeout(outgoingTimeout);
+  outgoingTimeout = setTimeout(() => {
+    const s = useCallStore.getState();
+    if (s.phase === 'outgoing' && s.callId === callId) {
+      console.warn('[call] outgoing timeout, auto-cancel');
+      cancelCall();
+    }
+  }, OUTGOING_TIMEOUT_MS);
 }
 
 export async function acceptCall() {
@@ -193,6 +222,7 @@ export function toggleVideo() {
 
 function cleanupAndReset(endReason?: 'hangup' | 'rejected' | 'cancelled' | 'unavailable' | 'missed') {
   stopRingtone();
+  if (outgoingTimeout) { clearTimeout(outgoingTimeout); outgoingTimeout = null; }
   const peerUserId = activePeerUserId;
   activePeerUserId = null;
   const store = useCallStore.getState();
@@ -221,18 +251,26 @@ function cleanupAndReset(endReason?: 'hangup' | 'rejected' | 'cancelled' | 'unav
 
 // ─── Socket event registration ─────────────────────────────────────
 
-let registered = false;
+/** Pass the live socket explicitly so we wire onto THIS instance.
+ *  Safe to call multiple times — we off() before on() each time. */
+export function registerCallSocketHandlers(socket: any) {
+  if (!socket) {
+    console.warn('[call] registerCallSocketHandlers: no socket');
+    return;
+  }
 
-export function registerCallSocketHandlers() {
-  if (registered) return;
-  const socket = getSocket();
-  if (!socket) return;
-  registered = true;
+  socket.off('call:incoming');
+  socket.off('call:ringing');
+  socket.off('call:unavailable');
+  socket.off('call:accepted');
+  socket.off('call:rejected');
+  socket.off('call:cancelled');
+  socket.off('call:ended');
 
-  socket.on('call:incoming', async ({ from, callId, kind }) => {
+  socket.on('call:incoming', async ({ from, callId, kind }: { from: string; callId: string; kind: CallKind }) => {
+    console.log('[call] incoming', { from, callId, kind });
     const store = useCallStore.getState();
     if (store.phase !== 'idle') {
-      // Busy — auto-reject the new invite so the caller gets feedback.
       socket.emit('call:reject', { to: from, callId, reason: 'busy' });
       return;
     }
@@ -241,32 +279,46 @@ export function registerCallSocketHandlers() {
     playRingtone(true);
   });
 
-  socket.on('call:ringing', () => {
-    // Caller-side confirmation — nothing to update visually.
+  socket.on('call:ringing', ({ callId }: { callId: string }) => {
+    console.log('[call] ringing', callId);
   });
 
-  socket.on('call:unavailable', ({ reason }) => {
+  socket.on('call:unavailable', ({ callId, reason }: { callId: string; reason: 'offline' | 'busy' }) => {
+    console.log('[call] unavailable', { callId, reason });
     const store = useCallStore.getState();
     if (store.phase !== 'outgoing') return;
     cleanupAndReset(reason === 'busy' ? 'rejected' : 'unavailable');
   });
 
-  socket.on('call:accepted', () => {
+  socket.on('call:accepted', ({ callId }: { callId: string }) => {
+    console.log('[call] accepted', callId);
     const store = useCallStore.getState();
     if (store.phase !== 'outgoing') return;
     stopRingtone();
     store.markActive();
   });
 
-  socket.on('call:rejected', () => {
+  socket.on('call:rejected', ({ callId }: { callId: string }) => {
+    console.log('[call] rejected', callId);
     cleanupAndReset('rejected');
   });
 
-  socket.on('call:cancelled', () => {
+  socket.on('call:cancelled', ({ callId }: { callId: string }) => {
+    console.log('[call] cancelled', callId);
     cleanupAndReset('cancelled');
   });
 
-  socket.on('call:ended', () => {
+  socket.on('call:ended', ({ callId, duration }: { callId: string; duration: number }) => {
+    console.log('[call] ended', { callId, duration });
     cleanupAndReset('hangup');
   });
+}
+
+/** Force-reset the call store to idle. Exposed for the dead-call
+ *  recovery: if the user clicks the call button while the store is
+ *  somehow stuck non-idle (lost socket reply, etc.), we wipe state
+ *  before starting a fresh call. */
+export function forceResetCallState() {
+  console.log('[call] forceResetCallState');
+  cleanupAndReset();
 }

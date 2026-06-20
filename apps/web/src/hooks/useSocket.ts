@@ -50,8 +50,6 @@ export function useSocket() {
 
     socket.on('connect', () => {
       connectedRef.current = true;
-      // Wire call:* socket handlers once the socket is up (idempotent).
-      registerCallSocketHandlers();
       // Refetch active chat messages — we may have missed pushes while disconnected
       const activeChatId = useChatStore.getState().activeChat?.id;
       if (activeChatId) {
@@ -201,6 +199,12 @@ export function useSocket() {
     socket.on('webrtc:close', ({ from, reason }: { from: string; reason?: string }) => {
       p2p.dropPeer(from, reason);
     });
+
+    // ─── Voice/video call lifecycle ──────────────────────────────────
+    // Registered here (not inside `connect`) so the listeners are bound
+    // to *this* socket instance regardless of whether it's already
+    // connected. Re-runs on socket re-creation in useEffect cleanup.
+    registerCallSocketHandlers(socket);
 
     // Heartbeat
     const heartbeatInterval = setInterval(() => {
