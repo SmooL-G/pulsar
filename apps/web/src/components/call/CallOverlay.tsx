@@ -27,17 +27,31 @@ export function CallOverlay() {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Wire MediaStream → media elements.
+  // Wire MediaStream → media elements. We re-run on every phase change
+  // too because the audio element only mounts once phase != 'idle' and
+  // we want srcObject reattached if the user accepts after a moment.
   useEffect(() => {
-    if (kind === 'audio' && audioRef.current && remoteStream) {
+    if (!remoteStream) return;
+    console.log('[call] attaching remoteStream', {
+      audio: kind === 'audio' && !!audioRef.current,
+      video: kind === 'video' && !!remoteVideoRef.current,
+      tracks: remoteStream.getTracks().map((t) => `${t.kind}:${t.enabled}`),
+    });
+    if (kind === 'audio' && audioRef.current) {
       audioRef.current.srcObject = remoteStream;
-      audioRef.current.play().catch(() => { /* autoplay blocked */ });
+      audioRef.current.volume = 1;
+      audioRef.current.muted = false;
+      audioRef.current.play()
+        .then(() => console.log('[call] audio playing'))
+        .catch((err) => console.warn('[call] audio play failed:', err));
     }
-    if (kind === 'video' && remoteVideoRef.current && remoteStream) {
+    if (kind === 'video' && remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
-      remoteVideoRef.current.play().catch(() => {});
+      remoteVideoRef.current.play()
+        .then(() => console.log('[call] video playing'))
+        .catch((err) => console.warn('[call] video play failed:', err));
     }
-  }, [remoteStream, kind]);
+  }, [remoteStream, kind, phase]);
 
   useEffect(() => {
     if (kind === 'video' && localVideoRef.current && localStream) {

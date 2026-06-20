@@ -93,10 +93,12 @@ export class PeerConnection {
 
     // Negotiation: fires when something changes that needs a renegotiation.
     pc.onnegotiationneeded = async () => {
+      console.log(`[p2p] negotiationneeded for ${this.remoteUserId} (state: ${pc.signalingState})`);
       try {
         this.makingOffer = true;
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
+        console.log(`[p2p] sending offer to ${this.remoteUserId}`);
         emitSignaling('webrtc:offer', this.remoteUserId, { sdp: pc.localDescription! });
       } catch (err) {
         console.error('[p2p] negotiationneeded error:', err);
@@ -126,9 +128,17 @@ export class PeerConnection {
     };
 
     pc.ontrack = (e) => {
+      console.log(`[p2p] ontrack from ${this.remoteUserId}: kind=${e.track.kind} id=${e.track.id} streams=${e.streams.length}`);
       if (!this.remoteStream) this.remoteStream = new MediaStream();
       this.remoteStream.addTrack(e.track);
-      try { this.onRemoteStream?.(this.remoteStream); } catch (err) {
+      try {
+        if (this.onRemoteStream) {
+          console.log(`[p2p] firing onRemoteStream callback for ${this.remoteUserId}`);
+          this.onRemoteStream(this.remoteStream);
+        } else {
+          console.log(`[p2p] onRemoteStream callback NOT YET SET for ${this.remoteUserId} (will be picked up on accept)`);
+        }
+      } catch (err) {
         console.warn('[p2p] onRemoteStream handler threw:', err);
       }
     };
@@ -180,11 +190,28 @@ export class PeerConnection {
     if (this.pc.signalingState === 'closed') return; // stale handler post-teardown
     const offerCollision = this.makingOffer || this.pc.signalingState !== 'stable';
     this.ignoreOffer = !this.polite && offerCollision;
-    if (this.ignoreOffer) return;
+    console.log(`[p2p] onRemoteOffer from ${this.remoteUserId} (state: ${this.pc.signalingState}, polite: ${this.polite}, collision: ${offerCollision}, ignore: ${this.ignoreOffer})`);
+    if (this.ignoreOffer) {
+      console.warn(`[p2p] IGNORING offer from ${this.remoteUserId} due to collision`);
+      return;
+    }
     try {
-      await this.pc.setRemoteDescription(sdp);
+      // Perfect-negotiation rollback for the polite peer: if we have a
+      // pending local offer when a remote one arrives, rollback ours
+      // BEFORE applying theirs, otherwise setRemoteDescription throws
+      // InvalidStateError and the negotiation deadlocks.
+      if (offerCollision && this.polite) {
+        console.log(`[p2p] polite rollback before remote offer`);
+        await Promise.all([
+          this.pc.setLocalDescription({ type: 'rollback' } as any),
+          this.pc.setRemoteDescription(sdp),
+        ]);
+      } else {
+        await this.pc.setRemoteDescription(sdp);
+      }
       const answer = await this.pc.createAnswer();
       await this.pc.setLocalDescription(answer);
+      console.log(`[p2p] sending answer to ${this.remoteUserId}`);
       emitSignaling('webrtc:answer', this.remoteUserId, { sdp: this.pc.localDescription! });
     } catch (err) {
       // Don't log if the connection was torn down between checks.
@@ -196,6 +223,7 @@ export class PeerConnection {
 
   async onRemoteAnswer(sdp: RTCSessionDescriptionInit) {
     if (this.pc.signalingState === 'closed') return;
+    console.log(`[p2p] onRemoteAnswer from ${this.remoteUserId} (state: ${this.pc.signalingState})`);
     try {
       await this.pc.setRemoteDescription(sdp);
     } catch (err) {
@@ -234,8 +262,10 @@ export class PeerConnection {
    *  triggers a renegotiation through the existing offer/answer path,
    *  so the remote side starts receiving tracks automatically. */
   addLocalStream(stream: MediaStream) {
+    console.log(`[p2p] addLocalStream to ${this.remoteUserId}: ${stream.getTracks().length} tracks (state: ${this.pc.signalingState})`);
     this.localStream = stream;
     for (const track of stream.getTracks()) {
+      console.log(`[p2p]   adding ${track.kind} track id=${track.id} enabled=${track.enabled}`);
       const sender = this.pc.addTrack(track, stream);
       this.localSenders.push(sender);
     }
