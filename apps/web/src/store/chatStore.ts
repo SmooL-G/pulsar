@@ -28,6 +28,11 @@ interface ChatState {
   /** Pinned messages keyed by chat id. Populated by socket
    *  "chat:pinned-updated" + initial GET /messages/chat/:id/pinned. */
   pinnedMessages: Record<string, PinnedMsg[]>;
+  /** Snapshot of unread count taken AT THE MOMENT setActiveChat()
+   *  is called, before it gets zeroed. MessageList uses this to draw
+   *  a "Новые сообщения" divider above the last N messages. Cleared
+   *  on chat switch. */
+  lastOpenedUnread: { chatId: string; count: number } | null;
   setActiveChat: (chat: Chat | null) => void;
   fetchChats: () => Promise<void>;
   openSavedChat: () => Promise<void>;
@@ -45,6 +50,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isLoading: false,
   savedChatId: null,
   pinnedMessages: {},
+  lastOpenedUnread: null,
 
   setPinnedMessages: (chatId, pinned) => {
     set((state) => ({ pinnedMessages: { ...state.pinnedMessages, [chatId]: pinned } }));
@@ -62,14 +68,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setActiveChat: (chat) => {
-    // Reset unread count when opening a chat
+    // Reset unread count when opening a chat, but FIRST snapshot it
+    // so MessageList can draw a "Новые сообщения" divider above the
+    // last N messages.
     if (chat) {
-      set((state) => ({
-        activeChat: chat,
-        chats: state.chats.map((c) => c.id === chat.id ? { ...c, unreadCount: 0 } : c),
-      }));
+      set((state) => {
+        const existing = state.chats.find((c) => c.id === chat.id);
+        const prevUnread = (existing as any)?.unreadCount || 0;
+        return {
+          activeChat: chat,
+          lastOpenedUnread: { chatId: chat.id, count: prevUnread },
+          chats: state.chats.map((c) => c.id === chat.id ? { ...c, unreadCount: 0 } : c),
+        };
+      });
     } else {
-      set({ activeChat: null });
+      set({ activeChat: null, lastOpenedUnread: null });
     }
   },
 

@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useMessageStore } from '../../store/messageStore';
+import { useChatStore } from '../../store/chatStore';
 import { MessageBubble } from './MessageBubble';
 import { BotStartButton } from './BotStartButton';
 import { DateDivider } from './DateDivider';
+import { UnreadDivider } from './UnreadDivider';
 import { useAuthStore } from '../../store/authStore';
 import { getSocket } from '../../hooks/useSocket';
 import { useI18n } from '../../i18n';
@@ -35,10 +37,43 @@ export function MessageList({ chatId, chatType, otherUserId, otherUserIsBot, onO
   const { messages, fetchMessages, isLoading } = useMessageStore();
   const user = useAuthStore((s) => s.user);
   const locale = useI18n((s) => s.locale);
+  const lastOpenedUnread = useChatStore((s) => s.lastOpenedUnread);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showJumpDown, setShowJumpDown] = useState(false);
   const chatMessages = messages[chatId] || [];
+
+  // Snapshot of which message should get the "Новые сообщения" line
+  // ABOVE it. Computed once when messages load for a chat that was
+  // opened with unread > 0. Stable until chat switch.
+  const [unreadDividerMessageId, setUnreadDividerMessageId] = useState<string | null>(null);
+  const dividerComputedForChatRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    // New chat opened — wipe prior anchor until we (maybe) compute a new one.
+    if (dividerComputedForChatRef.current !== chatId) {
+      setUnreadDividerMessageId(null);
+      dividerComputedForChatRef.current = null;
+    }
+    if (
+      lastOpenedUnread?.chatId === chatId &&
+      lastOpenedUnread.count > 0 &&
+      chatMessages.length > 0 &&
+      dividerComputedForChatRef.current !== chatId
+    ) {
+      const idx = Math.max(0, chatMessages.length - lastOpenedUnread.count);
+      const anchor = chatMessages[idx];
+      if (anchor) {
+        setUnreadDividerMessageId(anchor.id);
+        dividerComputedForChatRef.current = chatId;
+        // Scroll the divider into view shortly after first paint.
+        setTimeout(() => {
+          const el = document.getElementById(`unread-divider-${anchor.id}`);
+          if (el) el.scrollIntoView({ behavior: 'auto', block: 'center' });
+        }, 60);
+      }
+    }
+  }, [chatId, chatMessages.length, lastOpenedUnread]);
 
   // Show "jump to bottom" pill when user has scrolled up past ~300px.
   // Listens on the scroll container so the button reflects current
@@ -104,9 +139,16 @@ export function MessageList({ chatId, chatType, otherUserId, otherUserIsBot, onO
         const showDivider =
           !prevMessage || !isSameDay(new Date(prevMessage.createdAt), date);
 
+        const showUnread = unreadDividerMessageId === message.id;
+
         return (
           <React.Fragment key={message.id}>
             {showDivider && <DateDivider label={dayLabel(date, locale)} />}
+            {showUnread && (
+              <div id={`unread-divider-${message.id}`}>
+                <UnreadDivider />
+              </div>
+            )}
             <MessageBubble
               message={message}
               isOwn={isOwn}

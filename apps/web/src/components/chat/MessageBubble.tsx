@@ -32,7 +32,7 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserId, onOpenComments }: MessageBubbleProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [showForward, setShowForward] = useState(false);
   const [showReward, setShowReward] = useState(false);
@@ -113,6 +113,49 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
   }
 
   if (message.type === 'SYSTEM') {
+    // Special-case: PLS transfer notification (metadata.plsTransfer
+    // populated by /wallet/transfer when a DM already exists). Render
+    // a glassy card with the diamond + amount; arrow flips direction
+    // based on whether the viewer is sender or recipient.
+    const transfer = (message.metadata as any)?.plsTransfer;
+    if (transfer) {
+      const isSender = transfer.fromUserId === currentUser?.id;
+      const amount = transfer.amount;
+      const received = transfer.received;
+      const fee = transfer.fee;
+      const verb = isSender
+        ? (locale === 'ru' ? 'Отправлено' : 'Sent')
+        : (locale === 'ru' ? 'Получено' : 'Received');
+      const shown = isSender ? amount : received;
+      return (
+        <div id={`msg-${message.id}`} className="flex justify-center my-3">
+          <div
+            className={`
+              flex items-center gap-3 px-4 py-2.5 rounded-2xl
+              backdrop-blur-xl shadow-md ring-1
+              ${isSender
+                ? 'bg-amber-500/10 ring-amber-500/30 text-amber-700 dark:text-amber-300'
+                : 'bg-emerald-500/10 ring-emerald-500/30 text-emerald-700 dark:text-emerald-300'}
+            `}
+          >
+            <span className="text-2xl leading-none">💎</span>
+            <div className="flex flex-col">
+              <span className="text-[11px] uppercase tracking-wider font-semibold opacity-70">
+                {verb} PLS
+              </span>
+              <span className="text-base font-bold tabular-nums">
+                {isSender ? '−' : '+'}{shown} PLS
+              </span>
+              {isSender && fee && fee !== '0' && (
+                <span className="text-[10px] opacity-60">
+                  {locale === 'ru' ? 'комиссия' : 'fee'}: {fee} PLS
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex justify-center my-2">
         <span className="text-xs text-gray-400 bg-gray-100 dark:bg-dark-600 px-3 py-1 rounded-full">

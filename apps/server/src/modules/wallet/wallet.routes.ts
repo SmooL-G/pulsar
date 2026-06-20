@@ -42,26 +42,94 @@ export async function walletRoutes(app: FastifyInstance) {
     };
   });
 
-  // Transaction history with pagination
+  // Transaction history with pagination + filters.
+  //
+  //   types     — comma-separated PlsTransactionType list to include
+  //               (e.g. "DEPOSIT,REWARD"). Empty/missing = all.
+  //   direction — "in" | "out". Computed from type + description prefix
+  //               since direction isn't a column: REWARD/DEPOSIT and
+  //               TRANSFERs starting with "Transfer from" are inbound;
+  //               everything else (PURCHASE/WITHDRAWAL/BURN + outgoing
+  //               TRANSFERs) is outbound.
+  //   q         — case-insensitive substring match on description.
+  //   from/to   — ISO date strings, inclusive bounds on createdAt.
   app.get('/history', async (request: FastifyRequest<{
-    Querystring: { limit?: string; offset?: string };
+    Querystring: {
+      limit?: string;
+      offset?: string;
+      types?: string;
+      direction?: string;
+      q?: string;
+      from?: string;
+      to?: string;
+    };
   }>) => {
     const wallet = await getOrCreateWallet(request.user!.userId);
     const limit = Math.min(parseInt(request.query.limit || '20') || 20, 100);
     const offset = parseInt(request.query.offset || '0') || 0;
 
-    const [transactions, total] = await Promise.all([
+    const where: any = { walletId: wallet.id };
+
+    const ALLOWED_TYPES = ['DEPOSIT', 'WITHDRAWAL', 'PURCHASE', 'REWARD', 'TRANSFER', 'BURN'];
+    if (request.query.types) {
+      const wanted = request.query.types
+        .split(',')
+        .map((s) => s.trim().toUpperCase())
+        .filter((s) => ALLOWED_TYPES.includes(s));
+      if (wanted.length > 0) where.type = { in: wanted };
+    }
+
+    if (request.query.q) {
+      where.description = { contains: request.query.q, mode: 'insensitive' };
+    }
+
+    if (request.query.from || request.query.to) {
+      where.createdAt = {};
+      if (request.query.from) {
+        const d = new Date(request.query.from);
+        if (!isNaN(d.getTime())) where.createdAt.gte = d;
+      }
+      if (request.query.to) {
+        const d = new Date(request.query.to);
+        if (!isNaN(d.getTime())) where.createdAt.lte = d;
+      }
+    }
+
+    // direction filter (post-query — can't be expressed cleanly as
+    // SQL with the current schema). Fetch a wider page and slice.
+    const direction = request.query.direction?.toLowerCase();
+    const usesDirection = direction === 'in' || direction === 'out';
+    const fetchTake = usesDirection ? limit * 4 : limit;
+    const fetchSkip = usesDirection ? 0 : offset;
+
+    const [rawTransactions, total] = await Promise.all([
       prisma.plsTransaction.findMany({
-        where: { walletId: wallet.id },
+        where,
         orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset,
+        take: fetchTake,
+        skip: fetchSkip,
       }),
-      prisma.plsTransaction.count({ where: { walletId: wallet.id } }),
+      prisma.plsTransaction.count({ where }),
     ]);
 
+    const isInbound = (tx: { type: string; description: string | null }) => {
+      if (tx.type === 'DEPOSIT' || tx.type === 'REWARD') return true;
+      if (tx.type === 'TRANSFER') {
+        return !!tx.description && /^Transfer from/i.test(tx.description);
+      }
+      return false;
+    };
+
+    let filtered = rawTransactions;
+    if (usesDirection) {
+      filtered = rawTransactions.filter((tx) =>
+        direction === 'in' ? isInbound(tx) : !isInbound(tx),
+      );
+      filtered = filtered.slice(offset, offset + limit);
+    }
+
     return {
-      transactions: transactions.map((tx) => ({
+      transactions: filtered.map((tx) => ({
         id: tx.id,
         type: tx.type,
         amount: tx.amount.toString(),
@@ -283,6 +351,77 @@ export async function walletRoutes(app: FastifyInstance) {
         type: 'TRANSFER' as const,
       });
     } catch {}
+
+    // If a direct chat already exists between sender & recipient, drop
+    // a SYSTEM message with plsTransfer metadata so the transfer is
+    // visible in the conversation (Telegram-style "Sent 100 PLS"
+    // bubble). We do NOT auto-create the DM — that would surprise the
+    // recipient with an empty chat appearing in their list.
+    try {
+      const dm = await prisma.chat.findFirst({
+        where: {
+          type: 'DIRECT',
+          AND: [
+            { members: { some: { userId: fromUserId, leftAt: null } } },
+            { members: { some: { userId: toUserId, leftAt: null } } },
+          ],
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (dm) {
+        const sysMsg = await prisma.message.create({
+          data: {
+            chatId: dm.id,
+            senderId: fromUserId,
+            type: 'SYSTEM',
+            content: null,
+            metadata: {
+              plsTransfer: {
+                fromUserId,
+                toUserId,
+                amount: plsAmount.toString(),
+                received: receivedAmount.toString(),
+                fee: fee.toString(),
+              },
+            },
+          },
+          include: {
+            sender: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+          },
+        });
+        await prisma.chat.update({
+          where: { id: dm.id },
+          data: { updatedAt: new Date() },
+        });
+        try {
+          const io = getIO();
+          io.to(`chat:${dm.id}`).emit('message:new', {
+            id: sysMsg.id,
+            chatId: dm.id,
+            senderId: sysMsg.senderId,
+            content: null,
+            type: 'SYSTEM',
+            replyToId: null,
+            isEdited: false,
+            isDeleted: false,
+            metadata: sysMsg.metadata as any,
+            signature: null,
+            signerWallet: null,
+            encryptedContent: null,
+            encryptionType: null,
+            createdAt: sysMsg.createdAt.toISOString(),
+            updatedAt: sysMsg.updatedAt.toISOString(),
+            sender: sysMsg.sender,
+            status: 'sent',
+            attachments: [],
+          } as any);
+        } catch {}
+      }
+    } catch (e) {
+      // Non-fatal — the transfer itself succeeded.
+      request.log.warn({ err: e }, 'wallet/transfer: failed to post chat system message');
+    }
 
     return {
       success: true,
