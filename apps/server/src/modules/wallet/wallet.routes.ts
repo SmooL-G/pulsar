@@ -365,7 +365,6 @@ export async function walletRoutes(app: FastifyInstance) {
             { members: { some: { userId: fromUserId, leftAt: null } } },
             { members: { some: { userId: toUserId, leftAt: null } } },
           ],
-          deletedAt: null,
         },
         select: { id: true },
       });
