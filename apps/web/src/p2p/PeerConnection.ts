@@ -143,12 +143,16 @@ export class PeerConnection {
       }
     };
 
-    // 8s opening budget; if not 'open' by then, mark failed and let
-    // MessageTransport fall back to server.
+    // 8s opening budget for the data channel. If it doesn't open by
+    // then we mark the peer 'failed' so MessageTransport falls back to
+    // the server, but we DON'T close() the PeerConnection — that would
+    // emit webrtc:close, dropping the other side's PC (including any
+    // media tracks added for an in-progress call). The PC stays alive;
+    // either later media negotiation succeeds or an explicit hang-up
+    // tears it down.
     this.connectTimer = setTimeout(() => {
       if (this.channel?.readyState !== 'open') {
         usePeerStore.getState().setState(this.remoteUserId, 'failed', 'timeout');
-        this.close('connect-timeout');
       }
     }, 8000);
     usePeerStore.getState().setState(this.remoteUserId, 'connecting');
