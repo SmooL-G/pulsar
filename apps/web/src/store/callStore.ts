@@ -37,6 +37,10 @@ interface CallState {
   inputDeviceId: string;
   /** Currently active output (speaker/headset) deviceId, or '' for default. */
   outputDeviceId: string;
+  /** Minimized state — overlay collapses to a floating pill so the
+   *  user can use the rest of the app (chat, wallet, etc.) without
+   *  hanging up. Tap the pill → restored to full overlay. */
+  isMinimized: boolean;
 
   setPhase: (phase: CallPhase) => void;
   setCall: (data: { callId: string; kind: CallKind; peer: CallPeer; phase: CallPhase }) => void;
@@ -46,6 +50,7 @@ interface CallState {
   setVideoMuted: (muted: boolean) => void;
   setInputDeviceId: (id: string) => void;
   setOutputDeviceId: (id: string) => void;
+  setMinimized: (m: boolean) => void;
   markActive: () => void;
   endCall: (reason: CallState['endReason']) => void;
   reset: () => void;
@@ -64,6 +69,7 @@ const initial = {
   endReason: null,
   inputDeviceId: '',
   outputDeviceId: '',
+  isMinimized: false,
 };
 
 export const useCallStore = create<CallState>((set) => ({
@@ -79,6 +85,7 @@ export const useCallStore = create<CallState>((set) => ({
     remoteStream: null,
     localStream: null,
     endReason: null,
+    isMinimized: false,
   }),
 
   setRemoteStream: (s) => set({ remoteStream: s }),
@@ -87,6 +94,7 @@ export const useCallStore = create<CallState>((set) => ({
   setVideoMuted: (muted) => set({ isVideoMuted: muted }),
   setInputDeviceId: (id) => set({ inputDeviceId: id }),
   setOutputDeviceId: (id) => set({ outputDeviceId: id }),
+  setMinimized: (m) => set({ isMinimized: m }),
 
   markActive: () => set({ phase: 'active', startedAt: Date.now() }),
 

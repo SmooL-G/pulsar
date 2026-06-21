@@ -58,6 +58,50 @@ function stopRingtone() {
   } catch { /* ignore */ }
 }
 
+/** Show an OS-level notification for an incoming call. We only fire
+ *  this when the page is hidden — if it's visible, the in-app
+ *  CallOverlay is already obvious and a second toast would be noise.
+ *  Tapping the notification focuses the tab so the user can accept. */
+let activeNotification: Notification | null = null;
+function showIncomingCallNotification(callerName: string, kind: CallKind) {
+  try {
+    if (typeof Notification === 'undefined') return;
+    if (document.visibilityState === 'visible') return;
+
+    const fire = () => {
+      try {
+        activeNotification?.close();
+        activeNotification = new Notification(
+          kind === 'video' ? `📹 Видеозвонок` : `📞 Звонок`,
+          {
+            body: callerName,
+            tag: 'pulsar-call',
+            requireInteraction: true,
+            silent: false,
+          },
+        );
+        activeNotification.onclick = () => {
+          window.focus();
+          activeNotification?.close();
+          activeNotification = null;
+        };
+      } catch (e) {
+        console.warn('[call] notification failed:', e);
+      }
+    };
+
+    if (Notification.permission === 'granted') {
+      fire();
+    } else if (Notification.permission === 'default') {
+      Notification.requestPermission().then((p) => { if (p === 'granted') fire(); });
+    }
+  } catch { /* notifications unsupported */ }
+}
+
+function closeIncomingCallNotification() {
+  try { activeNotification?.close(); activeNotification = null; } catch {}
+}
+
 async function getUserMediaSafe(kind: CallKind): Promise<MediaStream | null> {
   try {
     return await navigator.mediaDevices.getUserMedia({
@@ -166,6 +210,7 @@ export async function acceptCall() {
 
   getSocket()?.emit('call:accept', { to: store.peer.userId, callId: store.callId });
   stopRingtone();
+  closeIncomingCallNotification();
   useCallStore.getState().markActive();
 }
 
@@ -278,6 +323,7 @@ export async function switchOutputDevice(deviceId: string) {
 
 function cleanupAndReset(endReason?: 'hangup' | 'rejected' | 'cancelled' | 'unavailable' | 'missed') {
   stopRingtone();
+  closeIncomingCallNotification();
   if (outgoingTimeout) { clearTimeout(outgoingTimeout); outgoingTimeout = null; }
   const peerUserId = activePeerUserId;
   activePeerUserId = null;
@@ -333,6 +379,7 @@ export function registerCallSocketHandlers(socket: any) {
     const peer = await loadPeer(from);
     store.setCall({ callId, kind, peer, phase: 'incoming' });
     playRingtone(true);
+    showIncomingCallNotification(peer.displayName || peer.username, kind);
   });
 
   socket.on('call:ringing', ({ callId }: { callId: string }) => {
