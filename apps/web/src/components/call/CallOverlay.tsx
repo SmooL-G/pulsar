@@ -97,18 +97,35 @@ export function CallOverlay() {
 
   const initial = (peer.displayName || peer.username || '?')[0].toUpperCase();
 
+  // ───── Always-mounted media sinks ──────────────────────────────────
+  // CRITICAL: keep these OUTSIDE the minimized/full branches. If we
+  // duplicated the <audio>/<video> inside each branch, switching
+  // between minimized and full would unmount one element and mount a
+  // new one — the new one starts with srcObject=null and audio dies.
+  const remoteVideoClass = isMinimized || phase !== 'active'
+    ? 'hidden'
+    : 'fixed inset-0 w-full h-full object-cover -z-10';
+  const mediaSinks = (
+    <>
+      {kind === 'audio' && (
+        <audio ref={audioRef} autoPlay playsInline />
+      )}
+      {kind === 'video' && (
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className={remoteVideoClass}
+        />
+      )}
+    </>
+  );
+
   // ───── Minimized floating pill ─────────────────────────────────────
-  // Visible everywhere (top z-index), survives tab switches inside the
-  // app. We still mount the audio/video sinks so media keeps playing
-  // and tracks stay attached.
   if (isMinimized) {
     return (
       <>
-        {/* Hidden audio element keeps the stream playing */}
-        {kind === 'audio' && <audio ref={audioRef} autoPlay playsInline className="hidden" />}
-        {kind === 'video' && (
-          <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
-        )}
+        {mediaSinks}
         <button
           onClick={() => setMinimized(false)}
           className="
@@ -167,18 +184,10 @@ export function CallOverlay() {
         <Minimize2 size={18} />
       </button>
 
-      {/* Hidden audio sink for audio-only calls */}
-      {kind === 'audio' && <audio ref={audioRef} autoPlay playsInline />}
-
-      {/* Remote video */}
-      {kind === 'video' && phase === 'active' && (
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover -z-10"
-        />
-      )}
+      {/* Always-mounted media sinks (audio + video). The video element
+          uses fixed positioning so it tracks the overlay regardless of
+          where it lives in the tree. */}
+      {mediaSinks}
 
       {/* Local self-preview (top-right) for video calls */}
       {kind === 'video' && localStream && (
