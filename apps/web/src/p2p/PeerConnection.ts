@@ -325,6 +325,27 @@ export class PeerConnection {
     for (const track of this.localStream.getAudioTracks()) track.enabled = !muted;
   }
 
+  /** Swap the track for an existing RTCRtpSender of the matching kind.
+   *  Used to hot-switch microphone/camera mid-call without
+   *  renegotiation. Returns true on success, false if no sender was
+   *  found for that kind. */
+  async replaceTrack(kind: 'audio' | 'video', newTrack: MediaStreamTrack): Promise<boolean> {
+    const sender = this.localSenders.find((s) => s.track?.kind === kind);
+    if (!sender) {
+      console.warn(`[p2p] no ${kind} sender to replace`);
+      return false;
+    }
+    try {
+      const old = sender.track;
+      await sender.replaceTrack(newTrack);
+      if (old && old !== newTrack) old.stop();
+      return true;
+    } catch (e) {
+      console.error('[p2p] replaceTrack failed:', e);
+      return false;
+    }
+  }
+
   setVideoMuted(muted: boolean) {
     if (!this.localStream) return;
     for (const track of this.localStream.getVideoTracks()) track.enabled = !muted;

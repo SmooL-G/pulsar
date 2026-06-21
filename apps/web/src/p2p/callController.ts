@@ -218,6 +218,62 @@ export function toggleVideo() {
   useCallStore.getState().setVideoMuted(newMuted);
 }
 
+/** Swap the microphone for this call to a different input device.
+ *  Replaces the audio sender's track in-place — no renegotiation
+ *  needed, the other side keeps receiving without interruption. */
+export async function switchInputDevice(deviceId: string) {
+  const store = useCallStore.getState();
+  if (!store.peer || !store.localStream) return;
+
+  console.log('[call] switchInputDevice', deviceId);
+  try {
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+      video: store.kind === 'video' ? (store.localStream.getVideoTracks()[0] ? true : false) : false,
+    });
+
+    const peer = getPeer(store.peer.userId);
+    if (!peer) return;
+
+    // Replace the AUDIO sender's track without touching video (video
+    // track is unchanged — we just took a fresh audio track).
+    const newAudio = newStream.getAudioTracks()[0];
+    if (newAudio) {
+      const replaced = await peer.replaceTrack('audio', newAudio);
+      if (!replaced) {
+        console.warn('[call] could not replace audio track');
+        newAudio.stop();
+        return;
+      }
+    }
+
+    // Stop old audio tracks from localStream; keep video tracks.
+    for (const t of store.localStream.getAudioTracks()) t.stop();
+
+    // Build a NEW MediaStream containing the new audio + existing video
+    // so the local-preview useEffect in CallOverlay re-binds cleanly.
+    const updated = new MediaStream();
+    if (newAudio) updated.addTrack(newAudio);
+    for (const v of store.localStream.getVideoTracks()) updated.addTrack(v);
+
+    useCallStore.getState().setLocalStream(updated);
+    useCallStore.getState().setInputDeviceId(deviceId);
+  } catch (e) {
+    console.warn('[call] switchInputDevice failed:', e);
+  }
+}
+
+/** Switch the speaker/headset that incoming audio plays from. Uses
+ *  HTMLMediaElement.setSinkId — supported in Chrome/Edge/Opera; in
+ *  Firefox and iOS Safari this is a no-op and the OS picks the
+ *  active output. */
+export async function switchOutputDevice(deviceId: string) {
+  console.log('[call] switchOutputDevice', deviceId);
+  useCallStore.getState().setOutputDeviceId(deviceId);
+  // CallOverlay's useEffect picks up outputDeviceId and calls
+  // setSinkId on the audio element.
+}
+
 // ─── Internal cleanup ──────────────────────────────────────────────
 
 function cleanupAndReset(endReason?: 'hangup' | 'rejected' | 'cancelled' | 'unavailable' | 'missed') {

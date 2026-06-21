@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff, Headphones, Check, ChevronDown } from 'lucide-react';
 import { useCallStore } from '../../store/callStore';
 import {
   acceptCall, rejectCall, cancelCall, endCall, toggleMute, toggleVideo,
+  switchInputDevice, switchOutputDevice,
 } from '../../p2p/callController';
 import { useI18n } from '../../i18n';
+import { useAudioDevices } from '../../hooks/useAudioDevices';
 
 /**
  * Single full-screen overlay that handles every call phase. Mounted
@@ -26,6 +28,10 @@ export function CallOverlay() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const inputDeviceId = useCallStore((s) => s.inputDeviceId);
+  const outputDeviceId = useCallStore((s) => s.outputDeviceId);
+  const [deviceSheetOpen, setDeviceSheetOpen] = useState(false);
+  const { inputs, outputs } = useAudioDevices();
 
   // Wire MediaStream → media elements. We re-run on every phase change
   // too because the audio element only mounts once phase != 'idle' and
@@ -59,6 +65,19 @@ export function CallOverlay() {
       localVideoRef.current.play().catch(() => {});
     }
   }, [localStream, kind]);
+
+  // Output device routing (speaker / headset). setSinkId is supported
+  // in Chromium-based browsers; Firefox and iOS Safari ignore it (the
+  // OS routes audio there). We tolerate the rejection silently.
+  useEffect(() => {
+    const el = kind === 'audio' ? audioRef.current : remoteVideoRef.current;
+    if (!el || !outputDeviceId) return;
+    const anyEl = el as any;
+    if (typeof anyEl.setSinkId !== 'function') return;
+    anyEl.setSinkId(outputDeviceId)
+      .then(() => console.log('[call] sinkId switched to', outputDeviceId))
+      .catch((err: unknown) => console.warn('[call] setSinkId failed:', err));
+  }, [outputDeviceId, kind, remoteStream]);
 
   // Duration counter.
   const [now, setNow] = useState(Date.now());
@@ -175,6 +194,16 @@ export function CallOverlay() {
             >
               {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
             </button>
+            <button
+              onClick={() => setDeviceSheetOpen((v) => !v)}
+              className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                deviceSheetOpen ? 'bg-white text-dark-900' : 'bg-white/15 hover:bg-white/25'
+              }`}
+              aria-label={ru ? 'Устройства' : 'Devices'}
+              title={ru ? 'Микрофон и динамики' : 'Mic & speakers'}
+            >
+              <Headphones size={22} />
+            </button>
             {kind === 'video' && (
               <button
                 onClick={toggleVideo}
@@ -196,6 +225,86 @@ export function CallOverlay() {
           </>
         )}
       </div>
+
+      {/* Device picker sheet — slides up from the bottom over the
+          action bar when the headset button is tapped. */}
+      {deviceSheetOpen && phase === 'active' && (
+        <div
+          className="absolute inset-x-0 bottom-0 z-10 p-4 pb-8 bg-dark-800/95 backdrop-blur-xl rounded-t-3xl shadow-2xl animate-fade-in max-h-[60%] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">{ru ? 'Аудио-устройства' : 'Audio devices'}</h3>
+            <button
+              onClick={() => setDeviceSheetOpen(false)}
+              className="text-white/60 hover:text-white"
+              aria-label={ru ? 'Закрыть' : 'Close'}
+            >
+              <ChevronDown size={20} />
+            </button>
+          </div>
+
+          {/* Input devices (microphones) */}
+          <div className="mb-4">
+            <p className="text-[11px] uppercase tracking-wider text-white/50 mb-2 flex items-center gap-1.5">
+              <Mic size={12} /> {ru ? 'Микрофон' : 'Microphone'}
+            </p>
+            <div className="space-y-1">
+              {inputs.length === 0 && (
+                <p className="text-xs text-white/40 italic">{ru ? 'Устройств не найдено' : 'No devices found'}</p>
+              )}
+              {inputs.map((d) => {
+                const active = d.deviceId === inputDeviceId
+                  || (!inputDeviceId && d.deviceId === 'default');
+                return (
+                  <button
+                    key={d.deviceId}
+                    onClick={() => switchInputDevice(d.deviceId)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ${
+                      active ? 'bg-primary-500/30 text-white' : 'bg-white/5 hover:bg-white/10 text-white/80'
+                    }`}
+                  >
+                    {active ? <Check size={16} /> : <span className="w-4" />}
+                    <span className="text-sm truncate flex-1">{d.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Output devices (speakers / headset) */}
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-white/50 mb-2 flex items-center gap-1.5">
+              <Headphones size={12} /> {ru ? 'Динамики / Гарнитура' : 'Speaker / Headset'}
+            </p>
+            <div className="space-y-1">
+              {outputs.length === 0 && (
+                <p className="text-xs text-white/40 italic">
+                  {ru
+                    ? 'Браузер не разрешает выбор вывода. Управляется системой.'
+                    : 'Browser doesn\'t expose output selection — controlled by OS.'}
+                </p>
+              )}
+              {outputs.map((d) => {
+                const active = d.deviceId === outputDeviceId
+                  || (!outputDeviceId && d.deviceId === 'default');
+                return (
+                  <button
+                    key={d.deviceId}
+                    onClick={() => switchOutputDevice(d.deviceId)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors ${
+                      active ? 'bg-primary-500/30 text-white' : 'bg-white/5 hover:bg-white/10 text-white/80'
+                    }`}
+                  >
+                    {active ? <Check size={16} /> : <span className="w-4" />}
+                    <span className="text-sm truncate flex-1">{d.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

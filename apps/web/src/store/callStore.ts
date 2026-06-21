@@ -33,6 +33,10 @@ interface CallState {
   localStream: MediaStream | null;
   /** Why the call ended (for the 1.5s "Ended" splash before reset). */
   endReason: 'hangup' | 'rejected' | 'cancelled' | 'unavailable' | 'missed' | null;
+  /** Currently active input (mic) device deviceId, or '' for default. */
+  inputDeviceId: string;
+  /** Currently active output (speaker/headset) deviceId, or '' for default. */
+  outputDeviceId: string;
 
   setPhase: (phase: CallPhase) => void;
   setCall: (data: { callId: string; kind: CallKind; peer: CallPeer; phase: CallPhase }) => void;
@@ -40,6 +44,8 @@ interface CallState {
   setLocalStream: (s: MediaStream | null) => void;
   setMuted: (muted: boolean) => void;
   setVideoMuted: (muted: boolean) => void;
+  setInputDeviceId: (id: string) => void;
+  setOutputDeviceId: (id: string) => void;
   markActive: () => void;
   endCall: (reason: CallState['endReason']) => void;
   reset: () => void;
@@ -56,6 +62,8 @@ const initial = {
   remoteStream: null,
   localStream: null,
   endReason: null,
+  inputDeviceId: '',
+  outputDeviceId: '',
 };
 
 export const useCallStore = create<CallState>((set) => ({
@@ -77,6 +85,8 @@ export const useCallStore = create<CallState>((set) => ({
   setLocalStream: (s) => set({ localStream: s }),
   setMuted: (muted) => set({ isMuted: muted }),
   setVideoMuted: (muted) => set({ isVideoMuted: muted }),
+  setInputDeviceId: (id) => set({ inputDeviceId: id }),
+  setOutputDeviceId: (id) => set({ outputDeviceId: id }),
 
   markActive: () => set({ phase: 'active', startedAt: Date.now() }),
 
