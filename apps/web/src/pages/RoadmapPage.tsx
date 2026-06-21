@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Loader2, Clock, Sparkles, Shield, Gem, Crown, Search, MessageCircle, Globe, Megaphone, Bot, Zap, Home, Bookmark, Smartphone, ListChecks, BarChart3, Mic } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Clock, Sparkles, Shield, Gem, Crown, Search, MessageCircle, Globe, Megaphone, Bot, Zap, Home, Bookmark, Smartphone, ListChecks, BarChart3, Mic, Phone } from 'lucide-react';
 import { useI18n } from '../i18n';
 
 type Status = 'done' | 'active' | 'planned';
@@ -160,7 +160,8 @@ const PHASES: Phase[] = [
       { text: { en: 'Google Play + RuStore listings', ru: 'Публикация в Google Play и RuStore' }, status: 'planned', icon: <Smartphone size={14} /> },
       { text: { en: 'iOS app', ru: 'Приложение для iOS' }, status: 'planned' },
       { text: { en: 'Desktop client (Tauri, Win/Linux)', ru: 'Десктоп-клиент (Tauri, Win/Linux)' }, status: 'done' },
-      { text: { en: 'Voice & video calls (WebRTC)', ru: 'Голосовые и видеозвонки (WebRTC)' }, status: 'planned' },
+      { text: { en: 'Voice & video calls (P2P WebRTC, DM)', ru: 'Голосовые и видеозвонки (P2P WebRTC, DM)' }, status: 'done', icon: <Phone size={14} /> },
+      { text: { en: 'Group calls via SFU', ru: 'Групповые звонки через SFU' }, status: 'planned', icon: <Phone size={14} /> },
     ],
   },
   {
@@ -184,6 +185,7 @@ const PHASES: Phase[] = [
       { text: { en: 'Mobile settings drill-down (long list → button cards)', ru: 'Drill-down настроек на мобильном (длинный список → карточки)' }, status: 'done', icon: <Smartphone size={14} /> },
       { text: { en: 'PLS transfer renders as glassy chat bubble (auto-creates DM)', ru: 'PLS-перевод как glass-баббл в чате (DM создаётся автоматически)' }, status: 'done', icon: <Gem size={14} /> },
       { text: { en: 'Transaction history filters (type, direction, search, date range)', ru: 'Фильтры истории операций (тип, направление, поиск, диапазон дат)' }, status: 'done' },
+      { text: { en: 'P2P audio + video calls in DMs (Telegram-style overlay, call history bubbles)', ru: 'P2P голосовые и видеозвонки в DM (Telegram-style оверлей, история звонков в чате)' }, status: 'done', icon: <Phone size={14} /> },
     ],
   },
   {
