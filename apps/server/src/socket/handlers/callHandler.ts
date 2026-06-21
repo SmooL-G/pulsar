@@ -1,6 +1,7 @@
 import type { Server, Socket } from 'socket.io';
 import { prisma } from '../../config/database.js';
 import { getIO } from '../index.js';
+import { sendPushToUser } from '../../modules/push/push.service.js';
 
 /**
  * Voice/video call signaling — high-level lifecycle on top of the
@@ -32,6 +33,23 @@ interface ActiveCall {
 // In-memory: userId → active call (either as caller or callee).
 // Cleared on call:end / call:cancel / call:reject / disconnect.
 const userToCall = new Map<string, ActiveCall>();
+
+/** Calls where the callee was offline at invite time. We send them a
+ *  push notification and wait this long for them to come online. If
+ *  they connect within the window, we promote pending → active and
+ *  emit call:incoming. If not, caller gets call:unavailable. */
+const PENDING_CALL_TTL_MS = 30_000;
+
+interface PendingCall {
+  callId: string;
+  caller: string;
+  callee: string;
+  kind: 'audio' | 'video';
+  startedAt: number;
+  timeoutHandle: NodeJS.Timeout;
+}
+
+const pendingCalls = new Map<string, PendingCall>(); // callee → pending
 
 function isUserOnline(userId: string): boolean {
   const io = getIO();
@@ -121,15 +139,52 @@ export function registerCallHandlers(io: Server, socket: Socket) {
       return;
     }
 
-    // Callee offline → unavailable + missed-call message.
+    // Callee offline → register as pending, fire OS push, and wait up
+    // to PENDING_CALL_TTL_MS for them to come online via the
+    // notification. If they connect in time we promote to active and
+    // ring them; otherwise the timeout writes a missed-call message.
     if (!isUserOnline(to)) {
-      socket.emit('call:unavailable', { callId, reason: 'offline' });
-      const dmId = await findDmId(fromUserId, to);
-      if (dmId) {
-        await writeCallSystemMessage({
-          dmId, senderId: fromUserId, status: 'missed', kind, duration: 0,
-        });
+      // Already a pending invite to this callee from someone else?
+      // Tell the new caller they're busy.
+      if (pendingCalls.has(to)) {
+        socket.emit('call:unavailable', { callId, reason: 'busy' });
+        return;
       }
+
+      const caller = await prisma.user.findUnique({
+        where: { id: fromUserId },
+        select: { username: true, displayName: true },
+      });
+      const callerName = caller?.displayName || caller?.username || 'Someone';
+
+      const timeoutHandle = setTimeout(async () => {
+        const pending = pendingCalls.get(to);
+        if (!pending || pending.callId !== callId) return;
+        pendingCalls.delete(to);
+        io.to(`user:${fromUserId}`).emit('call:unavailable', { callId, reason: 'offline' });
+        const dmId = await findDmId(fromUserId, to);
+        if (dmId) {
+          await writeCallSystemMessage({
+            dmId, senderId: fromUserId, status: 'missed', kind, duration: 0,
+          });
+        }
+      }, PENDING_CALL_TTL_MS);
+
+      pendingCalls.set(to, {
+        callId, caller: fromUserId, callee: to, kind,
+        startedAt: Date.now(), timeoutHandle,
+      });
+
+      // Tell the caller we're ringing (don't reveal callee is offline).
+      socket.emit('call:ringing', { callId });
+
+      // Fire push — fire-and-forget; do not block the socket response.
+      sendPushToUser(to, {
+        title: kind === 'video' ? `📹 Видеозвонок` : `📞 Звонок`,
+        body: callerName,
+        tag: `call:${callId}`,
+        url: '/',
+      }).catch((e) => console.warn('[call] push send failed:', e));
       return;
     }
 
@@ -142,6 +197,40 @@ export function registerCallHandlers(io: Server, socket: Socket) {
     io.to(`user:${to}`).emit('call:incoming', { from: fromUserId, callId, kind });
     socket.emit('call:ringing', { callId });
   });
+
+  // When a user connects (or reconnects), promote any pending call to
+  // active and ring them. Runs synchronously on connect — fromUserId
+  // is captured in the closure above.
+  const pending = pendingCalls.get(fromUserId);
+  if (pending) {
+    clearTimeout(pending.timeoutHandle);
+    pendingCalls.delete(fromUserId);
+    // Check caller is still online and not in another call.
+    if (isUserOnline(pending.caller) && !userToCall.has(pending.caller)) {
+      const call: ActiveCall = {
+        callId: pending.callId,
+        caller: pending.caller,
+        callee: pending.callee,
+        kind: pending.kind,
+        startedAt: pending.startedAt,
+      };
+      userToCall.set(pending.caller, call);
+      userToCall.set(pending.callee, call);
+      io.to(`user:${pending.callee}`).emit('call:incoming', {
+        from: pending.caller, callId: pending.callId, kind: pending.kind,
+      });
+    } else {
+      // Caller gave up. Write a missed-call message.
+      findDmId(pending.caller, pending.callee).then((dmId) => {
+        if (dmId) {
+          writeCallSystemMessage({
+            dmId, senderId: pending.caller, status: 'missed',
+            kind: pending.kind, duration: 0,
+          });
+        }
+      });
+    }
+  }
 
   socket.on('call:accept', (data: { to: string; callId: string }) => {
     if (!data?.to || !data.callId) return;
@@ -175,6 +264,14 @@ export function registerCallHandlers(io: Server, socket: Socket) {
     const call = userToCall.get(fromUserId);
     userToCall.delete(fromUserId);
     if (call) userToCall.delete(call.caller === fromUserId ? call.callee : call.caller);
+
+    // Also clear any pending invite this caller had to the target.
+    const pending = pendingCalls.get(data.to);
+    if (pending && pending.caller === fromUserId && pending.callId === data.callId) {
+      clearTimeout(pending.timeoutHandle);
+      pendingCalls.delete(data.to);
+    }
+
     io.to(`user:${data.to}`).emit('call:cancelled', { from: fromUserId, callId: data.callId });
     if (call) {
       const dmId = await findDmId(call.caller, call.callee);

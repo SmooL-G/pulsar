@@ -74,12 +74,22 @@ self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { data = { title: 'Pulsar', body: event.data?.text() || '' }; }
   const title = data.title || 'Pulsar';
+
+  // Call notifications (tag starts with "call:") get the high-priority
+  // treatment: requireInteraction so they don't auto-dismiss, vibrate
+  // pattern, and an Accept action button.
+  const isCall = typeof data.tag === 'string' && data.tag.startsWith('call:');
+
   const options = {
     body: data.body || '',
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     tag: data.tag,
-    data: { url: data.url || '/' },
+    data: { url: data.url || '/', isCall },
+    requireInteraction: isCall,
+    vibrate: isCall ? [500, 250, 500, 250, 500] : undefined,
+    actions: isCall ? [{ action: 'accept', title: 'Принять' }] : undefined,
+    silent: false,
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
