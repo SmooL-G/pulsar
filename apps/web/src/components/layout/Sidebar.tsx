@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, Globe, Megaphone, Bot, User, MessageSquare } from 'lucide-react';
+import { Search, Plus, Globe, Megaphone, Bot, User, MessageSquare, Mic } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { ChatListItem } from '../chat/ChatListItem';
 import { NewChatModal } from '../chat/NewChatModal';
 import { BotPanel } from '../bot/BotPanel';
+import { StartVoiceRoomModal } from '../voiceRoom/StartVoiceRoomModal';
+import { useVoiceRoomStore } from '../../store/voiceRoomStore';
 import { GenerativeAvatar } from '../ui/GenerativeAvatar';
 import { api } from '../../services/api';
 import { useMessageStore } from '../../store/messageStore';
@@ -19,6 +21,8 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
   const [showBots, setShowBots] = useState(false);
+  const [showVoiceRoom, setShowVoiceRoom] = useState(false);
+  const activeVoiceRoomId = useVoiceRoomStore((s) => s.activeChatId);
   const [searchResults, setSearchResults] = useState<any>(null);
   const [searchLoading, setSearchLoading] = useState(false);
 
@@ -139,6 +143,20 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
         {/* Sidebar header now keeps only chat-creation actions.
             Wallet / Friends / Settings moved to the global BottomNav. */}
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowVoiceRoom(true)}
+            className={`p-2 rounded-lg transition-colors relative ${
+              activeVoiceRoomId
+                ? 'bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25'
+                : 'hover:bg-gray-200 dark:hover:bg-dark-500'
+            }`}
+            title={locale === 'ru' ? 'Голосовая комната' : 'Voice room'}
+          >
+            <Mic size={20} />
+            {activeVoiceRoomId && (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            )}
+          </button>
           <button
             onClick={() => setShowBots(true)}
             className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-500 transition-colors"
@@ -327,6 +345,7 @@ export function Sidebar({ onChatSelect }: SidebarProps) {
       {/* Chat-creation modals still triggered here */}
       {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
       {showBots && <BotPanel onClose={() => setShowBots(false)} />}
+      {showVoiceRoom && <StartVoiceRoomModal onClose={() => setShowVoiceRoom(false)} />}
     </div>
   );
 }
