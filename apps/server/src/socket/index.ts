@@ -11,6 +11,7 @@ import { registerTypingHandlers } from './handlers/typingHandler.js';
 import { registerPresenceHandlers, cleanupPresenceOnStart } from './handlers/presenceHandler.js';
 import { registerWebrtcHandlers } from './handlers/webrtcHandler.js';
 import { registerCallHandlers } from './handlers/callHandler.js';
+import { registerVoiceRoomHandlers } from './handlers/voiceRoomHandler.js';
 
 export type AppSocket = Server<ClientToServerEvents, ServerToClientEvents>;
 
@@ -50,6 +51,7 @@ export function initSocketServer(httpServer: HttpServer) {
     registerPresenceHandlers(io, socket);
     registerWebrtcHandlers(io, socket);
     registerCallHandlers(io, socket);
+    registerVoiceRoomHandlers(io, socket);
 
     socket.on('disconnect', (reason) => {
       console.log(`User disconnected: ${userId} (reason: ${reason})`);

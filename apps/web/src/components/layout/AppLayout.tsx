@@ -8,6 +8,7 @@ import { FriendsPanel } from '../friends/FriendsPanel';
 import { WalletPanel } from '../wallet/WalletPanel';
 import { SettingsPanel } from '../settings/SettingsPanel';
 import { CallOverlay } from '../call/CallOverlay';
+import { VoiceRoomOverlay } from '../voiceRoom/VoiceRoomOverlay';
 import { useChatStore } from '../../store/chatStore';
 import { useShortcut } from '../../hooks/useKeyboardShortcuts';
 
@@ -136,6 +137,9 @@ export function AppLayout() {
 
       {/* Global voice/video call overlay — covers everything when active */}
       <CallOverlay />
+
+      {/* Global group voice room overlay — same pattern, separate state */}
+      <VoiceRoomOverlay />
     </div>
   );
 }

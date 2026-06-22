@@ -113,6 +113,37 @@ export function MessageBubble({ message, isOwn, showAvatar, chatType, otherUserI
   }
 
   if (message.type === 'SYSTEM') {
+    // Special-case: group voice room opened (metadata.voiceRoom).
+    // Renders a card with a "Присоединиться" button.
+    const voiceRoom = (message.metadata as any)?.voiceRoom;
+    if (voiceRoom) {
+      return (
+        <div id={`msg-${message.id}`} className="flex justify-center my-3">
+          <button
+            onClick={async () => {
+              const { joinVoiceRoom } = await import('../../p2p/voiceRoomController');
+              joinVoiceRoom(message.chatId);
+            }}
+            className="
+              flex items-center gap-3 px-4 py-2.5 rounded-2xl
+              bg-emerald-500/10 ring-1 ring-emerald-500/30 text-emerald-600 dark:text-emerald-300
+              backdrop-blur-xl shadow-sm hover:bg-emerald-500/20 transition-colors
+            "
+          >
+            <span className="text-2xl leading-none">🎤</span>
+            <div className="flex flex-col leading-tight text-left">
+              <span className="text-[11px] uppercase tracking-wider font-semibold opacity-70">
+                {locale === 'ru' ? 'Голосовая комната' : 'Voice room'}
+              </span>
+              <span className="text-sm font-bold">
+                {locale === 'ru' ? 'Присоединиться' : 'Join'}
+              </span>
+            </div>
+          </button>
+        </div>
+      );
+    }
+
     // Special-case: voice/video call summary (metadata.call written
     // by callHandler when the call ends — answered / missed /
     // rejected / cancelled).

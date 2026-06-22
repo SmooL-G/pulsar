@@ -19,6 +19,9 @@ import { P2PIndicator } from '../chat/P2PIndicator';
 import { NewsFeed } from './NewsFeed';
 import { useI18n } from '../../i18n';
 import { startCall } from '../../p2p/callController';
+import { joinVoiceRoom } from '../../p2p/voiceRoomController';
+import { useVoiceRoomStore } from '../../store/voiceRoomStore';
+import { Mic } from 'lucide-react';
 
 interface ChatAreaProps {
   onBack: () => void;
@@ -184,6 +187,9 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
               </button>
             </>
           )}
+          {!isSaved && (activeChat.type === 'GROUP' || activeChat.type === 'CHANNEL') && (
+            <VoiceRoomChatButton chatId={activeChat.id} locale={locale} />
+          )}
           <button
             onClick={onToggleInfo}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500"
@@ -240,5 +246,29 @@ export function ChatArea({ onBack, onToggleInfo }: ChatAreaProps) {
         />
       )}
     </div>
+  );
+}
+
+function VoiceRoomChatButton({ chatId, locale }: { chatId: string; locale: string }) {
+  const activeRoomId = useVoiceRoomStore((s) => s.activeChatId);
+  const participants = useVoiceRoomStore((s) => s.participants);
+  const inThisRoom = activeRoomId === chatId;
+  const count = inThisRoom ? participants.size : 0;
+  const ru = locale === 'ru';
+  return (
+    <button
+      onClick={() => joinVoiceRoom(chatId)}
+      className={`p-2 rounded-lg transition-colors flex items-center gap-1 ${
+        inThisRoom
+          ? 'bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25'
+          : 'hover:bg-gray-100 dark:hover:bg-dark-500 text-gray-500 hover:text-emerald-500'
+      }`}
+      title={inThisRoom ? (ru ? 'Вы в голосовой комнате' : 'You are in the voice room') : (ru ? 'Голосовая комната' : 'Voice room')}
+    >
+      <Mic size={18} />
+      {count > 0 && (
+        <span className="text-xs font-bold">{count}</span>
+      )}
+    </button>
   );
 }

@@ -6,6 +6,7 @@ import { useChatStore } from '../store/chatStore';
 import type { Message } from '@pulsar/shared';
 import * as p2p from '../p2p/PeerConnection';
 import { registerCallSocketHandlers } from '../p2p/callController';
+import { registerVoiceRoomSocketHandlers } from '../p2p/voiceRoomController';
 
 let socket: Socket | null = null;
 
@@ -205,6 +206,7 @@ export function useSocket() {
     // to *this* socket instance regardless of whether it's already
     // connected. Re-runs on socket re-creation in useEffect cleanup.
     registerCallSocketHandlers(socket);
+    registerVoiceRoomSocketHandlers(socket);
 
     // Heartbeat
     const heartbeatInterval = setInterval(() => {

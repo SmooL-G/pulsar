@@ -55,6 +55,17 @@ export interface ClientToServerEvents {
   'call:reject': (data: { to: string; callId: string; reason?: 'declined' | 'busy' }) => void;
   'call:cancel': (data: { to: string; callId: string }) => void;
   'call:end':    (data: { to: string; callId: string; duration: number }) => void;
+
+  // ─── Group voice rooms (mesh P2P, up to ~10 participants) ────────
+  // Per-chat room. Audio is on by default for joiners; video requires
+  // admin grant (chat.OWNER/ADMIN/MODERATOR).
+  'voiceRoom:join':         (data: { chatId: string }) => void;
+  'voiceRoom:leave':        (data: { chatId: string }) => void;
+  'voiceRoom:mute':         (data: { chatId: string; isMuted: boolean }) => void;
+  'voiceRoom:videoRequest': (data: { chatId: string }) => void;
+  'voiceRoom:videoGrant':   (data: { chatId: string; targetUserId: string; allowed: boolean }) => void;
+  'voiceRoom:videoStart':   (data: { chatId: string }) => void;
+  'voiceRoom:videoStop':    (data: { chatId: string }) => void;
 }
 
 // Server → Client events
@@ -166,4 +177,19 @@ export interface ServerToClientEvents {
   'call:rejected':    (data: { from: string; callId: string; reason?: 'declined' | 'busy' }) => void;
   'call:cancelled':   (data: { from: string; callId: string }) => void;
   'call:ended':       (data: { from: string; callId: string; duration: number }) => void;
+
+  // ─── Group voice rooms (server → clients) ─────────────────
+  'voiceRoom:participants': (data: {
+    chatId: string;
+    participants: { userId: string; isMuted: boolean; canStreamVideo: boolean; isStreamingVideo: boolean; joinedAt: number }[];
+  }) => void;
+  'voiceRoom:participantJoined': (data: { chatId: string; userId: string }) => void;
+  'voiceRoom:participantLeft':   (data: { chatId: string; userId: string }) => void;
+  'voiceRoom:participantMuted':  (data: { chatId: string; userId: string; isMuted: boolean }) => void;
+  'voiceRoom:videoRequest':      (data: { chatId: string; userId: string }) => void;
+  'voiceRoom:videoGranted':      (data: { chatId: string; userId: string; allowed: boolean }) => void;
+  'voiceRoom:videoStarted':      (data: { chatId: string; userId: string }) => void;
+  'voiceRoom:videoStopped':      (data: { chatId: string; userId: string }) => void;
+  'voiceRoom:closed':            (data: { chatId: string }) => void;
+  'voiceRoom:error':             (data: { chatId: string; code: 'FULL' | 'FORBIDDEN' | 'VIDEO_LIMIT' | 'NOT_ALLOWED' }) => void;
 }
