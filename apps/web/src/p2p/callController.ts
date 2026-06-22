@@ -116,7 +116,13 @@ async function getUserMediaSafe(kind: CallKind): Promise<MediaStream | null> {
 
 function attachMediaToPeer(remoteUserId: string, stream: MediaStream) {
   const peer = ensurePeer(remoteUserId);
+  console.log('[call] attachMediaToPeer', {
+    remoteUserId,
+    existingRemote: !!peer.getRemoteStream(),
+    localTracks: stream.getTracks().length,
+  });
   peer.onRemoteStream = (s) => {
+    console.log('[call] onRemoteStream fired (1-to-1)', { remoteUserId, tracks: s.getTracks().length });
     useCallStore.getState().setRemoteStream(s);
   };
   // If a remote stream already arrived (race with onRemoteStream wiring), pick it up.
@@ -154,6 +160,19 @@ export async function startCall(peerUserId: string, kind: CallKind) {
     console.warn('[call] resetting stale phase before new call:', store.phase);
     cleanupAndReset();
   }
+
+  // Voice room and 1-to-1 calls share the same PeerConnection registry
+  // (ensurePeer). If a voice room is active it will have written its
+  // own onRemoteStream callback into our peer object — we'd never see
+  // remote tracks routed to the call UI. Tear it down first.
+  try {
+    const { useVoiceRoomStore } = await import('../store/voiceRoomStore');
+    if (useVoiceRoomStore.getState().activeChatId) {
+      console.warn('[call] leaving voice room before 1-to-1 call');
+      const { leaveVoiceRoom } = await import('./voiceRoomController');
+      await leaveVoiceRoom();
+    }
+  } catch { /* voiceRoom modules optional */ }
 
   const me = useAuthStore.getState().user;
   if (!me || me.id === peerUserId) return;
@@ -196,6 +215,17 @@ export async function startCall(peerUserId: string, kind: CallKind) {
 export async function acceptCall() {
   const store = useCallStore.getState();
   if (store.phase !== 'incoming' || !store.peer || !store.callId) return;
+
+  // Same defensive cleanup as startCall — voice room may have stolen
+  // the PeerConnection's onRemoteStream slot.
+  try {
+    const { useVoiceRoomStore } = await import('../store/voiceRoomStore');
+    if (useVoiceRoomStore.getState().activeChatId) {
+      console.warn('[call] leaving voice room before accepting 1-to-1 call');
+      const { leaveVoiceRoom } = await import('./voiceRoomController');
+      await leaveVoiceRoom();
+    }
+  } catch { /* voiceRoom modules optional */ }
 
   const stream = await getUserMediaSafe(store.kind);
   if (!stream) {
