@@ -17,11 +17,21 @@ export function P2PIndicator({ remoteUserId }: Props) {
   const relayLabel = useRelayStatusStore((s) => s.label);
 
   // Effect: when enabled flips on, open a peer; off → tear down.
+  // Guarded against active calls — dropping the peer mid-call kills
+  // media tracks. The dropPeer helper also has its own guard, but
+  // gating here too prevents needless render churn / log spam.
   useEffect(() => {
+    const inCall = (() => {
+      try {
+        const { useCallStore } = require('../../store/callStore') as typeof import('../../store/callStore');
+        const cs = useCallStore.getState();
+        return cs.peer?.userId === remoteUserId && cs.phase !== 'idle' && cs.phase !== 'ended';
+      } catch { return false; }
+    })();
     if (entry?.enabled && entry.state !== 'open' && entry.state !== 'connecting') {
       try { ensurePeer(remoteUserId); } catch { /* localUserId not set yet */ }
     }
-    if (entry && !entry.enabled && entry.state !== 'idle' && entry.state !== 'closed') {
+    if (!inCall && entry && !entry.enabled && entry.state !== 'idle' && entry.state !== 'closed') {
       dropPeer(remoteUserId, 'user-toggle-off');
     }
   }, [entry?.enabled, entry?.state, remoteUserId]);

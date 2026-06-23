@@ -274,10 +274,12 @@ export class PeerConnection {
       const sender = this.pc.addTrack(track, stream);
       this.localSenders.push(sender);
     }
-    // Don't trust onnegotiationneeded to fire reliably across browser
-    // versions / WebRTC adapter quirks. Kick off renegotiation
-    // explicitly. If signaling is busy, schedule for when it's stable.
-    void this.renegotiate('addLocalStream');
+    // pc.addTrack() queues onnegotiationneeded automatically. We used
+    // to ALSO call this.renegotiate() here, but that raced with the
+    // browser event — both paths created offers, the second one with
+    // a different m-line order than the first, and setLocalDescription
+    // threw `InvalidAccessError: order of m-lines ... doesn't match`.
+    // Trust the browser event.
   }
 
   private async renegotiate(reason: string) {
